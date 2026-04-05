@@ -26,7 +26,7 @@ export default function LoginPage() {
       AuthService.guardarSesion(respuesta.token, respuesta.usuario);
 
       // 3. Redirigimos al módulo protegido
-      router.push("/ventas");
+      router.push("/ventas/nueva");
     } catch (err: any) {
       setError(err.message || "Error de conexión con el servidor");
     } finally {
