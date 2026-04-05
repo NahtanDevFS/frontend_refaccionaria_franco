@@ -1,0 +1,37 @@
+:root {
+  --primary-blue: #003366;
+  --secondary-blue: #00509e;
+  --light-blue: #e6f0fa;
+  --white: #ffffff;
+  --text-main: #333333;
+  --border-color: #b3d4f0;
+  --error-color: #cc0000;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--white);
+  color: var(--text-main);
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  font-family: inherit;
+}
+
+input,
+select {
+  font-family: inherit;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+}

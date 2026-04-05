@@ -1,0 +1,86 @@
+.container {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 2rem;
+}
+
+.panel {
+  border: 1px solid var(--border-color);
+  padding: 1.5rem;
+  border-radius: 8px;
+}
+
+.title {
+  color: var(--primary-blue);
+  margin-bottom: 1.5rem;
+}
+
+.formGroup {
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.formGroup label {
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  color: var(--primary-blue);
+}
+
+.input {
+  padding: 0.75rem;
+}
+
+.tableContainer {
+  margin-top: 1.5rem;
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--border-color);
+  text-align: left;
+}
+
+.btnPrimary {
+  background-color: var(--primary-blue);
+  color: var(--white);
+  padding: 0.75rem;
+  border-radius: 4px;
+  width: 100%;
+  font-weight: bold;
+  margin-top: 1rem;
+}
+
+.btnPrimary:hover {
+  background-color: var(--secondary-blue);
+}
+
+.btnDanger {
+  background-color: var(--white);
+  color: var(--primary-blue);
+  border: 1px solid var(--primary-blue);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.btnDanger:hover {
+  background-color: var(--light-blue);
+}
+
+.totalText {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: var(--primary-blue);
+  text-align: right;
+  margin-top: 1rem;
+}

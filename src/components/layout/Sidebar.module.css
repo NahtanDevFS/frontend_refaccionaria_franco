@@ -1,0 +1,95 @@
+.sidebar {
+  width: 250px;
+  height: 100vh;
+  background-color: var(--primary-blue);
+  color: var(--white);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0;
+  left: 0;
+  border-right: 2px solid var(--secondary-blue);
+}
+
+.brand {
+  padding: 1.5rem;
+  font-size: 1.25rem;
+  font-weight: bold;
+  border-bottom: 1px solid var(--secondary-blue);
+  text-align: center;
+  letter-spacing: 1px;
+}
+
+.userInfo {
+  padding: 1rem 1.5rem;
+  background-color: var(--secondary-blue);
+  font-size: 0.85rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.userName {
+  font-weight: bold;
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.userRole {
+  color: var(--light-blue);
+  font-size: 0.75rem;
+}
+
+.nav {
+  flex: 1;
+  padding: 1rem 0;
+  overflow-y: auto;
+}
+
+.menuSection {
+  margin-bottom: 1.5rem;
+}
+
+.sectionTitle {
+  padding: 0 1.5rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--light-blue);
+  margin-bottom: 0.5rem;
+  letter-spacing: 1px;
+}
+
+.navItem {
+  display: block;
+  padding: 0.75rem 1.5rem;
+  color: var(--white);
+  text-decoration: none;
+  transition: background-color 0.2s;
+  font-size: 0.95rem;
+}
+
+.navItem:hover {
+  background-color: var(--secondary-blue);
+}
+
+.active {
+  background-color: var(--white);
+  color: var(--primary-blue);
+  font-weight: bold;
+}
+
+.active:hover {
+  background-color: var(--white);
+}
+
+.logoutBtn {
+  margin: 1rem;
+  padding: 0.75rem;
+  background-color: var(--white);
+  color: var(--primary-blue);
+  font-weight: bold;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.logoutBtn:hover {
+  background-color: var(--light-blue);
+}

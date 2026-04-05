@@ -1,0 +1,12 @@
+.layoutWrapper {
+  display: flex;
+  min-height: 100vh;
+}
+
+.mainContent {
+  flex: 1;
+  /* El ancho del sidebar es 250px, así que empujamos el contenido */
+  margin-left: 250px;
+  padding: 2rem;
+  background-color: var(--light-blue);
+}
