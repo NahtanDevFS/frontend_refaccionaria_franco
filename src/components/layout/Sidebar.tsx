@@ -54,6 +54,11 @@ const MENU_CONFIG: MenuSection[] = [
           "SUPERVISOR_SUCURSAL",
         ],
       },
+      {
+        title: "Aprobación de Descuentos",
+        path: "/ventas/aprobaciones",
+        rolesAllowed: ["ADMINISTRADOR", "SUPERVISOR_SUCURSAL"],
+      },
     ],
   },
   {
@@ -107,7 +112,7 @@ export default function Sidebar() {
 
   return (
     <aside className={styles.sidebar}>
-      <div className={styles.brand}>SISTEMA FRANCO</div>
+      <div className={styles.brand}>REFACCIONARIA FRANCO</div>
 
       <div className={styles.userInfo}>
         <span className={styles.userName}>{usuario.nombre}</span>

@@ -50,15 +50,16 @@ export default function NuevaVentaPage() {
     notas_internas: "",
   });
 
-  // === ESTADOS DE LOGÍSTICA ===
+  // === ESTADOS DE LOGÍSTICA Y NEGOCIO ===
   const [esDomicilio, setEsDomicilio] = useState(false);
   const [idRepartidor, setIdRepartidor] = useState("");
   const [pagoContraEntrega, setPagoContraEntrega] = useState(false);
+  const [descuentoPorcentaje, setDescuentoPorcentaje] = useState<number>(0);
   const [listaRepartidores, setListaRepartidores] = useState<
     { id_empleado: number; nombre: string; apellido: string }[]
   >([]);
 
-  // ESTADOS DE UBICACIÓN
+  // === ESTADOS DE UBICACIÓN ===
   const [departamentos, setDepartamentos] = useState<
     { id_departamento: number; nombre: string }[]
   >([]);
@@ -219,7 +220,10 @@ export default function NuevaVentaPage() {
     }
   };
 
-  const totalVenta = carrito.reduce((sum, item) => sum + item.subtotal, 0);
+  // === CÁLCULO DE TOTALES ===
+  const subtotalCarrito = carrito.reduce((sum, item) => sum + item.subtotal, 0);
+  const descuentoMonto = subtotalCarrito * (descuentoPorcentaje / 100);
+  const totalVenta = subtotalCarrito - descuentoMonto;
 
   // === ENVÍO DE ORDEN AL BACKEND ===
   const procesarOrden = async () => {
@@ -248,6 +252,7 @@ export default function NuevaVentaPage() {
           : null,
       canal: esDomicilio ? "domicilio" : "mostrador",
       pago_contra_entrega: esDomicilio ? pagoContraEntrega : false,
+      descuento_porcentaje: descuentoPorcentaje,
       id_repartidor:
         esDomicilio && idRepartidor ? parseInt(idRepartidor) : null,
       direccion_entrega: esDomicilio ? datosCliente.direccion : null,
@@ -258,10 +263,16 @@ export default function NuevaVentaPage() {
     };
 
     try {
-      const mensajeEstado =
-        esDomicilio && pagoContraEntrega
-          ? "Pendiente de cobro contra entrega"
-          : "Pendiente de Pago";
+      let mensajeEstado = "";
+      if (descuentoPorcentaje > 5) {
+        mensajeEstado = "Enviada a Supervisor para Autorización de Descuento";
+      } else if (esDomicilio && pagoContraEntrega) {
+        mensajeEstado = "Pendiente de cobro contra entrega";
+      } else {
+        mensajeEstado = "Pendiente de Pago";
+      }
+
+      await VentaService.crearOrdenVenta(payload);
       alert(`Orden enviada exitosamente. Estado: ${mensajeEstado}`);
 
       // Reiniciar formulario
@@ -280,6 +291,7 @@ export default function NuevaVentaPage() {
       });
       setEsDomicilio(false);
       setPagoContraEntrega(false);
+      setDescuentoPorcentaje(0);
       setIdRepartidor("");
     } catch (error: any) {
       alert(`Error al procesar: ${error.message}`);
@@ -410,9 +422,54 @@ export default function NuevaVentaPage() {
           </tbody>
         </table>
 
+        {/* SECCIÓN DE DESCUENTOS Y TOTALES */}
+        <div
+          style={{
+            marginTop: "1.5rem",
+            display: "flex",
+            gap: "1rem",
+            alignItems: "center",
+            justifyContent: "flex-end",
+          }}
+        >
+          <label className={styles.label}>Descuento (%):</label>
+          <input
+            type="number"
+            min="0"
+            max="100"
+            className={styles.input}
+            style={{ width: "80px" }}
+            value={descuentoPorcentaje}
+            onChange={(e) => setDescuentoPorcentaje(Number(e.target.value))}
+          />
+        </div>
+
         <div className={styles.totalBox}>
-          Total de la Orden:{" "}
-          <span className={styles.totalText}>Q {totalVenta.toFixed(2)}</span>
+          <div
+            style={{
+              fontSize: "1rem",
+              fontWeight: "normal",
+              color: "var(--text-main)",
+              marginBottom: "0.25rem",
+            }}
+          >
+            Subtotal: Q {subtotalCarrito.toFixed(2)}
+          </div>
+          {descuentoPorcentaje > 0 && (
+            <div
+              style={{
+                fontSize: "1rem",
+                color: "var(--error-color)",
+                marginBottom: "0.5rem",
+              }}
+            >
+              Descuento: - Q {descuentoMonto.toFixed(2)}
+            </div>
+          )}
+          <div>
+            Total de la Orden:{" "}
+            <span className={styles.totalText}>Q {totalVenta.toFixed(2)}</span>
+          </div>
         </div>
       </div>
 
@@ -593,7 +650,6 @@ export default function NuevaVentaPage() {
                 onChange={(e) => setIdRepartidor(e.target.value)}
               >
                 <option value="">Seleccione un repartidor...</option>
-                {/* AHORA ES DINÁMICO Y FILTRADO POR SUCURSAL */}
                 {listaRepartidores.map((rep) => (
                   <option key={rep.id_empleado} value={rep.id_empleado}>
                     {rep.nombre} {rep.apellido}
@@ -615,7 +671,7 @@ export default function NuevaVentaPage() {
                 id="contraEntrega"
                 checked={pagoContraEntrega}
                 onChange={(e) => setPagoContraEntrega(e.target.checked)}
-                style={{ width: "auto 18px", height: "18px" }}
+                style={{ width: "18px", height: "18px", margin: 0 }}
               />
               <label
                 htmlFor="contraEntrega"
