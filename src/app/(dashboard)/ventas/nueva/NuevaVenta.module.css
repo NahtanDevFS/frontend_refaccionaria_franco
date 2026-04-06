@@ -1,86 +1,149 @@
 .container {
-  padding: 2rem;
-  max-width: 1200px;
-  margin: 0 auto;
   display: grid;
   grid-template-columns: 2fr 1fr;
   gap: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 .panel {
+  background-color: var(--white);
   border: 1px solid var(--border-color);
-  padding: 1.5rem;
   border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 51, 102, 0.05);
 }
 
-.title {
+.sectionTitle {
   color: var(--primary-blue);
+  border-bottom: 2px solid var(--light-blue);
+  padding-bottom: 0.5rem;
   margin-bottom: 1.5rem;
+  font-size: 1.25rem;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
 }
 
 .formGroup {
-  margin-bottom: 1rem;
   display: flex;
   flex-direction: column;
+  margin-bottom: 1rem;
 }
 
-.formGroup label {
-  font-weight: bold;
-  margin-bottom: 0.5rem;
+.formGroup.fullWidth {
+  grid-column: span 2;
+}
+
+.label {
+  font-size: 0.85rem;
+  font-weight: 600;
   color: var(--primary-blue);
+  margin-bottom: 0.4rem;
 }
 
-.input {
+.input,
+.select {
   padding: 0.75rem;
-}
-
-.tableContainer {
-  margin-top: 1.5rem;
-  overflow-x: auto;
-}
-
-.table {
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: 0.95rem;
   width: 100%;
-  border-collapse: collapse;
 }
 
-.table th,
-.table td {
-  padding: 0.75rem;
-  border-bottom: 1px solid var(--border-color);
-  text-align: left;
+.input:focus,
+.select:focus {
+  outline: none;
+  border-color: var(--primary-blue);
 }
 
-.btnPrimary {
+.btnAction {
   background-color: var(--primary-blue);
   color: var(--white);
-  padding: 0.75rem;
+  padding: 0.75rem 1.5rem;
   border-radius: 4px;
-  width: 100%;
   font-weight: bold;
   margin-top: 1rem;
+  width: 100%;
 }
 
-.btnPrimary:hover {
+.btnAction:hover:not(:disabled) {
   background-color: var(--secondary-blue);
 }
 
-.btnDanger {
-  background-color: var(--white);
-  color: var(--primary-blue);
-  border: 1px solid var(--primary-blue);
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
+.btnAction:disabled {
+  background-color: var(--border-color);
+  cursor: not-allowed;
 }
 
-.btnDanger:hover {
+.searchRow {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Tabla del Carrito */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+.table th {
   background-color: var(--light-blue);
+  color: var(--primary-blue);
+  text-align: left;
+  padding: 0.75rem;
+  font-size: 0.9rem;
+}
+
+.table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--border-color);
+  vertical-align: middle;
+}
+
+.qtyControl {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.qtyBtn {
+  background-color: var(--light-blue);
+  color: var(--primary-blue);
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  font-weight: bold;
+}
+
+.totalBox {
+  background-color: var(--light-blue);
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-top: 2rem;
+  text-align: right;
 }
 
 .totalText {
   font-size: 1.5rem;
   font-weight: bold;
   color: var(--primary-blue);
-  text-align: right;
-  margin-top: 1rem;
+}
+
+.badgeStock {
+  font-size: 0.75rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 12px;
+  background-color: #e6f4ea;
+  color: #1e7e34;
+  margin-left: 0.5rem;
+}
+.badgeStockOut {
+  background-color: #fce8e6;
+  color: #d93025;
 }

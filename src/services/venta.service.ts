@@ -36,4 +36,20 @@ export const VentaService = {
       throw new Error(errorData.message || "Error al procesar la venta");
     }
   },
+
+  async crearOrdenVenta(payload: any): Promise<void> {
+    const token = document.cookie.match(new RegExp("(^| )token=([^;]+)"))?.[2];
+    const response = await fetch(`${API_URL}/ventas/orden`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Error al crear la orden");
+    }
+  },
 };
