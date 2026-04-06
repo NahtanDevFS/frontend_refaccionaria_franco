@@ -54,6 +54,8 @@ export default function NuevaVentaPage() {
   const [esDomicilio, setEsDomicilio] = useState(false);
   const [idRepartidor, setIdRepartidor] = useState("");
   const [pagoContraEntrega, setPagoContraEntrega] = useState(false);
+  const [nombreContacto, setNombreContacto] = useState("");
+  const [telefonoContacto, setTelefonoContacto] = useState("");
   const [descuentoPorcentaje, setDescuentoPorcentaje] = useState<number>(0);
   const [listaRepartidores, setListaRepartidores] = useState<
     { id_empleado: number; nombre: string; apellido: string }[]
@@ -256,6 +258,8 @@ export default function NuevaVentaPage() {
       id_repartidor:
         esDomicilio && idRepartidor ? parseInt(idRepartidor) : null,
       direccion_entrega: esDomicilio ? datosCliente.direccion : null,
+      nombre_contacto: esDomicilio ? nombreContacto : null,
+      telefono_contacto: esDomicilio ? telefonoContacto : null,
       detalles: carrito.map((c) => ({
         id_producto: c.id_producto,
         cantidad: c.cantidad,
@@ -530,6 +534,7 @@ export default function NuevaVentaPage() {
                 type="text"
                 className={styles.input}
                 value={datosCliente.telefono}
+                maxLength={9}
                 onChange={(e) =>
                   setDatosCliente({ ...datosCliente, telefono: e.target.value })
                 }
@@ -628,6 +633,29 @@ export default function NuevaVentaPage() {
         {esDomicilio && (
           <>
             <div className={styles.formGroup}>
+              <label className={styles.label}>Nombre de quien recibe</label>
+              <input
+                type="text"
+                className={styles.input}
+                value={nombreContacto}
+                onChange={(e) => setNombreContacto(e.target.value)}
+                placeholder="Ej. Juan Pérez o Taller Los Motores"
+              />
+            </div>
+
+            <div className={styles.formGroup}>
+              <label className={styles.label}>Teléfono de contacto</label>
+              <input
+                type="text"
+                className={styles.input}
+                value={telefonoContacto}
+                maxLength={9}
+                onChange={(e) => setTelefonoContacto(e.target.value)}
+                placeholder="Teléfono para el repartidor"
+              />
+            </div>
+
+            <div className={styles.formGroup}>
               <label className={styles.label}>Dirección de Entrega</label>
               <input
                 type="text"
@@ -639,9 +667,10 @@ export default function NuevaVentaPage() {
                     direccion: e.target.value,
                   })
                 }
-                placeholder="Dirección exacta..."
+                placeholder="Dirección exacta, referencias..."
               />
             </div>
+
             <div className={styles.formGroup}>
               <label className={styles.label}>Asignar Repartidor</label>
               <select
@@ -657,6 +686,7 @@ export default function NuevaVentaPage() {
                 ))}
               </select>
             </div>
+
             <div
               className={styles.formGroup}
               style={{
