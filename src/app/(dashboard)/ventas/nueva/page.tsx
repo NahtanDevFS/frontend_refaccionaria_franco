@@ -53,6 +53,7 @@ export default function NuevaVentaPage() {
   // === ESTADOS DE LOGÍSTICA ===
   const [esDomicilio, setEsDomicilio] = useState(false);
   const [idRepartidor, setIdRepartidor] = useState("");
+  const [pagoContraEntrega, setPagoContraEntrega] = useState(false);
   const [listaRepartidores, setListaRepartidores] = useState<
     { id_empleado: number; nombre: string; apellido: string }[]
   >([]);
@@ -246,6 +247,7 @@ export default function NuevaVentaPage() {
             }
           : null,
       canal: esDomicilio ? "domicilio" : "mostrador",
+      pago_contra_entrega: esDomicilio ? pagoContraEntrega : false,
       id_repartidor:
         esDomicilio && idRepartidor ? parseInt(idRepartidor) : null,
       direccion_entrega: esDomicilio ? datosCliente.direccion : null,
@@ -256,9 +258,10 @@ export default function NuevaVentaPage() {
     };
 
     try {
-      const mensajeEstado = esDomicilio
-        ? "Pendiente de cobro contra entrega"
-        : "Pendiente de Pago";
+      const mensajeEstado =
+        esDomicilio && pagoContraEntrega
+          ? "Pendiente de cobro contra entrega"
+          : "Pendiente de Pago";
       alert(`Orden enviada exitosamente. Estado: ${mensajeEstado}`);
 
       // Reiniciar formulario
@@ -276,6 +279,7 @@ export default function NuevaVentaPage() {
         notas_internas: "",
       });
       setEsDomicilio(false);
+      setPagoContraEntrega(false);
       setIdRepartidor("");
     } catch (error: any) {
       alert(`Error al procesar: ${error.message}`);
@@ -596,6 +600,30 @@ export default function NuevaVentaPage() {
                   </option>
                 ))}
               </select>
+            </div>
+            <div
+              className={styles.formGroup}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: "0.5rem",
+                marginTop: "1rem",
+              }}
+            >
+              <input
+                type="checkbox"
+                id="contraEntrega"
+                checked={pagoContraEntrega}
+                onChange={(e) => setPagoContraEntrega(e.target.checked)}
+                style={{ width: "auto 18px", height: "18px" }}
+              />
+              <label
+                htmlFor="contraEntrega"
+                className={styles.label}
+                style={{ marginBottom: 0, cursor: "pointer" }}
+              >
+                El cliente pagará al recibir el pedido (Contra Entrega)
+              </label>
             </div>
           </>
         )}
