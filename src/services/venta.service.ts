@@ -52,4 +52,18 @@ export const VentaService = {
       throw new Error(errorData.message || "Error al crear la orden");
     }
   },
+
+  async obtenerRepartidores(): Promise<
+    { id_empleado: number; nombre: string; apellido: string }[]
+  > {
+    const token = document.cookie.match(new RegExp("(^| )token=([^;]+)"))?.[2];
+    const response = await fetch(`${API_URL}/ventas/repartidores/activos`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) throw new Error("Error al obtener repartidores");
+    return response.json();
+  },
 };

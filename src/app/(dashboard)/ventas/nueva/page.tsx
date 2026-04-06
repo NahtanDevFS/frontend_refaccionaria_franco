@@ -5,6 +5,7 @@ import styles from "./NuevaVenta.module.css";
 import { InventarioService } from "@/services/inventario.service";
 import { ClienteService } from "@/services/cliente.service";
 import { VentaService } from "@/services/venta.service";
+import { UbicacionService } from "@/services/ubicacion.service";
 
 // Interfaces internas para el tipado estricto
 interface ProductoInventario {
@@ -42,27 +43,75 @@ export default function NuevaVentaPage() {
     nombre: "Consumidor Final",
     tipo: "particular",
     telefono: "",
+    email: "",
     direccion: "",
     id_departamento: "",
     id_municipio: "",
+    notas_internas: "",
   });
 
   // === ESTADOS DE LOGÍSTICA ===
   const [esDomicilio, setEsDomicilio] = useState(false);
   const [idRepartidor, setIdRepartidor] = useState("");
+  const [listaRepartidores, setListaRepartidores] = useState<
+    { id_empleado: number; nombre: string; apellido: string }[]
+  >([]);
+
+  // ESTADOS DE UBICACIÓN
+  const [departamentos, setDepartamentos] = useState<
+    { id_departamento: number; nombre: string }[]
+  >([]);
+  const [municipios, setMunicipios] = useState<
+    { id_municipio: number; nombre: string }[]
+  >([]);
 
   // === EFECTO DE MONTAJE ===
   useEffect(() => {
     const userString = localStorage.getItem("usuario");
     if (userString) {
       const u = JSON.parse(userString);
-      // Ajustar si la propiedad en tu localStorage se llama diferente
       setUsuarioSesion({
         id_empleado: u.id_empleado,
-        id_sucursal: u.id_sucursal || 1, // Asumiendo sucursal 1 como fallback si no la guardaste
+        id_sucursal: u.id_sucursal || 1,
       });
+
+      // Disparamos la carga de repartidores una vez tenemos la sesión
+      cargarRepartidores();
+
+      // Cargar departamentos validando que sea un arreglo
+      UbicacionService.obtenerDepartamentos()
+        .then((data) => {
+          if (Array.isArray(data)) {
+            setDepartamentos(data);
+          }
+        })
+        .catch(console.error);
     }
   }, []);
+
+  // Efecto para cargar municipios cuando cambia el departamento
+  useEffect(() => {
+    if (datosCliente.id_departamento) {
+      UbicacionService.obtenerMunicipios(parseInt(datosCliente.id_departamento))
+        .then((data) => {
+          if (Array.isArray(data)) {
+            setMunicipios(data);
+          }
+        })
+        .catch(console.error);
+    } else {
+      setMunicipios([]);
+    }
+  }, [datosCliente.id_departamento]);
+
+  const cargarRepartidores = async () => {
+    try {
+      const data = await VentaService.obtenerRepartidores();
+      setListaRepartidores(data);
+    } catch (error) {
+      console.error("No se pudieron cargar los repartidores", error);
+    }
+  };
 
   // === BÚSQUEDA DE PRODUCTO REAL ===
   const buscarProducto = async () => {
@@ -146,9 +195,11 @@ export default function NuevaVentaPage() {
           nombre: clienteDB.nombre_razon_social,
           tipo: clienteDB.tipo_cliente,
           telefono: clienteDB.telefono || "",
+          email: clienteDB.email || "",
           direccion: clienteDB.direccion || "",
           id_departamento: "", // Manejar selects en cascada después
           id_municipio: clienteDB.id_municipio?.toString() || "",
+          notas_internas: clienteDB.notas_internas || "",
         });
       } else {
         setClienteExiste(false);
@@ -186,10 +237,12 @@ export default function NuevaVentaPage() {
               nombre_razon_social: datosCliente.nombre,
               tipo_cliente: datosCliente.tipo,
               telefono: datosCliente.telefono,
+              email: datosCliente.email,
               direccion: datosCliente.direccion,
               id_municipio: datosCliente.id_municipio
                 ? parseInt(datosCliente.id_municipio)
                 : undefined,
+              notas_internas: datosCliente.notas_internas,
             }
           : null,
       canal: esDomicilio ? "domicilio" : "mostrador",
@@ -203,8 +256,10 @@ export default function NuevaVentaPage() {
     };
 
     try {
-      await VentaService.crearOrdenVenta(payload);
-      alert("Orden enviada a Caja exitosamente. Estado: Pendiente de Pago");
+      const mensajeEstado = esDomicilio
+        ? "Pendiente de cobro contra entrega"
+        : "Pendiente de Pago";
+      alert(`Orden enviada exitosamente. Estado: ${mensajeEstado}`);
 
       // Reiniciar formulario
       setCarrito([]);
@@ -214,9 +269,11 @@ export default function NuevaVentaPage() {
         nombre: "Consumidor Final",
         tipo: "particular",
         telefono: "",
+        email: "",
         direccion: "",
         id_departamento: "",
         id_municipio: "",
+        notas_internas: "",
       });
       setEsDomicilio(false);
       setIdRepartidor("");
@@ -364,6 +421,7 @@ export default function NuevaVentaPage() {
             type="text"
             className={styles.input}
             placeholder="NIT del Cliente (CF por defecto)"
+            maxLength={9}
             value={nitBusqueda}
             onChange={(e) => setNitBusqueda(e.target.value)}
           />
@@ -416,6 +474,77 @@ export default function NuevaVentaPage() {
                 }
               />
             </div>
+            <div className={styles.formGroup}>
+              <label className={styles.label}>Correo Electrónico</label>
+              <input
+                type="email"
+                className={styles.input}
+                value={datosCliente.email}
+                onChange={(e) =>
+                  setDatosCliente({ ...datosCliente, email: e.target.value })
+                }
+              />
+            </div>
+
+            <div className={styles.formGroup}>
+              <label className={styles.label}>Departamento</label>
+              <select
+                className={styles.select}
+                value={datosCliente.id_departamento}
+                onChange={(e) =>
+                  setDatosCliente({
+                    ...datosCliente,
+                    id_departamento: e.target.value,
+                    id_municipio: "",
+                  })
+                }
+              >
+                <option value="">Seleccione...</option>
+                {departamentos.map((d) => (
+                  <option key={d.id_departamento} value={d.id_departamento}>
+                    {d.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className={styles.formGroup}>
+              <label className={styles.label}>Municipio</label>
+              <select
+                className={styles.select}
+                value={datosCliente.id_municipio}
+                onChange={(e) =>
+                  setDatosCliente({
+                    ...datosCliente,
+                    id_municipio: e.target.value,
+                  })
+                }
+                disabled={!datosCliente.id_departamento}
+              >
+                <option value="">Seleccione...</option>
+                {municipios.map((m) => (
+                  <option key={m.id_municipio} value={m.id_municipio}>
+                    {m.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className={styles.formGroup} style={{ gridColumn: "span 2" }}>
+              <label className={styles.label}>Notas Internas del Cliente</label>
+              <textarea
+                className={styles.input}
+                rows={2}
+                value={datosCliente.notas_internas}
+                onChange={(e) =>
+                  setDatosCliente({
+                    ...datosCliente,
+                    notas_internas: e.target.value,
+                  })
+                }
+                placeholder="Ej. Entregar en puerta azul, preguntar por Don Julio..."
+              />
+            </div>
           </div>
         )}
 
@@ -460,8 +589,12 @@ export default function NuevaVentaPage() {
                 onChange={(e) => setIdRepartidor(e.target.value)}
               >
                 <option value="">Seleccione un repartidor...</option>
-                {/* Idealmente aquí harías un GET para obtener empleados con rol REPARTIDOR */}
-                <option value="5">Carlos Repartidor</option>
+                {/* AHORA ES DINÁMICO Y FILTRADO POR SUCURSAL */}
+                {listaRepartidores.map((rep) => (
+                  <option key={rep.id_empleado} value={rep.id_empleado}>
+                    {rep.nombre} {rep.apellido}
+                  </option>
+                ))}
               </select>
             </div>
           </>
