@@ -181,3 +181,45 @@
   padding-bottom: 0.5rem;
   margin-bottom: 0.5rem;
 }
+
+/* Modales para Ver Detalle */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 1rem;
+}
+
+.modalContent {
+  background: white;
+  padding: 2rem;
+  border-radius: 0.5rem;
+  width: 100%;
+  max-width: 450px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.listDetalle {
+  list-style: none;
+  padding: 0;
+  margin: 1.5rem 0;
+}
+
+.listDetalle li {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.listDetalle li:last-child {
+  border-bottom: none;
+}

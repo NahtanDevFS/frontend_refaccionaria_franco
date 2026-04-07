@@ -9,6 +9,7 @@ export interface InventarioBodega {
   punto_reorden: number;
   requiere_reorden: boolean;
   stock_otras_sucursales: number;
+  detalle_otras_sucursales: { sucursal: string; cantidad: number }[];
 }
 
 export interface RecepcionPendiente {

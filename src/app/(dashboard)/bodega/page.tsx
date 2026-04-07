@@ -45,6 +45,11 @@ export default function BodegaPage() {
     motivo: "",
   });
 
+  // Modal de Detalle de Sucursales
+  const [modalDetalleAbierto, setModalDetalleAbierto] = useState(false);
+  const [productoDetalle, setProductoDetalle] =
+    useState<InventarioBodega | null>(null);
+
   useEffect(() => {
     cargarInventario(); // Se carga siempre porque lo usamos para los selects
   }, []);
@@ -169,25 +174,25 @@ export default function BodegaPage() {
           className={`${styles.tabBtn} ${tabActual === "stock" ? styles.tabActive : ""}`}
           onClick={() => setTabActual("stock")}
         >
-          📦 Stock y Alertas
+          Stock y Alertas
         </button>
         <button
           className={`${styles.tabBtn} ${tabActual === "emitir" ? styles.tabActive : ""}`}
           onClick={() => setTabActual("emitir")}
         >
-          🚚 Emitir Traslado
+          Emitir Traslado
         </button>
         <button
           className={`${styles.tabBtn} ${tabActual === "recibir" ? styles.tabActive : ""}`}
           onClick={() => setTabActual("recibir")}
         >
-          📥 Recibir Traslado
+          Recibir Traslado
         </button>
         <button
           className={`${styles.tabBtn} ${tabActual === "ajustes" ? styles.tabActive : ""}`}
           onClick={() => setTabActual("ajustes")}
         >
-          ⚖️ Ajustes (Mermas)
+          Ajustes (Mermas)
         </button>
       </div>
 
@@ -218,13 +223,31 @@ export default function BodegaPage() {
                   <td>
                     {item.requiere_reorden ? (
                       <span className={styles.badgeWarning}>
-                        ⚠️ Reorden ({item.punto_reorden})
+                        Reorden ({item.punto_reorden})
                       </span>
                     ) : (
                       <span className={styles.badgeOk}>Suficiente</span>
                     )}
                   </td>
-                  <td>{item.stock_otras_sucursales} und</td>
+                  <td>
+                    {item.stock_otras_sucursales} und
+                    {item.stock_otras_sucursales > 0 && (
+                      <button
+                        className={styles.btnSecondary}
+                        style={{
+                          marginLeft: "10px",
+                          padding: "0.25rem 0.5rem",
+                          fontSize: "0.75rem",
+                        }}
+                        onClick={() => {
+                          setProductoDetalle(item);
+                          setModalDetalleAbierto(true);
+                        }}
+                      >
+                        Ver
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -453,6 +476,54 @@ export default function BodegaPage() {
           >
             Registrar Ajuste en Bitácora
           </button>
+        </div>
+      )}
+      {/* MODAL DETALLE OTRAS SUCURSALES */}
+      {modalDetalleAbierto && productoDetalle && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalContent}>
+            <h2 style={{ marginBottom: "0.5rem" }}>
+              Disponibilidad por Sucursal
+            </h2>
+            <p>
+              <strong>Producto:</strong> {productoDetalle.nombre}
+            </p>
+            <p>
+              <strong>SKU:</strong> {productoDetalle.sku}
+            </p>
+
+            <ul className={styles.listDetalle}>
+              {productoDetalle.detalle_otras_sucursales.length === 0 ? (
+                <li style={{ color: "gray" }}>
+                  No hay inventario en otras sucursales.
+                </li>
+              ) : (
+                productoDetalle.detalle_otras_sucursales.map((det, index) => (
+                  <li key={index}>
+                    <span>🏢 {det.sucursal}</span>
+                    <strong style={{ fontSize: "1.1rem" }}>
+                      {det.cantidad} und
+                    </strong>
+                  </li>
+                ))
+              )}
+            </ul>
+
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                marginTop: "1rem",
+              }}
+            >
+              <button
+                className={styles.btnSecondary}
+                onClick={() => setModalDetalleAbierto(false)}
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
