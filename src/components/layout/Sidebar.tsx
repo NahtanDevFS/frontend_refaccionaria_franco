@@ -88,7 +88,7 @@ const MENU_CONFIG: MenuSection[] = [
       {
         title: "Bodega e Inventario",
         path: "/bodega",
-        rolesAllowed: ["ADMINISTRADOR", "BODEGUERO"],
+        rolesAllowed: ["ADMINISTRADOR", "BODEGUERO", "SUPERVISOR_SUCURSAL"],
       },
       {
         title: "Entregas a Domicilio",

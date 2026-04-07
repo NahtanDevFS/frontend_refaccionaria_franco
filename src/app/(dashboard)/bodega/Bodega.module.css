@@ -1,0 +1,183 @@
+/* src/app/(dashboard)/bodega/Bodega.module.css */
+.container {
+  padding: 2rem;
+  background-color: #f9fafb;
+  min-height: 100vh;
+}
+
+.title {
+  font-size: 1.75rem;
+  font-weight: bold;
+  color: #111827;
+  margin-bottom: 1.5rem;
+}
+
+.tabs {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid #e5e7eb;
+  padding-bottom: 0.5rem;
+  overflow-x: auto;
+}
+
+.tabBtn {
+  background: none;
+  border: none;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.tabBtn:hover {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.tabActive {
+  color: #3b82f6;
+  border-bottom: 3px solid #3b82f6;
+}
+
+.card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  margin-bottom: 1.5rem;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th {
+  background-color: #f3f4f6;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-size: 0.875rem;
+  color: #4b5563;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.table td {
+  padding: 1rem;
+  font-size: 0.875rem;
+  color: #374151;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.rowAlert {
+  background-color: #fef2f2;
+}
+
+.badgeWarning {
+  background-color: #fee2e2;
+  color: #b91c1c;
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.badgeOk {
+  background-color: #d1fae5;
+  color: #047857;
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.label {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #374151;
+}
+
+.input,
+.select {
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  font-size: 1rem;
+  font-family: inherit;
+}
+
+.btnPrimary {
+  background-color: #3b82f6;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 0.375rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.btnPrimary:hover {
+  background-color: #2563eb;
+}
+
+.btnSuccess {
+  background-color: #10b981;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 0.375rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.btnSuccess:hover {
+  background-color: #059669;
+}
+
+.btnSecondary {
+  background-color: #f3f4f6;
+  color: #374151;
+  padding: 0.5rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btnSecondary:hover {
+  background-color: #e5e7eb;
+}
+
+.grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.recepcionCard {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+.recepcionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #f3f4f6;
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.5rem;
+}
