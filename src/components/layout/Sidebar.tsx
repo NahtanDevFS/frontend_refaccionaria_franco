@@ -59,6 +59,12 @@ const MENU_CONFIG: MenuSection[] = [
         path: "/ventas/aprobaciones",
         rolesAllowed: ["ADMINISTRADOR", "SUPERVISOR_SUCURSAL"],
       },
+      // Nuevo Módulo de Garantías
+      {
+        title: "Aprobación de Garantías",
+        path: "/garantias/aprobaciones",
+        rolesAllowed: ["ADMINISTRADOR", "SUPERVISOR_SUCURSAL"],
+      },
     ],
   },
   {
