@@ -1,0 +1,172 @@
+/* src/app/(dashboard)/entregas/Entregas.module.css */
+.container {
+  padding: 1rem;
+  background-color: #f3f4f6;
+  min-height: 100vh;
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #111827;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.card {
+  background: white;
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #f3f4f6;
+  padding-bottom: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.orderId {
+  font-size: 1.125rem;
+  font-weight: 800;
+  color: #1f2937;
+}
+
+.badgeCobrar {
+  background-color: #fee2e2;
+  color: #b91c1c;
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.badgePagado {
+  background-color: #d1fae5;
+  color: #047857;
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.infoRow {
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+  color: #4b5563;
+}
+
+.infoRow strong {
+  color: #111827;
+}
+
+.productList {
+  margin-top: 1rem;
+  background: #f9fafb;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.productItem {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 0.25rem 0;
+}
+.productItem:last-child {
+  border-bottom: none;
+}
+
+.actionButtons {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+}
+
+.btnSuccess {
+  flex: 1;
+  background-color: #10b981;
+  color: white;
+  padding: 0.875rem;
+  border-radius: 0.5rem;
+  border: none;
+  font-weight: bold;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.btnDanger {
+  flex: 1;
+  background-color: #ef4444;
+  color: white;
+  padding: 0.875rem;
+  border-radius: 0.5rem;
+  border: none;
+  font-weight: bold;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+/* Modales */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 1rem;
+}
+
+.modalContent {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  width: 100%;
+  max-width: 400px;
+}
+
+.inputLarge {
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 1.25rem;
+  border: 2px solid #d1d5db;
+  border-radius: 0.5rem;
+  margin-top: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.textarea {
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  margin-top: 0.5rem;
+  margin-bottom: 1rem;
+  font-family: inherit;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #6b7280;
+  font-size: 1.125rem;
+}
