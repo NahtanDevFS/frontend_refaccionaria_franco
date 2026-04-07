@@ -66,4 +66,17 @@ export const VentaService = {
     if (!response.ok) throw new Error("Error al obtener repartidores");
     return response.json();
   },
+
+  async obtenerVentaPorId(
+    id_venta: number,
+  ): Promise<{ venta: any; detalles: any[] }> {
+    const token = obtenerToken();
+    const response = await fetch(`${API_URL}/ventas/${id_venta}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await response.json();
+    if (!response.ok || !data.success)
+      throw new Error(data.message || "Error al obtener la venta");
+    return data.data;
+  },
 };

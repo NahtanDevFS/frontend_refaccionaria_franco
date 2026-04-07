@@ -61,6 +61,16 @@ const MENU_CONFIG: MenuSection[] = [
       },
       // Nuevo Módulo de Garantías
       {
+        title: "Reclamar Garantía",
+        path: "/garantias/nueva",
+        rolesAllowed: [
+          "ADMINISTRADOR",
+          "SUPERVISOR_SUCURSAL",
+          "VENDEDOR",
+          "CAJERO",
+        ],
+      },
+      {
         title: "Aprobación de Garantías",
         path: "/garantias/aprobaciones",
         rolesAllowed: ["ADMINISTRADOR", "SUPERVISOR_SUCURSAL"],
