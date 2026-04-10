@@ -1,0 +1,128 @@
+.container {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid var(--primary-blue, #003366);
+}
+
+.title {
+  color: var(--primary-blue, #003366);
+  margin: 0;
+}
+
+.btnSecondary {
+  background-color: transparent;
+  color: var(--primary-blue, #003366);
+  border: 1px solid var(--primary-blue, #003366);
+  padding: 0.5rem 1rem;
+  font-weight: bold;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btnSecondary:hover {
+  background-color: var(--light-blue, #e6f0fa);
+}
+
+.gridContainer {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.card {
+  background-color: var(--white, #ffffff);
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--border-color, #e0e0e0);
+}
+
+.card h3 {
+  margin-top: 0;
+  color: var(--primary-blue, #003366);
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 0.5rem;
+}
+
+.card p {
+  margin: 0.5rem 0;
+  color: #333;
+}
+
+.badge {
+  background-color: #e6f0fa;
+  color: #003366;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+.error {
+  color: #d32f2f;
+  background-color: #ffebee;
+  padding: 1rem;
+  border-radius: 4px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+.table th,
+.table td {
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.table th {
+  background-color: #f8f9fa;
+  color: #555;
+  font-weight: 600;
+}
+
+.totalsContainer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 2rem;
+}
+
+.totalsCard {
+  background-color: var(--white, #ffffff);
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--border-color, #e0e0e0);
+  min-width: 300px;
+}
+
+.totalRow {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+  font-size: 1.1rem;
+  color: #555;
+}
+
+.granTotal {
+  font-size: 1.3rem;
+  font-weight: bold;
+  color: var(--primary-blue, #003366);
+  border-top: 2px solid #eee;
+  padding-top: 0.75rem;
+  margin-top: 0.75rem;
+}

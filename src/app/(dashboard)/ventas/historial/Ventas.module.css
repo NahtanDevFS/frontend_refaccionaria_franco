@@ -46,3 +46,90 @@
   background-color: var(--light-blue);
   color: var(--primary-blue);
 }
+
+.btnSecondary {
+  background-color: transparent;
+  color: var(--primary-blue);
+  border: 1px solid var(--primary-blue);
+  padding: 0.5rem 1rem;
+  text-decoration: none;
+  font-weight: bold;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+  display: inline-block;
+  text-align: center;
+}
+
+.btnSecondary:hover {
+  background-color: var(--light-blue);
+}
+
+/* Opcional: Estilos rápidos para badges de estado */
+.badge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+
+.pagada {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.pendiente_pago {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.filtersContainer {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  background-color: var(--white, #ffffff);
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  margin-bottom: 2rem;
+  align-items: flex-end;
+}
+
+.filterGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.filterGroup label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--primary-blue);
+}
+
+.input,
+.select {
+  padding: 0.6rem;
+  border: 1px solid var(--border-color, #ccc);
+  border-radius: 4px;
+  font-size: 1rem;
+  width: 100%;
+}
+
+.input:focus,
+.select:focus {
+  outline: none;
+  border-color: var(--primary-blue);
+}
+
+.filterActions {
+  display: flex;
+  gap: 1rem;
+  height: 42px; /* Alinea los botones con los inputs */
+}
+
+.filterActions button {
+  flex: 1;
+  cursor: pointer;
+  border: none;
+}

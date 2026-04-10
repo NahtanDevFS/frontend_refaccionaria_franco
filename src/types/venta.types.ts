@@ -36,4 +36,15 @@ export interface VentaResumen {
   cliente: string;
   total: number;
   estado: string;
+  vendedor: string;
+  canal: string;
+  subtotal: number;
+  descuento: number;
+}
+
+export interface FiltrosHistorialVentas {
+  fechaInicio?: string;
+  fechaFin?: string;
+  id_vendedor?: number | string;
+  estado?: string;
 }

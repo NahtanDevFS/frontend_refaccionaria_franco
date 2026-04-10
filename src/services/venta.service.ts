@@ -1,4 +1,9 @@
-import { CrearVentaDTO, VentaResumen } from "../types/venta.types";
+// src/services/venta.service.ts
+import {
+  CrearVentaDTO,
+  VentaResumen,
+  FiltrosHistorialVentas,
+} from "../types/venta.types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
 
@@ -10,13 +15,52 @@ function obtenerToken(): string {
 }
 
 export const VentaService = {
-  async obtenerVentas(): Promise<VentaResumen[]> {
+  async obtenerVentas(
+    filtros?: FiltrosHistorialVentas,
+  ): Promise<VentaResumen[]> {
     const token = obtenerToken();
-    const response = await fetch(`${API_URL}/ventas`, {
+    let url = `${API_URL}/ventas`;
+
+    // Construir los query params si existen filtros
+    if (filtros) {
+      const params = new URLSearchParams();
+      if (filtros.fechaInicio)
+        params.append("fechaInicio", filtros.fechaInicio);
+      if (filtros.fechaFin) params.append("fechaFin", filtros.fechaFin);
+      if (filtros.id_vendedor)
+        params.append("id_vendedor", filtros.id_vendedor.toString());
+      if (filtros.estado) params.append("estado", filtros.estado);
+
+      const queryString = params.toString();
+      if (queryString) {
+        url += `?${queryString}`;
+      }
+    }
+
+    const response = await fetch(url, {
       headers: { Authorization: `Bearer ${token}` },
     });
+
     if (!response.ok) throw new Error("Error al obtener las ventas");
-    return response.json();
+
+    // Asumiendo que tu backend devuelve directamente el array o un objeto { data: [...] }
+    const data = await response.json();
+    return data.data || data;
+  },
+
+  async obtenerVendedores(): Promise<
+    { id_empleado: number; nombre: string; apellido: string }[]
+  > {
+    const token = obtenerToken();
+    // Nota: Deberás asegurarte de tener este endpoint o uno similar en tu backend
+    const response = await fetch(`${API_URL}/ventas/vendedores/activos`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (!response.ok) throw new Error("Error al obtener vendedores");
+
+    const data = await response.json();
+    return data.data || data;
   },
 
   async crearVenta(data: CrearVentaDTO): Promise<void> {
