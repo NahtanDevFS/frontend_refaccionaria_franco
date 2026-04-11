@@ -133,3 +133,25 @@
   cursor: pointer;
   border: none;
 }
+
+.paginationContainer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color, #eee);
+  background-color: var(--white, #fff);
+  padding: 1rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+.pageInfo {
+  text-align: center;
+  color: var(--primary-blue, #003366);
+}
+
+.pageInfo small {
+  color: #666;
+}

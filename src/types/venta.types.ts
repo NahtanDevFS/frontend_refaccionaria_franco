@@ -47,4 +47,19 @@ export interface FiltrosHistorialVentas {
   fechaFin?: string;
   id_vendedor?: number | string;
   estado?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface MetaPaginacion {
+  totalRecords: number;
+  totalPages: number;
+  currentPage: number;
+  limit: number;
+}
+
+export interface RespuestaVentasPaginada {
+  success: boolean;
+  data: VentaResumen[];
+  meta: MetaPaginacion;
 }
