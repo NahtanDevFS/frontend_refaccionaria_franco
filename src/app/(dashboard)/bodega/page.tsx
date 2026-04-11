@@ -6,7 +6,7 @@ import { BodegaService } from "@/services/bodega.service";
 import { InventarioBodega, RecepcionPendiente } from "@/types/bodega.types";
 import styles from "./Bodega.module.css";
 
-// Lista temporal de sucursales para el select de destino (se basa en tu SQL)
+// Lista temporal de sucursales para el select de destino
 const SUCURSALES = [
   { id: 1, nombre: "Sucursal Chiquimula Principal" },
   { id: 2, nombre: "Sede Central - Puerto Barrios" },
@@ -337,7 +337,7 @@ export default function BodegaPage() {
                   )?.nombre;
                   return (
                     <li key={index}>
-                      📦 {nombreProd} - <strong>x{d.cantidad}</strong>
+                      {nombreProd} - <strong>x{d.cantidad}</strong>
                     </li>
                   );
                 })}
@@ -396,7 +396,7 @@ export default function BodegaPage() {
                   style={{ marginTop: "1rem" }}
                   onClick={() => confirmarLlegada(rec.id_despacho)}
                 >
-                  ✅ Confirmar Recepción Física
+                  Confirmar Recepción Física
                 </button>
               </div>
             ))
@@ -500,7 +500,7 @@ export default function BodegaPage() {
               ) : (
                 productoDetalle.detalle_otras_sucursales.map((det, index) => (
                   <li key={index}>
-                    <span>🏢 {det.sucursal}</span>
+                    <span>{det.sucursal}</span>
                     <strong style={{ fontSize: "1.1rem" }}>
                       {det.cantidad} und
                     </strong>
