@@ -32,11 +32,26 @@ export default function NuevaGarantiaPage() {
     }
   };
 
-  const calcularDiasRestantes = (fechaCompra: string, diasGarantia: number) => {
-    if (!diasGarantia) return -1;
+  // CORRECCIÓN: Cálculo de fechas más robusto
+  const calcularDiasRestantes = (
+    fechaCompra: string,
+    diasGarantia: number | undefined,
+  ) => {
+    if (
+      diasGarantia === undefined ||
+      diasGarantia === null ||
+      diasGarantia <= 0
+    )
+      return -1;
+
     const limite = new Date(fechaCompra);
     limite.setDate(limite.getDate() + diasGarantia);
+
+    // Usamos el inicio del día para que la hora exacta no interfiera en el cálculo
     const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    limite.setHours(0, 0, 0, 0);
+
     return Math.ceil(
       (limite.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24),
     );

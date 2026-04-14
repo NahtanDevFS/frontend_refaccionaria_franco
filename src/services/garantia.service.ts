@@ -10,6 +10,23 @@ const getHeaders = () => {
 };
 
 export const GarantiaService = {
+  async crearGarantia(payload: {
+    id_detalle_venta: number;
+    cantidad: number;
+    motivo_reclamo: string;
+  }) {
+    const res = await fetch(`${API_URL}/garantias`, {
+      method: "POST",
+      headers: getHeaders(),
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.message || "Error al crear la garantía");
+    }
+    return res.json();
+  },
+
   // Pestaña 1: Pendientes de Aprobar
   async obtenerPendientesAutorizacion(id_sucursal: number) {
     const res = await fetch(
