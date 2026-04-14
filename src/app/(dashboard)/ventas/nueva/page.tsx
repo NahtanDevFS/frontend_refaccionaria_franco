@@ -7,14 +7,14 @@ import { ClienteService } from "@/services/cliente.service";
 import { VentaService } from "@/services/venta.service";
 import { UbicacionService } from "@/services/ubicacion.service";
 
-// Interfaces internas para el tipado estricto
 interface ProductoInventario {
   id_producto: number;
   sku: string;
   nombre: string;
   precio_venta: number;
   stock_local: number;
-  stock_otras_sucursales: { sucursal: string; cantidad: number }[];
+  stock_otras_sucursales?: { sucursal: string; cantidad: number }[];
+  marca_repuesto?: string;
 }
 
 interface ItemCarrito extends ProductoInventario {
@@ -29,8 +29,25 @@ export default function NuevaVentaPage() {
     id_sucursal: number;
   } | null>(null);
 
-  // === ESTADOS DEL CARRITO ===
+  // === ESTADOS DE BÚSQUEDA ===
+  const [tipoBusqueda, setTipoBusqueda] = useState<"texto" | "vehiculo">(
+    "texto",
+  );
   const [terminoBusqueda, setTerminoBusqueda] = useState("");
+
+  // Vehículos
+  const [marcasVehiculo, setMarcasVehiculo] = useState<
+    { id_marca_vehiculo: number; nombre: string }[]
+  >([]);
+  const [modelosVehiculo, setModelosVehiculo] = useState<
+    { id_modelo: number; nombre: string }[]
+  >([]);
+  const [busquedaVehiculo, setBusquedaVehiculo] = useState({
+    id_marca: "",
+    id_modelo: "",
+    anio: "",
+  });
+
   const [resultadosProducto, setResultadosProducto] = useState<
     ProductoInventario[]
   >([]);
@@ -69,7 +86,7 @@ export default function NuevaVentaPage() {
     { id_municipio: number; nombre: string }[]
   >([]);
 
-  // === EFECTO DE MONTAJE ===
+  // === EFECTOS ===
   useEffect(() => {
     const userString = localStorage.getItem("usuario");
     if (userString) {
@@ -78,35 +95,50 @@ export default function NuevaVentaPage() {
         id_empleado: u.id_empleado,
         id_sucursal: u.id_sucursal || 1,
       });
-
-      // Disparamos la carga de repartidores una vez tenemos la sesión
       cargarRepartidores();
-
-      // Cargar departamentos validando que sea un arreglo
       UbicacionService.obtenerDepartamentos()
         .then((data) => {
-          if (Array.isArray(data)) {
-            setDepartamentos(data);
-          }
+          if (Array.isArray(data)) setDepartamentos(data);
         })
         .catch(console.error);
     }
   }, []);
 
-  // Efecto para cargar municipios cuando cambia el departamento
   useEffect(() => {
     if (datosCliente.id_departamento) {
       UbicacionService.obtenerMunicipios(parseInt(datosCliente.id_departamento))
         .then((data) => {
-          if (Array.isArray(data)) {
-            setMunicipios(data);
-          }
+          if (Array.isArray(data)) setMunicipios(data);
         })
         .catch(console.error);
     } else {
       setMunicipios([]);
     }
   }, [datosCliente.id_departamento]);
+
+  // Cargar marcas si cambia a búsqueda por vehículo
+  useEffect(() => {
+    if (tipoBusqueda === "vehiculo" && marcasVehiculo.length === 0) {
+      InventarioService.obtenerMarcasVehiculo()
+        .then(setMarcasVehiculo)
+        .catch(console.error);
+    }
+  }, [tipoBusqueda]);
+
+  // Cargar modelos en cascada
+  useEffect(() => {
+    if (busquedaVehiculo.id_marca) {
+      InventarioService.obtenerModelosPorMarca(
+        parseInt(busquedaVehiculo.id_marca),
+      )
+        .then(setModelosVehiculo)
+        .catch(console.error);
+    } else {
+      setModelosVehiculo([]);
+    }
+    // Reiniciar modelo y año si cambia la marca
+    setBusquedaVehiculo((prev) => ({ ...prev, id_modelo: "", anio: "" }));
+  }, [busquedaVehiculo.id_marca]);
 
   const cargarRepartidores = async () => {
     try {
@@ -117,10 +149,9 @@ export default function NuevaVentaPage() {
     }
   };
 
-  // === BÚSQUEDA DE PRODUCTO REAL ===
-  const buscarProducto = async () => {
+  // === MÉTODOS DE BÚSQUEDA ===
+  const buscarProductoTexto = async () => {
     if (!terminoBusqueda || !usuarioSesion) return;
-
     try {
       const data = await InventarioService.buscarProductoMultiSucursal(
         terminoBusqueda,
@@ -129,6 +160,20 @@ export default function NuevaVentaPage() {
       setResultadosProducto(data);
     } catch (error) {
       alert("Error al buscar productos en el inventario.");
+    }
+  };
+
+  const buscarPorVehiculo = async () => {
+    if (!busquedaVehiculo.id_modelo || !usuarioSesion) return;
+    try {
+      const data = await InventarioService.buscarPorVehiculo(
+        usuarioSesion.id_sucursal,
+        parseInt(busquedaVehiculo.id_modelo),
+        busquedaVehiculo.anio ? parseInt(busquedaVehiculo.anio) : undefined,
+      );
+      setResultadosProducto(data);
+    } catch (error) {
+      alert("Error al buscar repuestos para este vehículo.");
     }
   };
 
@@ -143,7 +188,7 @@ export default function NuevaVentaPage() {
       (i) => i.id_producto === prod.id_producto,
     );
     if (itemExistente) {
-      if (itemExistente.cantidad >= prod.stock_local) return; // Validación límite de stock
+      if (itemExistente.cantidad >= prod.stock_local) return;
 
       const nuevoCarrito = carrito.map((i) =>
         i.id_producto === prod.id_producto
@@ -163,13 +208,13 @@ export default function NuevaVentaPage() {
     }
     setResultadosProducto([]);
     setTerminoBusqueda("");
+    setBusquedaVehiculo({ id_marca: "", id_modelo: "", anio: "" });
   };
 
   const modificarCantidad = (id: number, delta: number) => {
     const nuevoCarrito = carrito.map((item) => {
       if (item.id_producto === id) {
         const nuevaCant = item.cantidad + delta;
-        // Validaciones: no menor a 1, no mayor al stock local
         if (nuevaCant < 1 || nuevaCant > item.stock_local) return item;
         return {
           ...item,
@@ -182,7 +227,7 @@ export default function NuevaVentaPage() {
     setCarrito(nuevoCarrito);
   };
 
-  // === BÚSQUEDA DE CLIENTE REAL ===
+  // === CLIENTE ===
   const buscarClienteNit = async () => {
     if (nitBusqueda === "CF" || nitBusqueda.trim() === "") {
       setNitBusqueda("CF");
@@ -201,7 +246,7 @@ export default function NuevaVentaPage() {
           telefono: clienteDB.telefono || "",
           email: clienteDB.email || "",
           direccion: clienteDB.direccion || "",
-          id_departamento: "", // Manejar selects en cascada después
+          id_departamento: "",
           id_municipio: clienteDB.id_municipio?.toString() || "",
           notas_internas: clienteDB.notas_internas || "",
         });
@@ -222,12 +267,16 @@ export default function NuevaVentaPage() {
     }
   };
 
-  // === CÁLCULO DE TOTALES ===
+  // === CÁLCULO DE TOTALES E IVA ===
   const subtotalCarrito = carrito.reduce((sum, item) => sum + item.subtotal, 0);
   const descuentoMonto = subtotalCarrito * (descuentoPorcentaje / 100);
-  const totalVenta = subtotalCarrito - descuentoMonto;
+  const totalVentaConIva = subtotalCarrito - descuentoMonto;
 
-  // === ENVÍO DE ORDEN AL BACKEND ===
+  // Extracción del IVA para el recibo (El precio de venta en BD ya tiene IVA)
+  const precioBaseSinIva = totalVentaConIva / 1.12;
+  const montoIvaCalculado = totalVentaConIva - precioBaseSinIva;
+
+  // === PROCESAR ORDEN ===
   const procesarOrden = async () => {
     if (!usuarioSesion) {
       alert("No se detectó una sesión activa.");
@@ -268,18 +317,15 @@ export default function NuevaVentaPage() {
 
     try {
       let mensajeEstado = "";
-      if (descuentoPorcentaje > 5) {
+      if (descuentoPorcentaje > 5)
         mensajeEstado = "Enviada a Supervisor para Autorización de Descuento";
-      } else if (esDomicilio && pagoContraEntrega) {
+      else if (esDomicilio && pagoContraEntrega)
         mensajeEstado = "Pendiente de cobro contra entrega";
-      } else {
-        mensajeEstado = "Pendiente de Pago";
-      }
+      else mensajeEstado = "Pendiente de Pago";
 
       await VentaService.crearOrdenVenta(payload);
       alert(`Orden enviada exitosamente. Estado: ${mensajeEstado}`);
 
-      // Reiniciar formulario
       setCarrito([]);
       setNitBusqueda("CF");
       setClienteExiste(true);
@@ -306,73 +352,216 @@ export default function NuevaVentaPage() {
     <div className={styles.container}>
       {/* PANEL IZQUIERDO: PRODUCTOS Y CARRITO */}
       <div className={styles.panel}>
-        <h2 className={styles.sectionTitle}>Búsqueda de Productos</h2>
-
-        <div className={styles.searchRow}>
-          <input
-            type="text"
-            className={styles.input}
-            placeholder="Buscar por Nombre o SKU..."
-            value={terminoBusqueda}
-            onChange={(e) => setTerminoBusqueda(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && buscarProducto()}
-          />
-          <button
-            className={styles.btnAction}
-            style={{ marginTop: 0, width: "auto" }}
-            onClick={buscarProducto}
-          >
-            Buscar
-          </button>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "1rem",
+          }}
+        >
+          <h2 className={styles.sectionTitle} style={{ margin: 0 }}>
+            Catálogo de Repuestos
+          </h2>
+          <div style={{ display: "flex", gap: "0.5rem" }}>
+            <button
+              className={styles.btnAction}
+              style={{
+                margin: 0,
+                padding: "0.4rem 1rem",
+                background:
+                  tipoBusqueda === "texto" ? "var(--primary-color)" : "#ccc",
+              }}
+              onClick={() => setTipoBusqueda("texto")}
+            >
+              Texto / SKU
+            </button>
+            <button
+              className={styles.btnAction}
+              style={{
+                margin: 0,
+                padding: "0.4rem 1rem",
+                background:
+                  tipoBusqueda === "vehiculo" ? "var(--primary-color)" : "#ccc",
+              }}
+              onClick={() => setTipoBusqueda("vehiculo")}
+            >
+              Por Vehículo
+            </button>
+          </div>
         </div>
+
+        {/* Buscador de Texto */}
+        {tipoBusqueda === "texto" && (
+          <div className={styles.searchRow}>
+            <input
+              type="text"
+              className={styles.input}
+              placeholder="Buscar por Nombre o SKU..."
+              value={terminoBusqueda}
+              onChange={(e) => setTerminoBusqueda(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && buscarProductoTexto()}
+            />
+            <button
+              className={styles.btnAction}
+              style={{ marginTop: 0, width: "auto" }}
+              onClick={buscarProductoTexto}
+            >
+              Buscar
+            </button>
+          </div>
+        )}
+
+        {/* Buscador de Vehículo */}
+        {tipoBusqueda === "vehiculo" && (
+          <div className={styles.formGrid}>
+            <div className={styles.formGroup}>
+              <label className={styles.label}>Marca</label>
+              <select
+                className={styles.select}
+                value={busquedaVehiculo.id_marca}
+                onChange={(e) =>
+                  setBusquedaVehiculo({
+                    ...busquedaVehiculo,
+                    id_marca: e.target.value,
+                  })
+                }
+              >
+                <option value="">Seleccione...</option>
+                {marcasVehiculo.map((m) => (
+                  <option key={m.id_marca_vehiculo} value={m.id_marca_vehiculo}>
+                    {m.nombre.toUpperCase()}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className={styles.formGroup}>
+              <label className={styles.label}>Modelo</label>
+              <select
+                className={styles.select}
+                disabled={!busquedaVehiculo.id_marca}
+                value={busquedaVehiculo.id_modelo}
+                onChange={(e) =>
+                  setBusquedaVehiculo({
+                    ...busquedaVehiculo,
+                    id_modelo: e.target.value,
+                  })
+                }
+              >
+                <option value="">Todos los modelos...</option>
+                {modelosVehiculo.map((m) => (
+                  <option key={m.id_modelo} value={m.id_modelo}>
+                    {m.nombre.toUpperCase()}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className={styles.formGroup}>
+              <label className={styles.label}>Año (Opcional)</label>
+              <input
+                type="number"
+                className={styles.input}
+                placeholder="Ej. 2018"
+                value={busquedaVehiculo.anio}
+                onChange={(e) =>
+                  setBusquedaVehiculo({
+                    ...busquedaVehiculo,
+                    anio: e.target.value,
+                  })
+                }
+              />
+            </div>
+            <div
+              className={styles.formGroup}
+              style={{ justifyContent: "flex-end" }}
+            >
+              <button
+                className={styles.btnAction}
+                disabled={!busquedaVehiculo.id_modelo}
+                onClick={buscarPorVehiculo}
+              >
+                Consultar Compatibles
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Resultados de búsqueda */}
         {resultadosProducto.length > 0 && (
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>SKU</th>
-                <th>Nombre</th>
-                <th>Stock Local</th>
-                <th>Otras Sucursales</th>
-                <th>Acción</th>
-              </tr>
-            </thead>
-            <tbody>
-              {resultadosProducto.map((p) => (
-                <tr key={p.id_producto}>
-                  <td>{p.sku}</td>
-                  <td>{p.nombre}</td>
-                  <td>
-                    <span
-                      className={`${styles.badgeStock} ${
-                        p.stock_local === 0 ? styles.badgeStockOut : ""
-                      }`}
-                    >
-                      {p.stock_local} und
-                    </span>
-                  </td>
-                  <td style={{ fontSize: "0.8rem", color: "gray" }}>
-                    {p.stock_otras_sucursales.map((o, i) => (
-                      <div key={i}>
-                        {o.sucursal}: {o.cantidad} und
-                      </div>
-                    ))}
-                  </td>
-                  <td>
-                    <button
-                      className={styles.btnAction}
-                      style={{ padding: "0.4rem 0.8rem", marginTop: 0 }}
-                      onClick={() => agregarAlCarrito(p)}
-                      disabled={p.stock_local === 0}
-                    >
-                      Agregar
-                    </button>
-                  </td>
+          <div
+            style={{
+              maxHeight: "300px",
+              overflowY: "auto",
+              marginTop: "1rem",
+              border: "1px solid var(--border-color)",
+              borderRadius: "6px",
+            }}
+          >
+            <table className={styles.table} style={{ margin: 0 }}>
+              <thead
+                style={{
+                  position: "sticky",
+                  top: 0,
+                  background: "white",
+                  zIndex: 1,
+                }}
+              >
+                <tr>
+                  <th>Info</th>
+                  <th>Precio c/IVA</th>
+                  <th>Stock Local</th>
+                  <th>Acción</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {resultadosProducto.map((p) => (
+                  <tr key={p.id_producto}>
+                    <td>
+                      <strong>{p.sku}</strong>
+                      <br />
+                      {p.nombre}
+                      <br />
+                      {p.marca_repuesto && (
+                        <span style={{ fontSize: "0.8rem", color: "gray" }}>
+                          {p.marca_repuesto}
+                        </span>
+                      )}
+                    </td>
+                    <td>Q {p.precio_venta.toFixed(2)}</td>
+                    <td>
+                      <span
+                        className={`${styles.badgeStock} ${p.stock_local === 0 ? styles.badgeStockOut : ""}`}
+                      >
+                        {p.stock_local} und
+                      </span>
+                      {p.stock_otras_sucursales &&
+                        p.stock_otras_sucursales.length > 0 && (
+                          <div
+                            style={{
+                              fontSize: "0.75rem",
+                              color: "gray",
+                              marginTop: "4px",
+                            }}
+                          >
+                            + en otras sucursales
+                          </div>
+                        )}
+                    </td>
+                    <td>
+                      <button
+                        className={styles.btnAction}
+                        style={{ padding: "0.4rem 0.8rem", marginTop: 0 }}
+                        onClick={() => agregarAlCarrito(p)}
+                        disabled={p.stock_local === 0}
+                      >
+                        Agregar
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
 
         <h2 className={styles.sectionTitle} style={{ marginTop: "2rem" }}>
@@ -383,7 +572,7 @@ export default function NuevaVentaPage() {
           <thead>
             <tr>
               <th>Producto</th>
-              <th>Precio</th>
+              <th>P.U.</th>
               <th>Cantidad</th>
               <th>Subtotal</th>
             </tr>
@@ -449,35 +638,79 @@ export default function NuevaVentaPage() {
         </div>
 
         <div className={styles.totalBox}>
+          {/* Desglose Fiscal Interno */}
           <div
             style={{
-              fontSize: "1rem",
-              fontWeight: "normal",
+              fontSize: "0.9rem",
+              color: "gray",
+              display: "flex",
+              justifyContent: "space-between",
+              marginBottom: "0.2rem",
+            }}
+          >
+            <span>Precio Base (Neto):</span>
+            <span>Q {precioBaseSinIva.toFixed(2)}</span>
+          </div>
+          <div
+            style={{
+              fontSize: "0.9rem",
+              color: "gray",
+              display: "flex",
+              justifyContent: "space-between",
+              borderBottom: "1px solid #e2e8f0",
+              paddingBottom: "0.5rem",
+              marginBottom: "0.5rem",
+            }}
+          >
+            <span>IVA (12%):</span>
+            <span>Q {montoIvaCalculado.toFixed(2)}</span>
+          </div>
+
+          {/* Totales de cara al cliente */}
+          <div
+            style={{
+              fontSize: "1.1rem",
               color: "var(--text-main)",
+              display: "flex",
+              justifyContent: "space-between",
               marginBottom: "0.25rem",
             }}
           >
-            Subtotal: Q {subtotalCarrito.toFixed(2)}
+            <span>Subtotal (IVA Incluido):</span>
+            <span>Q {subtotalCarrito.toFixed(2)}</span>
           </div>
+
           {descuentoPorcentaje > 0 && (
             <div
               style={{
-                fontSize: "1rem",
+                fontSize: "1.1rem",
                 color: "var(--error-color)",
+                display: "flex",
+                justifyContent: "space-between",
                 marginBottom: "0.5rem",
               }}
             >
-              Descuento: - Q {descuentoMonto.toFixed(2)}
+              <span>Descuento:</span>
+              <span>- Q {descuentoMonto.toFixed(2)}</span>
             </div>
           )}
-          <div>
-            Total de la Orden:{" "}
-            <span className={styles.totalText}>Q {totalVenta.toFixed(2)}</span>
+
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              marginTop: "1rem",
+            }}
+          >
+            <span>Total a Pagar:</span>
+            <span className={styles.totalText}>
+              Q {totalVentaConIva.toFixed(2)}
+            </span>
           </div>
         </div>
       </div>
 
-      {/* PANEL DERECHO: CLIENTE Y LOGÍSTICA */}
+      {/* PANEL DERECHO: CLIENTE Y LOGÍSTICA (Sin Cambios) */}
       <div className={styles.panel}>
         <h2 className={styles.sectionTitle}>Datos del Cliente</h2>
 
