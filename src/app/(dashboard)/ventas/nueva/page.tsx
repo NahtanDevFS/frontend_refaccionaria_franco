@@ -136,7 +136,6 @@ export default function NuevaVentaPage() {
     } else {
       setModelosVehiculo([]);
     }
-    // Reiniciar modelo y año si cambia la marca
     setBusquedaVehiculo((prev) => ({ ...prev, id_modelo: "", anio: "" }));
   }, [busquedaVehiculo.id_marca]);
 
@@ -271,8 +270,6 @@ export default function NuevaVentaPage() {
   const subtotalCarrito = carrito.reduce((sum, item) => sum + item.subtotal, 0);
   const descuentoMonto = subtotalCarrito * (descuentoPorcentaje / 100);
   const totalVentaConIva = subtotalCarrito - descuentoMonto;
-
-  // Extracción del IVA para el recibo (El precio de venta en BD ya tiene IVA)
   const precioBaseSinIva = totalVentaConIva / 1.12;
   const montoIvaCalculado = totalVentaConIva - precioBaseSinIva;
 
@@ -490,7 +487,7 @@ export default function NuevaVentaPage() {
         {resultadosProducto.length > 0 && (
           <div
             style={{
-              maxHeight: "300px",
+              maxHeight: "350px",
               overflowY: "auto",
               marginTop: "1rem",
               border: "1px solid var(--border-color)",
@@ -509,7 +506,7 @@ export default function NuevaVentaPage() {
                 <tr>
                   <th>Info</th>
                   <th>Precio c/IVA</th>
-                  <th>Stock Local</th>
+                  <th>Stock</th>
                   <th>Acción</th>
                 </tr>
               </thead>
@@ -529,22 +526,70 @@ export default function NuevaVentaPage() {
                     </td>
                     <td>Q {p.precio_venta.toFixed(2)}</td>
                     <td>
-                      <span
-                        className={`${styles.badgeStock} ${p.stock_local === 0 ? styles.badgeStockOut : ""}`}
-                      >
-                        {p.stock_local} und
-                      </span>
+                      <div style={{ marginBottom: "6px" }}>
+                        <span
+                          className={`${styles.badgeStock} ${p.stock_local === 0 ? styles.badgeStockOut : ""}`}
+                        >
+                          {p.stock_local} und
+                        </span>
+                      </div>
+
+                      {/* NUEVO: DESPLEGABLE DE OTRAS SUCURSALES */}
                       {p.stock_otras_sucursales &&
                         p.stock_otras_sucursales.length > 0 && (
-                          <div
+                          <details
                             style={{
-                              fontSize: "0.75rem",
-                              color: "gray",
-                              marginTop: "4px",
+                              fontSize: "0.8rem",
+                              color: "var(--text-main)",
+                              cursor: "pointer",
                             }}
                           >
-                            + en otras sucursales
-                          </div>
+                            <summary
+                              style={{
+                                outline: "none",
+                                userSelect: "none",
+                                fontWeight: "bold",
+                                color: "var(--primary-color)",
+                              }}
+                            >
+                              + en otras sucursales
+                            </summary>
+                            <div
+                              style={{
+                                marginTop: "6px",
+                                padding: "6px",
+                                background: "#f8fafc",
+                                border: "1px solid #e2e8f0",
+                                borderRadius: "4px",
+                              }}
+                            >
+                              {p.stock_otras_sucursales.map((otra, idx) => (
+                                <div
+                                  key={idx}
+                                  style={{
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    borderBottom:
+                                      idx !==
+                                      p.stock_otras_sucursales!.length - 1
+                                        ? "1px solid #e2e8f0"
+                                        : "none",
+                                    padding: "2px 0",
+                                  }}
+                                >
+                                  <span>{otra.sucursal}</span>
+                                  <span
+                                    style={{
+                                      fontWeight: "bold",
+                                      marginLeft: "12px",
+                                    }}
+                                  >
+                                    {otra.cantidad} und
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </details>
                         )}
                     </td>
                     <td>
@@ -710,7 +755,7 @@ export default function NuevaVentaPage() {
         </div>
       </div>
 
-      {/* PANEL DERECHO: CLIENTE Y LOGÍSTICA (Sin Cambios) */}
+      {/* PANEL DERECHO: CLIENTE Y LOGÍSTICA */}
       <div className={styles.panel}>
         <h2 className={styles.sectionTitle}>Datos del Cliente</h2>
 
