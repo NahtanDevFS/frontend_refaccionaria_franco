@@ -6,16 +6,40 @@ const getHeaders = () => {
 };
 
 export const InventarioService = {
-  async buscarProductoMultiSucursal(termino: string, idSucursal: number) {
-    const res = await fetch(
-      `${API_URL}/inventario/buscar?q=${termino}&id_sucursal=${idSucursal}`,
-      { headers: getHeaders() },
-    );
-    if (!res.ok) throw new Error("Error buscando inventario");
+  async buscarProductoMultiSucursal(
+    idSucursal: number,
+    termino?: string,
+    idCategoria?: string,
+    idMarca?: string,
+  ) {
+    let url = `${API_URL}/inventario/buscar?id_sucursal=${idSucursal}`;
+    if (termino) url += `&q=${termino}`;
+    if (idCategoria) url += `&id_categoria=${idCategoria}`;
+    if (idMarca) url += `&id_marca=${idMarca}`;
+
+    const res = await fetch(url, { headers: getHeaders() });
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.error || "Error buscando inventario");
+    }
     return res.json();
   },
 
-  // === NUEVOS ENDPOINTS DE VEHÍCULOS ===
+  async obtenerCategorias() {
+    const res = await fetch(`${API_URL}/inventario/categorias`, {
+      headers: getHeaders(),
+    });
+    if (!res.ok) throw new Error("Error obteniendo categorías");
+    return res.json();
+  },
+
+  async obtenerMarcasRepuesto() {
+    const res = await fetch(`${API_URL}/inventario/marcas-repuesto`, {
+      headers: getHeaders(),
+    });
+    if (!res.ok) throw new Error("Error obteniendo marcas de repuesto");
+    return res.json();
+  },
 
   async obtenerMarcasVehiculo() {
     const res = await fetch(`${API_URL}/inventario/vehiculos/marcas`, {
@@ -40,9 +64,13 @@ export const InventarioService = {
     id_sucursal: number,
     id_modelo: number,
     anio?: number,
+    idCategoria?: string,
+    idMarca?: string,
   ) {
     let url = `${API_URL}/inventario/buscar-por-vehiculo?id_sucursal=${id_sucursal}&id_modelo=${id_modelo}`;
     if (anio) url += `&anio=${anio}`;
+    if (idCategoria) url += `&id_categoria=${idCategoria}`;
+    if (idMarca) url += `&id_marca=${idMarca}`;
 
     const res = await fetch(url, { headers: getHeaders() });
     if (!res.ok) throw new Error("Error buscando repuestos para este vehículo");

@@ -35,6 +35,15 @@ export default function NuevaVentaPage() {
   );
   const [terminoBusqueda, setTerminoBusqueda] = useState("");
 
+  const [categorias, setCategorias] = useState<
+    { id_categoria: number; nombre: string }[]
+  >([]);
+  const [marcasRepuesto, setMarcasRepuesto] = useState<
+    { id_marca: number; nombre: string }[]
+  >([]);
+  const [filtroCategoria, setFiltroCategoria] = useState("");
+  const [filtroMarca, setFiltroMarca] = useState("");
+
   // Vehículos
   const [marcasVehiculo, setMarcasVehiculo] = useState<
     { id_marca_vehiculo: number; nombre: string }[]
@@ -95,6 +104,12 @@ export default function NuevaVentaPage() {
         id_empleado: u.id_empleado,
         id_sucursal: u.id_sucursal || 1,
       });
+      InventarioService.obtenerCategorias()
+        .then(setCategorias)
+        .catch(console.error);
+      InventarioService.obtenerMarcasRepuesto()
+        .then(setMarcasRepuesto)
+        .catch(console.error);
       cargarRepartidores();
       UbicacionService.obtenerDepartamentos()
         .then((data) => {
@@ -150,15 +165,23 @@ export default function NuevaVentaPage() {
 
   // === MÉTODOS DE BÚSQUEDA ===
   const buscarProductoTexto = async () => {
-    if (!terminoBusqueda || !usuarioSesion) return;
+    if (!usuarioSesion) return;
+    if (!terminoBusqueda && !filtroCategoria && !filtroMarca) {
+      alert(
+        "Ingrese un término o seleccione al menos una Categoría/Marca para filtrar.",
+      );
+      return;
+    }
     try {
       const data = await InventarioService.buscarProductoMultiSucursal(
-        terminoBusqueda,
         usuarioSesion.id_sucursal,
+        terminoBusqueda,
+        filtroCategoria,
+        filtroMarca,
       );
       setResultadosProducto(data);
-    } catch (error) {
-      alert("Error al buscar productos en el inventario.");
+    } catch (error: any) {
+      alert(error.message || "Error al buscar productos en el inventario.");
     }
   };
 
@@ -169,6 +192,8 @@ export default function NuevaVentaPage() {
         usuarioSesion.id_sucursal,
         parseInt(busquedaVehiculo.id_modelo),
         busquedaVehiculo.anio ? parseInt(busquedaVehiculo.anio) : undefined,
+        filtroCategoria,
+        filtroMarca,
       );
       setResultadosProducto(data);
     } catch (error) {
@@ -176,7 +201,6 @@ export default function NuevaVentaPage() {
     }
   };
 
-  // === LÓGICA DE CARRITO ===
   const agregarAlCarrito = (prod: ProductoInventario) => {
     if (prod.stock_local < 1) {
       alert("Sin stock en esta sucursal. Solicita traslado.");
@@ -390,30 +414,90 @@ export default function NuevaVentaPage() {
 
         {/* Buscador de Texto */}
         {tipoBusqueda === "texto" && (
-          <div className={styles.searchRow}>
-            <input
-              type="text"
-              className={styles.input}
-              placeholder="Buscar por Nombre o SKU..."
-              value={terminoBusqueda}
-              onChange={(e) => setTerminoBusqueda(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && buscarProductoTexto()}
-            />
-            <button
-              className={styles.btnAction}
-              style={{ marginTop: 0, width: "auto" }}
-              onClick={buscarProductoTexto}
+          <div
+            className={styles.formGrid}
+            style={{
+              marginBottom: "1.5rem",
+              background: "#f8fafc",
+              padding: "1rem",
+              borderRadius: "8px",
+              border: "1px solid #e2e8f0",
+            }}
+          >
+            <div className={styles.formGroup} style={{ gridColumn: "span 2" }}>
+              <label className={styles.label}>Buscar por Nombre o SKU</label>
+              <input
+                type="text"
+                className={styles.input}
+                placeholder="Ej. Pastillas, FRIC-001..."
+                value={terminoBusqueda}
+                onChange={(e) => setTerminoBusqueda(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && buscarProductoTexto()}
+              />
+            </div>
+
+            <div className={styles.formGroup}>
+              <label className={styles.label}>Categoría</label>
+              <select
+                className={styles.select}
+                value={filtroCategoria}
+                onChange={(e) => setFiltroCategoria(e.target.value)}
+              >
+                <option value="">Todas las categorías</option>
+                {categorias.map((c) => (
+                  <option key={c.id_categoria} value={c.id_categoria}>
+                    {c.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className={styles.formGroup}>
+              <label className={styles.label}>Marca del Repuesto</label>
+              <select
+                className={styles.select}
+                value={filtroMarca}
+                onChange={(e) => setFiltroMarca(e.target.value)}
+              >
+                <option value="">Todas las marcas</option>
+                {marcasRepuesto.map((m) => (
+                  <option key={m.id_marca} value={m.id_marca}>
+                    {m.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div
+              className={styles.formGroup}
+              style={{ gridColumn: "span 2", justifyContent: "flex-end" }}
             >
-              Buscar
-            </button>
+              <button
+                className={styles.btnAction}
+                style={{ margin: 0 }}
+                onClick={buscarProductoTexto}
+              >
+                Aplicar Filtros y Buscar
+              </button>
+            </div>
           </div>
         )}
 
         {/* Buscador de Vehículo */}
         {tipoBusqueda === "vehiculo" && (
-          <div className={styles.formGrid}>
+          <div
+            className={styles.formGrid}
+            style={{
+              marginBottom: "1.5rem",
+              background: "#f8fafc",
+              padding: "1rem",
+              borderRadius: "8px",
+              border: "1px solid #e2e8f0",
+            }}
+          >
+            {/* Fila 1: Datos del Vehículo */}
             <div className={styles.formGroup}>
-              <label className={styles.label}>Marca</label>
+              <label className={styles.label}>Marca Vehículo</label>
               <select
                 className={styles.select}
                 value={busquedaVehiculo.id_marca}
@@ -468,16 +552,49 @@ export default function NuevaVentaPage() {
                 }
               />
             </div>
+
+            {/* Fila 2: Filtros del Repuesto */}
+            <div className={styles.formGroup}>
+              <label className={styles.label}>Categoría (Repuesto)</label>
+              <select
+                className={styles.select}
+                value={filtroCategoria}
+                onChange={(e) => setFiltroCategoria(e.target.value)}
+              >
+                <option value="">Todas las categorías</option>
+                {categorias.map((c) => (
+                  <option key={c.id_categoria} value={c.id_categoria}>
+                    {c.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className={styles.formGroup}>
+              <label className={styles.label}>Marca (Repuesto)</label>
+              <select
+                className={styles.select}
+                value={filtroMarca}
+                onChange={(e) => setFiltroMarca(e.target.value)}
+              >
+                <option value="">Todas las marcas</option>
+                {marcasRepuesto.map((m) => (
+                  <option key={m.id_marca} value={m.id_marca}>
+                    {m.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
             <div
               className={styles.formGroup}
               style={{ justifyContent: "flex-end" }}
             >
               <button
                 className={styles.btnAction}
+                style={{ margin: 0 }}
                 disabled={!busquedaVehiculo.id_modelo}
                 onClick={buscarPorVehiculo}
               >
-                Consultar Compatibles
+                Buscar Repuestos
               </button>
             </div>
           </div>
