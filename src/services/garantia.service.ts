@@ -108,4 +108,14 @@ export const GarantiaService = {
     }
     return res.json();
   },
+
+  // Pestaña 4: Historial Completo
+  async obtenerHistorial(id_sucursal: number) {
+    const res = await fetch(
+      `${API_URL}/garantias/sucursal/${id_sucursal}/historial`,
+      { headers: getHeaders() },
+    );
+    if (!res.ok) throw new Error("Error obteniendo el historial de garantías");
+    return res.json();
+  },
 };

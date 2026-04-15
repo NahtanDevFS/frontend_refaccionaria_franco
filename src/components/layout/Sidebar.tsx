@@ -75,6 +75,15 @@ const MENU_CONFIG: MenuSection[] = [
         path: "/garantias/aprobaciones",
         rolesAllowed: ["ADMINISTRADOR", "SUPERVISOR_SUCURSAL"],
       },
+      {
+        title: "Historial de Garantías",
+        path: "/garantias/historial",
+        rolesAllowed: [
+          "ADMINISTRADOR",
+          "GERENTE_REGIONAL",
+          "SUPERVISOR_SUCURSAL",
+        ],
+      },
     ],
   },
   {

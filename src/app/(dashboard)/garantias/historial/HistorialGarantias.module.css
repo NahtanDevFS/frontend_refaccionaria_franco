@@ -1,0 +1,205 @@
+.container {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 1.5rem;
+}
+
+.card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+}
+
+.error {
+  background-color: #fee2e2;
+  color: #991b1b;
+  padding: 1rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+}
+
+.tableResponsive {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.table th {
+  background-color: #f9fafb;
+  font-weight: 600;
+  color: #4b5563;
+}
+
+.textCenter {
+  text-align: center;
+  color: #6b7280;
+  padding: 2rem !important;
+}
+
+/* Badges de estados */
+.badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.badgeSuccess {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+.badgeDanger {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+.badgeWarning {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+.badgeInfo {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+.badgeNeutral {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.btnAction {
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: background-color 0.2s;
+}
+
+.btnAction:hover {
+  background-color: #2563eb;
+}
+
+/* Modal */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 1rem;
+}
+
+.modalContent {
+  background-color: white;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.modalHeader {
+  padding: 1.25rem;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modalHeader h2 {
+  font-size: 1.25rem;
+  margin: 0;
+  color: #111827;
+}
+
+.btnClose {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.modalBody {
+  padding: 1.5rem;
+  overflow-y: auto;
+}
+
+/* Timeline (Línea de tiempo) */
+.timeline {
+  position: relative;
+  padding-left: 1.5rem;
+  border-left: 2px solid #e5e7eb;
+}
+
+.timelineItem {
+  position: relative;
+  margin-bottom: 2rem;
+}
+
+.timelineItem:last-child {
+  margin-bottom: 0;
+}
+
+.timelineItem::before {
+  content: "";
+  position: absolute;
+  left: -1.9rem;
+  top: 0.25rem;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: #3b82f6;
+  border: 2px solid white;
+}
+
+.timelineDate {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-bottom: 0.25rem;
+}
+
+.timelineContent {
+  background-color: #f9fafb;
+  padding: 1rem;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+}
+
+.timelineContent h3 {
+  font-size: 1rem;
+  margin: 0 0 0.5rem 0;
+  color: #1f2937;
+}
+
+.timelineContent p {
+  margin: 0.25rem 0;
+  font-size: 0.875rem;
+  color: #4b5563;
+}
