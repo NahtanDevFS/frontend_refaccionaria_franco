@@ -205,3 +205,15 @@
   margin-right: 0.5rem;
   border: 1px solid #fcd34d;
 }
+
+.badgeReacTable {
+  background-color: #fef3c7;
+  color: #d97706;
+  font-size: 0.7rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 12px;
+  font-weight: bold;
+  display: inline-block;
+  margin-bottom: 0.25rem;
+  border: 1px solid #fcd34d;
+}

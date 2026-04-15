@@ -6,25 +6,24 @@ import { InventarioService } from "@/services/inventario.service";
 import { ClienteService } from "@/services/cliente.service";
 import { VentaService } from "@/services/venta.service";
 import { UbicacionService } from "@/services/ubicacion.service";
-import { GarantiaService } from "@/services/garantia.service"; // <-- NUEVO
 
 interface ProductoInventario {
   id_producto: number;
+  id_producto_reacondicionado?: number;
   sku: string;
   nombre: string;
   precio_venta: number;
   stock_local: number;
   stock_otras_sucursales?: { sucursal: string; cantidad: number }[];
   marca_repuesto?: string;
+  is_reacondicionado?: boolean;
 }
 
-// <-- NUEVO: Manejo de llave única 'uid' y campos reacondicionados
 interface ItemCarrito extends ProductoInventario {
   uid: string;
   cantidad: number;
   subtotal: number;
   es_reacondicionado?: boolean;
-  id_producto_reacondicionado?: number;
 }
 
 export default function NuevaVentaPage() {
@@ -66,9 +65,6 @@ export default function NuevaVentaPage() {
     ProductoInventario[]
   >([]);
   const [carrito, setCarrito] = useState<ItemCarrito[]>([]);
-
-  // <-- NUEVO: Estado para reacondicionados
-  const [reacondicionados, setReacondicionados] = useState<any[]>([]);
 
   // === ESTADOS DEL CLIENTE ===
   const [nitBusqueda, setNitBusqueda] = useState("CF");
@@ -123,13 +119,6 @@ export default function NuevaVentaPage() {
       UbicacionService.obtenerDepartamentos()
         .then((data) => {
           if (Array.isArray(data)) setDepartamentos(data);
-        })
-        .catch(console.error);
-
-      // <-- NUEVO: Cargar reacondicionados disponibles
-      GarantiaService.obtenerReacondicionadosDisponibles(u.id_sucursal || 1)
-        .then((res) => {
-          if (res.success) setReacondicionados(res.data);
         })
         .catch(console.error);
     }
@@ -221,11 +210,22 @@ export default function NuevaVentaPage() {
       return;
     }
 
-    const uid = `P_${prod.id_producto}`; // UID para normales
+    // UID Diferenciado para evitar colisiones entre el mismo producto nuevo vs reacondicionado
+    const uid = prod.is_reacondicionado
+      ? `R_${prod.id_producto_reacondicionado}`
+      : `P_${prod.id_producto}`;
+
     const itemExistente = carrito.find((i) => i.uid === uid);
 
     if (itemExistente) {
-      if (itemExistente.cantidad >= prod.stock_local) return;
+      if (itemExistente.cantidad >= prod.stock_local) {
+        alert(
+          prod.is_reacondicionado
+            ? "No hay más stock de este producto reacondicionado."
+            : "Stock máximo local alcanzado.",
+        );
+        return;
+      }
       const nuevoCarrito = carrito.map((i) =>
         i.uid === uid
           ? {
@@ -239,7 +239,13 @@ export default function NuevaVentaPage() {
     } else {
       setCarrito([
         ...carrito,
-        { ...prod, uid, cantidad: 1, subtotal: prod.precio_venta },
+        {
+          ...prod,
+          uid,
+          cantidad: 1,
+          subtotal: prod.precio_venta,
+          es_reacondicionado: prod.is_reacondicionado,
+        },
       ]);
     }
     setResultadosProducto([]);
@@ -247,46 +253,6 @@ export default function NuevaVentaPage() {
     setBusquedaVehiculo({ id_marca: "", id_modelo: "", anio: "" });
   };
 
-  // <-- NUEVO: Función para agregar reacondicionados
-  const agregarReacondicionadoAlCarrito = (reac: any) => {
-    const uid = `R_${reac.id_producto_reacondicionado}`;
-    const itemExistente = carrito.find((i) => i.uid === uid);
-
-    if (itemExistente) {
-      if (itemExistente.cantidad >= reac.cantidad) {
-        alert("No hay más stock de este producto reacondicionado.");
-        return;
-      }
-      const nuevoCarrito = carrito.map((i) =>
-        i.uid === uid
-          ? {
-              ...i,
-              cantidad: i.cantidad + 1,
-              subtotal: (i.cantidad + 1) * reac.precio_venta_reac,
-            }
-          : i,
-      );
-      setCarrito(nuevoCarrito);
-    } else {
-      setCarrito([
-        ...carrito,
-        {
-          uid,
-          id_producto: reac.id_producto,
-          id_producto_reacondicionado: reac.id_producto_reacondicionado,
-          sku: reac.sku,
-          nombre: reac.nombre,
-          precio_venta: reac.precio_venta_reac,
-          stock_local: reac.cantidad,
-          es_reacondicionado: true,
-          cantidad: 1,
-          subtotal: reac.precio_venta_reac,
-        },
-      ]);
-    }
-  };
-
-  // <-- ACTUALIZADO: Usa UID para identificar exactamente qué fila del carrito modificar
   const modificarCantidad = (uid: string, delta: number) => {
     const nuevoCarrito = carrito.map((item) => {
       if (item.uid === uid) {
@@ -382,7 +348,6 @@ export default function NuevaVentaPage() {
       direccion_entrega: esDomicilio ? datosCliente.direccion : null,
       nombre_contacto: esDomicilio ? nombreContacto : null,
       telefono_contacto: esDomicilio ? telefonoContacto : null,
-      // <-- ACTUALIZADO: Envía el ID del reacondicionado al backend
       detalles: carrito.map((c) => ({
         id_producto: c.id_producto,
         id_producto_reacondicionado: c.id_producto_reacondicionado,
@@ -401,7 +366,6 @@ export default function NuevaVentaPage() {
       await VentaService.crearOrdenVenta(payload);
       alert(`Orden enviada exitosamente. Estado: ${mensajeEstado}`);
 
-      // Limpiar UI y refrescar reaconcionados por si se vendió alguno
       setCarrito([]);
       setNitBusqueda("CF");
       setClienteExiste(true);
@@ -419,12 +383,6 @@ export default function NuevaVentaPage() {
       setPagoContraEntrega(false);
       setDescuentoPorcentaje(0);
       setIdRepartidor("");
-
-      GarantiaService.obtenerReacondicionadosDisponibles(
-        usuarioSesion.id_sucursal,
-      ).then((res) => {
-        if (res.success) setReacondicionados(res.data);
-      });
     } catch (error: any) {
       alert(`Error al procesar: ${error.message}`);
     }
@@ -432,50 +390,17 @@ export default function NuevaVentaPage() {
 
   return (
     <div className={styles.container}>
-      {/* PANEL IZQUIERDO: PRODUCTOS Y CARRITO */}
       <div className={styles.panel}>
-        {/* <-- NUEVO: SECCIÓN DE REACONDICIONADOS --> */}
-        {reacondicionados.length > 0 && (
-          <div className={styles.reacSection}>
-            <h3 className={styles.reacTitle}>
-              Oportunidades: Productos Reacondicionados
-            </h3>
-            <div className={styles.reacGrid}>
-              {reacondicionados.map((r) => (
-                <div
-                  key={r.id_producto_reacondicionado}
-                  className={styles.reacCard}
-                >
-                  <span style={{ fontWeight: 600 }}>{r.sku}</span>
-                  <span>{r.nombre}</span>
-                  <strong>Q {r.precio_venta_reac.toFixed(2)}</strong>
-                  <span style={{ fontSize: "0.8rem" }}>
-                    Disponibles: {r.cantidad}
-                  </span>
-                  <button
-                    className={styles.btnAction}
-                    style={{ marginTop: "auto", padding: "0.4rem" }}
-                    onClick={() => agregarReacondicionadoAlCarrito(r)}
-                  >
-                    Agregar Reacondicionado
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         <div
           style={{
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
             marginBottom: "1rem",
-            marginTop: "2rem",
           }}
         >
           <h2 className={styles.sectionTitle} style={{ margin: 0 }}>
-            Catálogo de Repuestos Nuevos
+            Catálogo de Repuestos
           </h2>
           <div style={{ display: "flex", gap: "0.5rem" }}>
             <button
@@ -505,7 +430,7 @@ export default function NuevaVentaPage() {
           </div>
         </div>
 
-        {/* Buscadores (igual que antes) */}
+        {/* Buscadores */}
         {tipoBusqueda === "texto" && (
           <div
             className={styles.formGrid}
@@ -686,7 +611,7 @@ export default function NuevaVentaPage() {
           </div>
         )}
 
-        {/* Resultados de búsqueda */}
+        {/* Resultados de búsqueda (Contextual) */}
         {resultadosProducto.length > 0 && (
           <div
             style={{
@@ -714,20 +639,47 @@ export default function NuevaVentaPage() {
                 </tr>
               </thead>
               <tbody>
-                {resultadosProducto.map((p) => (
-                  <tr key={p.id_producto}>
+                {resultadosProducto.map((p, idx) => (
+                  <tr
+                    key={`${p.id_producto}_${idx}`}
+                    style={
+                      p.is_reacondicionado ? { backgroundColor: "#fffbeb" } : {}
+                    }
+                  >
                     <td>
-                      <strong>{p.sku}</strong>
+                      {p.is_reacondicionado && (
+                        <span className={styles.badgeReacTable}>
+                          OFERTA: REACONDICIONADO
+                        </span>
+                      )}
+                      <strong
+                        style={p.is_reacondicionado ? { color: "#d97706" } : {}}
+                      >
+                        {p.sku}
+                      </strong>
                       <br />
                       {p.nombre}
                       <br />
                       {p.marca_repuesto && (
-                        <span style={{ fontSize: "0.8rem", color: "gray" }}>
+                        <span
+                          style={{
+                            fontSize: "0.8rem",
+                            color: p.is_reacondicionado ? "#b45309" : "gray",
+                          }}
+                        >
                           {p.marca_repuesto}
                         </span>
                       )}
                     </td>
-                    <td>Q {p.precio_venta.toFixed(2)}</td>
+                    <td
+                      style={
+                        p.is_reacondicionado
+                          ? { fontWeight: "bold", color: "#d97706" }
+                          : {}
+                      }
+                    >
+                      Q {p.precio_venta.toFixed(2)}
+                    </td>
                     <td>
                       <div style={{ marginBottom: "6px" }}>
                         <span
@@ -736,7 +688,8 @@ export default function NuevaVentaPage() {
                           {p.stock_local} und
                         </span>
                       </div>
-                      {p.stock_otras_sucursales &&
+                      {!p.is_reacondicionado &&
+                        p.stock_otras_sucursales &&
                         p.stock_otras_sucursales.length > 0 && (
                           <details
                             style={{
@@ -764,15 +717,14 @@ export default function NuevaVentaPage() {
                                 borderRadius: "4px",
                               }}
                             >
-                              {p.stock_otras_sucursales.map((otra, idx) => (
+                              {p.stock_otras_sucursales.map((otra, i) => (
                                 <div
-                                  key={idx}
+                                  key={i}
                                   style={{
                                     display: "flex",
                                     justifyContent: "space-between",
                                     borderBottom:
-                                      idx !==
-                                      p.stock_otras_sucursales!.length - 1
+                                      i !== p.stock_otras_sucursales!.length - 1
                                         ? "1px solid #e2e8f0"
                                         : "none",
                                     padding: "2px 0",
@@ -796,7 +748,13 @@ export default function NuevaVentaPage() {
                     <td>
                       <button
                         className={styles.btnAction}
-                        style={{ padding: "0.4rem 0.8rem", marginTop: 0 }}
+                        style={{
+                          padding: "0.4rem 0.8rem",
+                          marginTop: 0,
+                          backgroundColor: p.is_reacondicionado
+                            ? "#d97706"
+                            : "var(--primary-color)",
+                        }}
                         onClick={() => agregarAlCarrito(p)}
                         disabled={p.stock_local === 0}
                       >
@@ -834,9 +792,13 @@ export default function NuevaVentaPage() {
               carrito.map((item) => (
                 <tr key={item.uid}>
                   <td>
-                    {/* <-- ACTUALIZADO: Badge visual para piezas reacondicionadas --> */}
                     {item.es_reacondicionado && (
-                      <span className={styles.badgeReac}>REAC</span>
+                      <span
+                        className={styles.badgeReacTable}
+                        style={{ marginRight: "0.5rem" }}
+                      >
+                        REAC
+                      </span>
                     )}
                     {item.nombre}
                   </td>
@@ -957,7 +919,7 @@ export default function NuevaVentaPage() {
         </div>
       </div>
 
-      {/* PANEL DERECHO: CLIENTE Y LOGÍSTICA (Sin cambios visuales) */}
+      {/* PANEL DERECHO: CLIENTE Y LOGÍSTICA (Sin cambios funcionales) */}
       <div className={styles.panel}>
         <h2 className={styles.sectionTitle}>Datos del Cliente</h2>
 
