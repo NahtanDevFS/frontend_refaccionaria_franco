@@ -6,6 +6,7 @@ import { InventarioService } from "@/services/inventario.service";
 import { ClienteService } from "@/services/cliente.service";
 import { VentaService } from "@/services/venta.service";
 import { UbicacionService } from "@/services/ubicacion.service";
+import { GarantiaService } from "@/services/garantia.service"; // <-- NUEVO
 
 interface ProductoInventario {
   id_producto: number;
@@ -17,9 +18,13 @@ interface ProductoInventario {
   marca_repuesto?: string;
 }
 
+// <-- NUEVO: Manejo de llave única 'uid' y campos reacondicionados
 interface ItemCarrito extends ProductoInventario {
+  uid: string;
   cantidad: number;
   subtotal: number;
+  es_reacondicionado?: boolean;
+  id_producto_reacondicionado?: number;
 }
 
 export default function NuevaVentaPage() {
@@ -61,6 +66,9 @@ export default function NuevaVentaPage() {
     ProductoInventario[]
   >([]);
   const [carrito, setCarrito] = useState<ItemCarrito[]>([]);
+
+  // <-- NUEVO: Estado para reacondicionados
+  const [reacondicionados, setReacondicionados] = useState<any[]>([]);
 
   // === ESTADOS DEL CLIENTE ===
   const [nitBusqueda, setNitBusqueda] = useState("CF");
@@ -104,6 +112,7 @@ export default function NuevaVentaPage() {
         id_empleado: u.id_empleado,
         id_sucursal: u.id_sucursal || 1,
       });
+
       InventarioService.obtenerCategorias()
         .then(setCategorias)
         .catch(console.error);
@@ -114,6 +123,13 @@ export default function NuevaVentaPage() {
       UbicacionService.obtenerDepartamentos()
         .then((data) => {
           if (Array.isArray(data)) setDepartamentos(data);
+        })
+        .catch(console.error);
+
+      // <-- NUEVO: Cargar reacondicionados disponibles
+      GarantiaService.obtenerReacondicionadosDisponibles(u.id_sucursal || 1)
+        .then((res) => {
+          if (res.success) setReacondicionados(res.data);
         })
         .catch(console.error);
     }
@@ -131,7 +147,6 @@ export default function NuevaVentaPage() {
     }
   }, [datosCliente.id_departamento]);
 
-  // Cargar marcas si cambia a búsqueda por vehículo
   useEffect(() => {
     if (tipoBusqueda === "vehiculo" && marcasVehiculo.length === 0) {
       InventarioService.obtenerMarcasVehiculo()
@@ -140,7 +155,6 @@ export default function NuevaVentaPage() {
     }
   }, [tipoBusqueda]);
 
-  // Cargar modelos en cascada
   useEffect(() => {
     if (busquedaVehiculo.id_marca) {
       InventarioService.obtenerModelosPorMarca(
@@ -163,7 +177,7 @@ export default function NuevaVentaPage() {
     }
   };
 
-  // === MÉTODOS DE BÚSQUEDA ===
+  // === MÉTODOS DE BÚSQUEDA Y CARRITO ===
   const buscarProductoTexto = async () => {
     if (!usuarioSesion) return;
     if (!terminoBusqueda && !filtroCategoria && !filtroMarca) {
@@ -207,14 +221,13 @@ export default function NuevaVentaPage() {
       return;
     }
 
-    const itemExistente = carrito.find(
-      (i) => i.id_producto === prod.id_producto,
-    );
+    const uid = `P_${prod.id_producto}`; // UID para normales
+    const itemExistente = carrito.find((i) => i.uid === uid);
+
     if (itemExistente) {
       if (itemExistente.cantidad >= prod.stock_local) return;
-
       const nuevoCarrito = carrito.map((i) =>
-        i.id_producto === prod.id_producto
+        i.uid === uid
           ? {
               ...i,
               cantidad: i.cantidad + 1,
@@ -226,7 +239,7 @@ export default function NuevaVentaPage() {
     } else {
       setCarrito([
         ...carrito,
-        { ...prod, cantidad: 1, subtotal: prod.precio_venta },
+        { ...prod, uid, cantidad: 1, subtotal: prod.precio_venta },
       ]);
     }
     setResultadosProducto([]);
@@ -234,9 +247,49 @@ export default function NuevaVentaPage() {
     setBusquedaVehiculo({ id_marca: "", id_modelo: "", anio: "" });
   };
 
-  const modificarCantidad = (id: number, delta: number) => {
+  // <-- NUEVO: Función para agregar reacondicionados
+  const agregarReacondicionadoAlCarrito = (reac: any) => {
+    const uid = `R_${reac.id_producto_reacondicionado}`;
+    const itemExistente = carrito.find((i) => i.uid === uid);
+
+    if (itemExistente) {
+      if (itemExistente.cantidad >= reac.cantidad) {
+        alert("No hay más stock de este producto reacondicionado.");
+        return;
+      }
+      const nuevoCarrito = carrito.map((i) =>
+        i.uid === uid
+          ? {
+              ...i,
+              cantidad: i.cantidad + 1,
+              subtotal: (i.cantidad + 1) * reac.precio_venta_reac,
+            }
+          : i,
+      );
+      setCarrito(nuevoCarrito);
+    } else {
+      setCarrito([
+        ...carrito,
+        {
+          uid,
+          id_producto: reac.id_producto,
+          id_producto_reacondicionado: reac.id_producto_reacondicionado,
+          sku: reac.sku,
+          nombre: reac.nombre,
+          precio_venta: reac.precio_venta_reac,
+          stock_local: reac.cantidad,
+          es_reacondicionado: true,
+          cantidad: 1,
+          subtotal: reac.precio_venta_reac,
+        },
+      ]);
+    }
+  };
+
+  // <-- ACTUALIZADO: Usa UID para identificar exactamente qué fila del carrito modificar
+  const modificarCantidad = (uid: string, delta: number) => {
     const nuevoCarrito = carrito.map((item) => {
-      if (item.id_producto === id) {
+      if (item.uid === uid) {
         const nuevaCant = item.cantidad + delta;
         if (nuevaCant < 1 || nuevaCant > item.stock_local) return item;
         return {
@@ -258,7 +311,6 @@ export default function NuevaVentaPage() {
       setDatosCliente((prev) => ({ ...prev, nombre: "Consumidor Final" }));
       return;
     }
-
     try {
       const clienteDB = await ClienteService.buscarPorNit(nitBusqueda);
       if (clienteDB) {
@@ -330,8 +382,10 @@ export default function NuevaVentaPage() {
       direccion_entrega: esDomicilio ? datosCliente.direccion : null,
       nombre_contacto: esDomicilio ? nombreContacto : null,
       telefono_contacto: esDomicilio ? telefonoContacto : null,
+      // <-- ACTUALIZADO: Envía el ID del reacondicionado al backend
       detalles: carrito.map((c) => ({
         id_producto: c.id_producto,
+        id_producto_reacondicionado: c.id_producto_reacondicionado,
         cantidad: c.cantidad,
       })),
     };
@@ -339,7 +393,7 @@ export default function NuevaVentaPage() {
     try {
       let mensajeEstado = "";
       if (descuentoPorcentaje > 5)
-        mensajeEstado = "Enviada a Supervisor para Autorización de Descuento";
+        mensajeEstado = "Enviada a Supervisor para Autorización";
       else if (esDomicilio && pagoContraEntrega)
         mensajeEstado = "Pendiente de cobro contra entrega";
       else mensajeEstado = "Pendiente de Pago";
@@ -347,6 +401,7 @@ export default function NuevaVentaPage() {
       await VentaService.crearOrdenVenta(payload);
       alert(`Orden enviada exitosamente. Estado: ${mensajeEstado}`);
 
+      // Limpiar UI y refrescar reaconcionados por si se vendió alguno
       setCarrito([]);
       setNitBusqueda("CF");
       setClienteExiste(true);
@@ -364,6 +419,12 @@ export default function NuevaVentaPage() {
       setPagoContraEntrega(false);
       setDescuentoPorcentaje(0);
       setIdRepartidor("");
+
+      GarantiaService.obtenerReacondicionadosDisponibles(
+        usuarioSesion.id_sucursal,
+      ).then((res) => {
+        if (res.success) setReacondicionados(res.data);
+      });
     } catch (error: any) {
       alert(`Error al procesar: ${error.message}`);
     }
@@ -373,16 +434,48 @@ export default function NuevaVentaPage() {
     <div className={styles.container}>
       {/* PANEL IZQUIERDO: PRODUCTOS Y CARRITO */}
       <div className={styles.panel}>
+        {/* <-- NUEVO: SECCIÓN DE REACONDICIONADOS --> */}
+        {reacondicionados.length > 0 && (
+          <div className={styles.reacSection}>
+            <h3 className={styles.reacTitle}>
+              Oportunidades: Productos Reacondicionados
+            </h3>
+            <div className={styles.reacGrid}>
+              {reacondicionados.map((r) => (
+                <div
+                  key={r.id_producto_reacondicionado}
+                  className={styles.reacCard}
+                >
+                  <span style={{ fontWeight: 600 }}>{r.sku}</span>
+                  <span>{r.nombre}</span>
+                  <strong>Q {r.precio_venta_reac.toFixed(2)}</strong>
+                  <span style={{ fontSize: "0.8rem" }}>
+                    Disponibles: {r.cantidad}
+                  </span>
+                  <button
+                    className={styles.btnAction}
+                    style={{ marginTop: "auto", padding: "0.4rem" }}
+                    onClick={() => agregarReacondicionadoAlCarrito(r)}
+                  >
+                    Agregar Reacondicionado
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div
           style={{
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
             marginBottom: "1rem",
+            marginTop: "2rem",
           }}
         >
           <h2 className={styles.sectionTitle} style={{ margin: 0 }}>
-            Catálogo de Repuestos
+            Catálogo de Repuestos Nuevos
           </h2>
           <div style={{ display: "flex", gap: "0.5rem" }}>
             <button
@@ -412,7 +505,7 @@ export default function NuevaVentaPage() {
           </div>
         </div>
 
-        {/* Buscador de Texto */}
+        {/* Buscadores (igual que antes) */}
         {tipoBusqueda === "texto" && (
           <div
             className={styles.formGrid}
@@ -435,7 +528,6 @@ export default function NuevaVentaPage() {
                 onKeyDown={(e) => e.key === "Enter" && buscarProductoTexto()}
               />
             </div>
-
             <div className={styles.formGroup}>
               <label className={styles.label}>Categoría</label>
               <select
@@ -451,7 +543,6 @@ export default function NuevaVentaPage() {
                 ))}
               </select>
             </div>
-
             <div className={styles.formGroup}>
               <label className={styles.label}>Marca del Repuesto</label>
               <select
@@ -467,7 +558,6 @@ export default function NuevaVentaPage() {
                 ))}
               </select>
             </div>
-
             <div
               className={styles.formGroup}
               style={{ gridColumn: "span 2", justifyContent: "flex-end" }}
@@ -483,7 +573,6 @@ export default function NuevaVentaPage() {
           </div>
         )}
 
-        {/* Buscador de Vehículo */}
         {tipoBusqueda === "vehiculo" && (
           <div
             className={styles.formGrid}
@@ -495,7 +584,6 @@ export default function NuevaVentaPage() {
               border: "1px solid #e2e8f0",
             }}
           >
-            {/* Fila 1: Datos del Vehículo */}
             <div className={styles.formGroup}>
               <label className={styles.label}>Marca Vehículo</label>
               <select
@@ -552,8 +640,6 @@ export default function NuevaVentaPage() {
                 }
               />
             </div>
-
-            {/* Fila 2: Filtros del Repuesto */}
             <div className={styles.formGroup}>
               <label className={styles.label}>Categoría (Repuesto)</label>
               <select
@@ -650,8 +736,6 @@ export default function NuevaVentaPage() {
                           {p.stock_local} und
                         </span>
                       </div>
-
-                      {/* NUEVO: DESPLEGABLE DE OTRAS SUCURSALES */}
                       {p.stock_otras_sucursales &&
                         p.stock_otras_sucursales.length > 0 && (
                           <details
@@ -748,21 +832,27 @@ export default function NuevaVentaPage() {
               </tr>
             ) : (
               carrito.map((item) => (
-                <tr key={item.id_producto}>
-                  <td>{item.nombre}</td>
+                <tr key={item.uid}>
+                  <td>
+                    {/* <-- ACTUALIZADO: Badge visual para piezas reacondicionadas --> */}
+                    {item.es_reacondicionado && (
+                      <span className={styles.badgeReac}>REAC</span>
+                    )}
+                    {item.nombre}
+                  </td>
                   <td>Q {item.precio_venta.toFixed(2)}</td>
                   <td>
                     <div className={styles.qtyControl}>
                       <button
                         className={styles.qtyBtn}
-                        onClick={() => modificarCantidad(item.id_producto, -1)}
+                        onClick={() => modificarCantidad(item.uid, -1)}
                       >
                         -
                       </button>
                       <span>{item.cantidad}</span>
                       <button
                         className={styles.qtyBtn}
-                        onClick={() => modificarCantidad(item.id_producto, 1)}
+                        onClick={() => modificarCantidad(item.uid, 1)}
                       >
                         +
                       </button>
@@ -800,7 +890,6 @@ export default function NuevaVentaPage() {
         </div>
 
         <div className={styles.totalBox}>
-          {/* Desglose Fiscal Interno */}
           <div
             style={{
               fontSize: "0.9rem",
@@ -827,8 +916,6 @@ export default function NuevaVentaPage() {
             <span>IVA (12%):</span>
             <span>Q {montoIvaCalculado.toFixed(2)}</span>
           </div>
-
-          {/* Totales de cara al cliente */}
           <div
             style={{
               fontSize: "1.1rem",
@@ -841,7 +928,6 @@ export default function NuevaVentaPage() {
             <span>Subtotal (IVA Incluido):</span>
             <span>Q {subtotalCarrito.toFixed(2)}</span>
           </div>
-
           {descuentoPorcentaje > 0 && (
             <div
               style={{
@@ -856,7 +942,6 @@ export default function NuevaVentaPage() {
               <span>- Q {descuentoMonto.toFixed(2)}</span>
             </div>
           )}
-
           <div
             style={{
               display: "flex",
@@ -872,7 +957,7 @@ export default function NuevaVentaPage() {
         </div>
       </div>
 
-      {/* PANEL DERECHO: CLIENTE Y LOGÍSTICA */}
+      {/* PANEL DERECHO: CLIENTE Y LOGÍSTICA (Sin cambios visuales) */}
       <div className={styles.panel}>
         <h2 className={styles.sectionTitle}>Datos del Cliente</h2>
 
@@ -1003,7 +1088,7 @@ export default function NuevaVentaPage() {
                     notas_internas: e.target.value,
                   })
                 }
-                placeholder="Ej. Entregar en puerta azul, preguntar por Don Julio..."
+                placeholder="Ej. Entregar en puerta azul..."
               />
             </div>
           </div>
@@ -1037,7 +1122,6 @@ export default function NuevaVentaPage() {
                 placeholder="Ej. Juan Pérez o Taller Los Motores"
               />
             </div>
-
             <div className={styles.formGroup}>
               <label className={styles.label}>Teléfono de contacto</label>
               <input
@@ -1049,7 +1133,6 @@ export default function NuevaVentaPage() {
                 placeholder="Teléfono para el repartidor"
               />
             </div>
-
             <div className={styles.formGroup}>
               <label className={styles.label}>Dirección de Entrega</label>
               <input
@@ -1065,7 +1148,6 @@ export default function NuevaVentaPage() {
                 placeholder="Dirección exacta, referencias..."
               />
             </div>
-
             <div className={styles.formGroup}>
               <label className={styles.label}>Asignar Repartidor</label>
               <select
@@ -1081,7 +1163,6 @@ export default function NuevaVentaPage() {
                 ))}
               </select>
             </div>
-
             <div
               className={styles.formGroup}
               style={{

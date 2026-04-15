@@ -147,3 +147,61 @@
   background-color: #fce8e6;
   color: #d93025;
 }
+
+.reacSection {
+  margin-top: 2rem;
+  padding: 1.25rem;
+  background-color: #fffbeb;
+  border: 1px dashed #f59e0b;
+  border-radius: 8px;
+}
+
+.reacTitle {
+  color: #d97706;
+  font-weight: 700;
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.reacGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.reacCard {
+  background-color: white;
+  border: 1px solid #fcd34d;
+  border-radius: 6px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.reacCard span {
+  font-size: 0.9rem;
+  color: #374151;
+}
+
+.reacCard strong {
+  color: #d97706;
+  font-size: 1.1rem;
+}
+
+.badgeReac {
+  background-color: #fef3c7;
+  color: #d97706;
+  font-size: 0.7rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 12px;
+  font-weight: bold;
+  display: inline-block;
+  margin-right: 0.5rem;
+  border: 1px solid #fcd34d;
+}

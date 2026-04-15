@@ -13,10 +13,12 @@ export interface Cliente {
 
 export interface DetalleVentaDTO {
   id_producto: number;
+  id_producto_reacondicionado?: number;
   cantidad: number;
   precio_unitario: number;
   subtotal_linea: number;
-  nombre_producto?: string; // Solo para visualización en UI
+  nombre_producto?: string;
+  es_reacondicionado?: boolean;
 }
 
 export interface CrearVentaDTO {

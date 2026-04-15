@@ -118,4 +118,13 @@ export const GarantiaService = {
     if (!res.ok) throw new Error("Error obteniendo el historial de garantías");
     return res.json();
   },
+
+  async obtenerReacondicionadosDisponibles(id_sucursal: number) {
+    const res = await fetch(
+      `${API_URL}/garantias/sucursal/${id_sucursal}/reacondicionados`,
+      { headers: getHeaders() },
+    );
+    if (!res.ok) throw new Error("Error obteniendo productos reacondicionados");
+    return res.json();
+  },
 };
