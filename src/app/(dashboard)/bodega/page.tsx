@@ -23,9 +23,8 @@ export default function BodegaPage() {
   >("stock");
   const [cargando, setCargando] = useState(false);
 
-  // Tab 1: Stock local
+  // --- TAB 1: Stock local ---
   const [inventario, setInventario] = useState<InventarioBodega[]>([]);
-
   const [categorias, setCategorias] = useState<
     { id_categoria: number; nombre: string }[]
   >([]);
@@ -47,17 +46,13 @@ export default function BodegaPage() {
     id_modelo: "",
   });
 
-  // --- MODIFICADO: TAB 2 Emitir Despacho ---
+  // --- TAB 2: Emitir Despacho ---
   const [idSucursalDestino, setIdSucursalDestino] = useState("");
-
-  // Búsqueda para traslado
   const [busquedaTraslado, setBusquedaTraslado] = useState("");
   const [resultadosTraslado, setResultadosTraslado] = useState<
     InventarioBodega[]
   >([]);
   const [cargandoTraslado, setCargandoTraslado] = useState(false);
-
-  // Selección y Carrito
   const [prodSelectTraslado, setProdSelectTraslado] =
     useState<InventarioBodega | null>(null);
   const [cantSelectTraslado, setCantSelectTraslado] = useState(1);
@@ -65,26 +60,31 @@ export default function BodegaPage() {
     { producto: InventarioBodega; cantidad: number }[]
   >([]);
 
-  // Tab 3: Recepciones
+  // --- TAB 3: Recepciones ---
   const [recepciones, setRecepciones] = useState<RecepcionPendiente[]>([]);
 
-  // Tab 4: Ajustes
-  const [ajuste, setAjuste] = useState({
-    id_producto: "",
+  // --- NUEVO: TAB 4 Ajustes (Mermas) ---
+  const [busquedaAjuste, setBusquedaAjuste] = useState("");
+  const [resultadosAjuste, setResultadosAjuste] = useState<InventarioBodega[]>(
+    [],
+  );
+  const [cargandoAjuste, setCargandoAjuste] = useState(false);
+  const [prodSelectAjuste, setProdSelectAjuste] =
+    useState<InventarioBodega | null>(null);
+  const [datosAjuste, setDatosAjuste] = useState({
     tipo: "ajuste_negativo",
     cantidad: 1,
     motivo: "",
   });
 
+  // Modales
   const [modalDetalleAbierto, setModalDetalleAbierto] = useState(false);
   const [productoDetalle, setProductoDetalle] =
     useState<InventarioBodega | null>(null);
-
   const [modalCompatAbierto, setModalCompatAbierto] = useState(false);
   const [productoCompatSelect, setProductoCompatSelect] =
     useState<InventarioBodega | null>(null);
 
-  // Efecto Inicial
   useEffect(() => {
     cargarInventario();
     InventarioService.obtenerCategorias()
@@ -114,7 +114,7 @@ export default function BodegaPage() {
     }
   }, [busquedaVehiculo.id_marca]);
 
-  // Funciones Lógicas Stock
+  // --- LÓGICA STOCK ---
   const cargarInventario = async (filtros?: any) => {
     try {
       setCargando(true);
@@ -144,10 +144,9 @@ export default function BodegaPage() {
     cargarInventario();
   };
 
-  // --- LÓGICA DE TRASLADOS (NUEVA) ---
+  // --- LÓGICA TRASLADOS ---
   const buscarParaTraslado = async () => {
-    if (!busquedaTraslado.trim())
-      return alert("Ingrese un término de búsqueda (SKU o Nombre).");
+    if (!busquedaTraslado.trim()) return alert("Ingrese un SKU o Nombre.");
     try {
       setCargandoTraslado(true);
       const data = await BodegaService.obtenerInventario({
@@ -161,98 +160,57 @@ export default function BodegaPage() {
     }
   };
 
-  const seleccionarParaTraslado = (producto: InventarioBodega) => {
-    if (producto.cantidad_actual <= 0) {
-      return alert("Este producto no tiene stock disponible para enviar.");
-    }
-    setProdSelectTraslado(producto);
+  const seleccionarParaTraslado = (p: InventarioBodega) => {
+    if (p.cantidad_actual <= 0) return alert("No hay stock disponible.");
+    setProdSelectTraslado(p);
     setCantSelectTraslado(1);
     setResultadosTraslado([]);
     setBusquedaTraslado("");
   };
 
-  const cancelarSeleccionTraslado = () => {
-    setProdSelectTraslado(null);
-    setCantSelectTraslado(1);
-  };
-
   const agregarAlDespacho = () => {
-    if (!prodSelectTraslado || cantSelectTraslado < 1) return;
-
-    const cantidadDeseada = cantSelectTraslado;
-    const stockMaximo = prodSelectTraslado.cantidad_actual;
-
-    // Verificar si ya existe en el carrito para no duplicar filas y sumar la cantidad
+    if (!prodSelectTraslado) return;
     const index = detallesDespacho.findIndex(
       (d) => d.producto.id_producto === prodSelectTraslado.id_producto,
     );
-
     if (index >= 0) {
-      const cantidadActualEnCarrito = detallesDespacho[index].cantidad;
-      const nuevaCantidadTotal = cantidadActualEnCarrito + cantidadDeseada;
-
-      if (nuevaCantidadTotal > stockMaximo) {
-        return alert(
-          `Stock insuficiente. Ya tienes ${cantidadActualEnCarrito} unidades en el listado y el stock máximo local es de ${stockMaximo}.`,
-        );
-      }
-
-      const nuevosDetalles = [...detallesDespacho];
-      nuevosDetalles[index].cantidad = nuevaCantidadTotal;
-      setDetallesDespacho(nuevosDetalles);
+      const nuevaCant = detallesDespacho[index].cantidad + cantSelectTraslado;
+      if (nuevaCant > prodSelectTraslado.cantidad_actual)
+        return alert("Supera el stock disponible.");
+      const nuevos = [...detallesDespacho];
+      nuevos[index].cantidad = nuevaCant;
+      setDetallesDespacho(nuevos);
     } else {
-      if (cantidadDeseada > stockMaximo) {
-        return alert(
-          `El stock máximo disponible para este producto es de ${stockMaximo} unidades.`,
-        );
-      }
+      if (cantSelectTraslado > prodSelectTraslado.cantidad_actual)
+        return alert("Supera el stock.");
       setDetallesDespacho([
         ...detallesDespacho,
-        { producto: prodSelectTraslado, cantidad: cantidadDeseada },
+        { producto: prodSelectTraslado, cantidad: cantSelectTraslado },
       ]);
     }
-
-    // Limpiar para buscar otro
-    cancelarSeleccionTraslado();
-  };
-
-  const quitarDelDespacho = (id_producto: number) => {
-    setDetallesDespacho(
-      detallesDespacho.filter((d) => d.producto.id_producto !== id_producto),
-    );
+    setProdSelectTraslado(null);
   };
 
   const procesarEmision = async () => {
-    if (!idSucursalDestino)
-      return alert(
-        "Seleccione la sucursal destino a donde enviará los productos.",
-      );
-    if (detallesDespacho.length === 0)
-      return alert("El listado de envío está vacío.");
-
+    if (!idSucursalDestino || detallesDespacho.length === 0)
+      return alert("Datos incompletos.");
     try {
-      const detallesProcesados = detallesDespacho.map((d) => ({
-        id_producto: d.producto.id_producto,
-        cantidad: d.cantidad,
-      }));
-
       await BodegaService.emitirDespacho({
         id_sucursal_destino: Number(idSucursalDestino),
-        detalles: detallesProcesados,
+        detalles: detallesDespacho.map((d) => ({
+          id_producto: d.producto.id_producto,
+          cantidad: d.cantidad,
+        })),
       });
-
-      alert(
-        "¡Despacho emitido exitosamente! La mercadería ha sido descontada de su inventario local.",
-      );
+      alert("Traslado emitido.");
       setDetallesDespacho([]);
-      setIdSucursalDestino("");
       cargarInventario();
     } catch (err: any) {
-      alert("Error: " + err.message);
+      alert(err.message);
     }
   };
 
-  // --- Lógica Recepción y Ajustes ---
+  // --- LÓGICA RECEPCIONES ---
   const cargarRecepciones = async () => {
     try {
       setCargando(true);
@@ -265,41 +223,70 @@ export default function BodegaPage() {
     }
   };
 
-  const confirmarLlegada = async (id_despacho: number) => {
-    if (
-      confirm(
-        "¿Verificó físicamente que todos los productos del listado llegaron correctamente?",
-      )
-    ) {
-      try {
-        await BodegaService.confirmarRecepcion(id_despacho);
-        alert("¡Recepción confirmada e inventario actualizado!");
-        cargarRecepciones();
-        cargarInventario();
-      } catch (err: any) {
-        alert("Error: " + err.message);
-      }
+  const confirmarLlegada = async (id: number) => {
+    if (!confirm("¿Confirma la recepción física?")) return;
+    try {
+      await BodegaService.confirmarRecepcion(id);
+      alert("Inventario actualizado.");
+      cargarRecepciones();
+      cargarInventario();
+    } catch (err: any) {
+      alert(err.message);
     }
   };
 
-  const procesarAjuste = async () => {
-    if (!ajuste.id_producto || !ajuste.motivo || ajuste.cantidad < 1) {
-      return alert("Complete todos los campos del ajuste correctamente.");
+  // --- LÓGICA AJUSTES (NUEVA) ---
+  const buscarParaAjuste = async () => {
+    if (!busquedaAjuste.trim())
+      return alert("Ingrese un SKU o Nombre para buscar.");
+    try {
+      setCargandoAjuste(true);
+      const data = await BodegaService.obtenerInventario({
+        termino: busquedaAjuste,
+      });
+      setResultadosAjuste(data);
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setCargandoAjuste(false);
     }
+  };
+
+  const seleccionarParaAjuste = (p: InventarioBodega) => {
+    setProdSelectAjuste(p);
+    setResultadosAjuste([]);
+    setBusquedaAjuste("");
+    setDatosAjuste({ ...datosAjuste, cantidad: 1 });
+  };
+
+  const cancelarAjuste = () => {
+    setProdSelectAjuste(null);
+    setDatosAjuste({ tipo: "ajuste_negativo", cantidad: 1, motivo: "" });
+  };
+
+  const procesarAjuste = async () => {
+    if (!prodSelectAjuste || !datosAjuste.motivo || datosAjuste.cantidad < 1) {
+      return alert("Complete todos los campos obligatorios.");
+    }
+
+    if (
+      datosAjuste.tipo === "ajuste_negativo" &&
+      datosAjuste.cantidad > prodSelectAjuste.cantidad_actual
+    ) {
+      return alert(
+        "No puede realizar un ajuste negativo mayor al stock actual.",
+      );
+    }
+
     try {
       await BodegaService.ajustarInventario({
-        id_producto: Number(ajuste.id_producto),
-        tipo: ajuste.tipo as any,
-        cantidad: Number(ajuste.cantidad),
-        motivo: ajuste.motivo,
+        id_producto: prodSelectAjuste.id_producto,
+        tipo: datosAjuste.tipo as any,
+        cantidad: Number(datosAjuste.cantidad),
+        motivo: datosAjuste.motivo,
       });
       alert("Ajuste registrado exitosamente.");
-      setAjuste({
-        id_producto: "",
-        tipo: "ajuste_negativo",
-        cantidad: 1,
-        motivo: "",
-      });
+      cancelarAjuste();
       cargarInventario();
     } catch (err: any) {
       alert("Error: " + err.message);
@@ -311,30 +298,18 @@ export default function BodegaPage() {
       <h1 className={styles.title}>Panel de Bodega e Inventario</h1>
 
       <div className={styles.tabs}>
-        <button
-          className={`${styles.tabBtn} ${tabActual === "stock" ? styles.tabActive : ""}`}
-          onClick={() => setTabActual("stock")}
-        >
-          Stock y Alertas
-        </button>
-        <button
-          className={`${styles.tabBtn} ${tabActual === "emitir" ? styles.tabActive : ""}`}
-          onClick={() => setTabActual("emitir")}
-        >
-          Emitir Traslado
-        </button>
-        <button
-          className={`${styles.tabBtn} ${tabActual === "recibir" ? styles.tabActive : ""}`}
-          onClick={() => setTabActual("recibir")}
-        >
-          Recibir Traslado
-        </button>
-        <button
-          className={`${styles.tabBtn} ${tabActual === "ajustes" ? styles.tabActive : ""}`}
-          onClick={() => setTabActual("ajustes")}
-        >
-          Ajustes (Mermas)
-        </button>
+        {["stock", "emitir", "recibir", "ajustes"].map((t) => (
+          <button
+            key={t}
+            className={`${styles.tabBtn} ${tabActual === t ? styles.tabActive : ""}`}
+            onClick={() => setTabActual(t as any)}
+          >
+            {t === "stock" && "Stock y Alertas"}
+            {t === "emitir" && "Emitir Traslado"}
+            {t === "recibir" && "Recibir Traslado"}
+            {t === "ajustes" && "Ajustes (Mermas)"}
+          </button>
+        ))}
       </div>
 
       {/* TAB 1: STOCK */}
@@ -358,7 +333,6 @@ export default function BodegaPage() {
                   onKeyDown={(e) => e.key === "Enter" && aplicarFiltros()}
                 />
               </div>
-
               <div className={styles.formGroup}>
                 <label className={styles.label}>Categoría</label>
                 <select
@@ -366,7 +340,7 @@ export default function BodegaPage() {
                   value={filtroCategoria}
                   onChange={(e) => setFiltroCategoria(e.target.value)}
                 >
-                  <option value="">Todas las categorías</option>
+                  <option value="">Todas</option>
                   {categorias.map((c) => (
                     <option key={c.id_categoria} value={c.id_categoria}>
                       {c.nombre}
@@ -374,7 +348,6 @@ export default function BodegaPage() {
                   ))}
                 </select>
               </div>
-
               <div className={styles.formGroup}>
                 <label className={styles.label}>Marca Repuesto</label>
                 <select
@@ -382,7 +355,7 @@ export default function BodegaPage() {
                   value={filtroMarcaRepuesto}
                   onChange={(e) => setFiltroMarcaRepuesto(e.target.value)}
                 >
-                  <option value="">Todas las marcas</option>
+                  <option value="">Todas</option>
                   {marcasRepuesto.map((m) => (
                     <option key={m.id_marca} value={m.id_marca}>
                       {m.nombre}
@@ -390,7 +363,6 @@ export default function BodegaPage() {
                   ))}
                 </select>
               </div>
-
               <div className={styles.formGroup}>
                 <label className={styles.label}>Vehículo (Marca)</label>
                 <select
@@ -415,7 +387,6 @@ export default function BodegaPage() {
                   ))}
                 </select>
               </div>
-
               <div className={styles.formGroup}>
                 <label className={styles.label}>Vehículo (Modelo)</label>
                 <select
@@ -429,7 +400,7 @@ export default function BodegaPage() {
                     })
                   }
                 >
-                  <option value="">Todos los modelos...</option>
+                  <option value="">Todos...</option>
                   {modelosVehiculo.map((m) => (
                     <option key={m.id_modelo} value={m.id_modelo}>
                       {m.nombre.toUpperCase()}
@@ -438,7 +409,6 @@ export default function BodegaPage() {
                 </select>
               </div>
             </div>
-
             <div className={styles.filterActions}>
               <button className={styles.btnSecondary} onClick={limpiarFiltros}>
                 Limpiar
@@ -461,11 +431,11 @@ export default function BodegaPage() {
                     <th>Categoría</th>
                     <th>Marca</th>
                     <th>Costo</th>
-                    <th>Precio Venta</th>
-                    <th>Stock Local</th>
+                    <th>Venta</th>
+                    <th>Stock</th>
                     <th>Estado</th>
-                    <th>Compatibilidad</th>
-                    <th>Otras Sucursales</th>
+                    <th>Compat.</th>
+                    <th>Otros</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -486,52 +456,38 @@ export default function BodegaPage() {
                           {item.marca_repuesto || "Genérica"}
                         </span>
                       </td>
-
                       <td style={{ color: "#475569" }}>
                         Q {item.costo.toFixed(2)}
                       </td>
                       <td style={{ color: "#047857", fontWeight: "500" }}>
                         Q {item.precio_venta.toFixed(2)}
                       </td>
-
                       <td style={{ fontWeight: "bold" }}>
                         {item.cantidad_actual}
                       </td>
                       <td>
                         {item.requiere_reorden ? (
-                          <span className={styles.badgeWarning}>
-                            Reorden ({item.punto_reorden})
-                          </span>
+                          <span className={styles.badgeWarning}>Reorden</span>
                         ) : (
                           <span className={styles.badgeOk}>Suficiente</span>
                         )}
                       </td>
                       <td>
                         <button
-                          className={styles.btnSecondary}
-                          style={{
-                            padding: "0.25rem 0.5rem",
-                            fontSize: "0.75rem",
-                            margin: 0,
-                          }}
+                          className={styles.btnSelectMini}
                           onClick={() => {
                             setProductoCompatSelect(item);
                             setModalCompatAbierto(true);
                           }}
                         >
-                          Vehículos
+                          Ver
                         </button>
                       </td>
                       <td>
-                        {item.stock_otras_sucursales} und
+                        {item.stock_otras_sucursales} und{" "}
                         {item.stock_otras_sucursales > 0 && (
                           <button
-                            className={styles.btnSecondary}
-                            style={{
-                              marginLeft: "10px",
-                              padding: "0.25rem 0.5rem",
-                              fontSize: "0.75rem",
-                            }}
+                            className={styles.btnSelectMini}
                             onClick={() => {
                               setProductoDetalle(item);
                               setModalDetalleAbierto(true);
@@ -543,16 +499,6 @@ export default function BodegaPage() {
                       </td>
                     </tr>
                   ))}
-                  {inventario.length === 0 && (
-                    <tr>
-                      <td
-                        colSpan={10}
-                        style={{ textAlign: "center", padding: "2rem" }}
-                      >
-                        No se encontraron resultados para los filtros aplicados.
-                      </td>
-                    </tr>
-                  )}
                 </tbody>
               </table>
             </div>
@@ -566,7 +512,6 @@ export default function BodegaPage() {
           <h2 style={{ marginBottom: "1.5rem" }}>
             Enviar Producto a Otra Sucursal
           </h2>
-
           <div className={styles.formGroup} style={{ maxWidth: "400px" }}>
             <label className={styles.label}>
               1. Seleccione la Sucursal Destino:
@@ -576,7 +521,7 @@ export default function BodegaPage() {
               value={idSucursalDestino}
               onChange={(e) => setIdSucursalDestino(e.target.value)}
             >
-              <option value="">Seleccione a dónde enviar...</option>
+              <option value="">Seleccione...</option>
               {SUCURSALES.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.nombre}
@@ -593,39 +538,27 @@ export default function BodegaPage() {
             }}
           >
             <label className={styles.label}>
-              2. Busque y agregue los productos a enviar:
+              2. Busque y agregue los productos:
             </label>
-
-            {/* Buscador */}
             {!prodSelectTraslado && (
-              <div
-                style={{
-                  display: "flex",
-                  gap: "0.5rem",
-                  alignItems: "flex-end",
-                }}
-              >
-                <div style={{ flex: 1, maxWidth: "400px" }}>
-                  <input
-                    type="text"
-                    className={styles.input}
-                    placeholder="Buscar producto por nombre o SKU..."
-                    value={busquedaTraslado}
-                    onChange={(e) => setBusquedaTraslado(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && buscarParaTraslado()}
-                  />
-                </div>
+              <div style={{ display: "flex", gap: "0.5rem" }}>
+                <input
+                  type="text"
+                  className={styles.input}
+                  placeholder="SKU o Nombre..."
+                  value={busquedaTraslado}
+                  onChange={(e) => setBusquedaTraslado(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && buscarParaTraslado()}
+                />
                 <button
                   className={styles.btnSecondary}
                   onClick={buscarParaTraslado}
                   disabled={cargandoTraslado}
                 >
-                  {cargandoTraslado ? "Buscando..." : "Buscar en Inventario"}
+                  Buscar
                 </button>
               </div>
             )}
-
-            {/* Resultados de búsqueda */}
             {resultadosTraslado.length > 0 && !prodSelectTraslado && (
               <div className={styles.searchResultContainer}>
                 <table className={styles.searchResultTable}>
@@ -633,7 +566,7 @@ export default function BodegaPage() {
                     <tr>
                       <th>SKU</th>
                       <th>Producto</th>
-                      <th>Stock Local</th>
+                      <th>Stock</th>
                       <th>Acción</th>
                     </tr>
                   </thead>
@@ -641,12 +574,7 @@ export default function BodegaPage() {
                     {resultadosTraslado.map((p) => (
                       <tr key={p.id_producto}>
                         <td>{p.sku}</td>
-                        <td>
-                          {p.nombre} <br />{" "}
-                          <small style={{ color: "gray" }}>
-                            {p.marca_repuesto}
-                          </small>
-                        </td>
+                        <td>{p.nombre}</td>
                         <td
                           style={{
                             fontWeight: "bold",
@@ -659,15 +587,7 @@ export default function BodegaPage() {
                           <button
                             className={styles.btnSelectMini}
                             onClick={() => seleccionarParaTraslado(p)}
-                            disabled={p.cantidad_actual === 0}
-                            style={
-                              p.cantidad_actual === 0
-                                ? {
-                                    backgroundColor: "#ccc",
-                                    cursor: "not-allowed",
-                                  }
-                                : {}
-                            }
+                            disabled={p.cantidad_actual <= 0}
                           >
                             Seleccionar
                           </button>
@@ -678,61 +598,38 @@ export default function BodegaPage() {
                 </table>
               </div>
             )}
-
-            {/* Producto Seleccionado (Ingresar Cantidad) */}
             {prodSelectTraslado && (
               <div className={styles.selectedProductBox}>
                 <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}
+                  style={{ display: "flex", justifyContent: "space-between" }}
                 >
-                  <h3 style={{ margin: 0, color: "#1e40af" }}>
+                  <h3 style={{ margin: 0 }}>
                     Añadiendo: {prodSelectTraslado.nombre}
                   </h3>
                   <button
                     className={styles.btnRemove}
-                    style={{ padding: "0.2rem 0.5rem" }}
-                    onClick={cancelarSeleccionTraslado}
+                    style={{ padding: "2px 8px" }}
+                    onClick={() => setProdSelectTraslado(null)}
                   >
-                    Cancelar
+                    X
                   </button>
                 </div>
-                <p
-                  style={{
-                    margin: "0.5rem 0",
-                    fontSize: "0.9rem",
-                    color: "#475569",
-                  }}
-                >
-                  SKU: <strong>{prodSelectTraslado.sku}</strong> | Stock
-                  disponible en bodega:{" "}
-                  <strong>{prodSelectTraslado.cantidad_actual}</strong>
-                </p>
-
                 <div
                   style={{
                     display: "flex",
                     gap: "1rem",
                     alignItems: "flex-end",
-                    marginTop: "1rem",
+                    marginTop: "10px",
                   }}
                 >
                   <div>
-                    <label
-                      className={styles.label}
-                      style={{ fontSize: "0.85rem" }}
-                    >
-                      Cantidad a extraer:
-                    </label>
+                    <label className={styles.label}>Cantidad:</label>
                     <input
                       type="number"
                       min={1}
                       max={prodSelectTraslado.cantidad_actual}
                       className={styles.input}
-                      style={{ width: "120px" }}
+                      style={{ width: "100px" }}
                       value={cantSelectTraslado}
                       onChange={(e) =>
                         setCantSelectTraslado(Number(e.target.value))
@@ -743,50 +640,42 @@ export default function BodegaPage() {
                     className={styles.btnPrimary}
                     onClick={agregarAlDespacho}
                   >
-                    + Agregar a la caja de envío
+                    + Agregar a la caja
                   </button>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Tabla del Carrito de Traslados */}
           {detallesDespacho.length > 0 && (
-            <div
-              style={{
-                marginTop: "2.5rem",
-                borderTop: "2px dashed #e2e8f0",
-                paddingTop: "1.5rem",
-              }}
-            >
-              <h3 style={{ marginBottom: "1rem" }}>
-                Resumen de la Caja (Productos a Enviar)
-              </h3>
-
+            <div style={{ marginTop: "2.5rem" }}>
               <table className={styles.cartTable}>
                 <thead>
                   <tr>
                     <th>SKU</th>
                     <th>Descripción</th>
-                    <th style={{ textAlign: "center" }}>Cantidad</th>
-                    <th style={{ textAlign: "center" }}>Quitar</th>
+                    <th>Cantidad</th>
+                    <th>Quitar</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {detallesDespacho.map((d, index) => (
-                    <tr key={index}>
+                  {detallesDespacho.map((d, i) => (
+                    <tr key={i}>
                       <td>{d.producto.sku}</td>
                       <td>{d.producto.nombre}</td>
-                      <td style={{ textAlign: "center", fontWeight: "bold" }}>
-                        {d.cantidad}
-                      </td>
-                      <td style={{ textAlign: "center" }}>
+                      <td style={{ fontWeight: "bold" }}>{d.cantidad}</td>
+                      <td>
                         <button
                           className={styles.btnRemove}
                           onClick={() =>
-                            quitarDelDespacho(d.producto.id_producto)
+                            setDetallesDespacho(
+                              detallesDespacho.filter(
+                                (x) =>
+                                  x.producto.id_producto !==
+                                  d.producto.id_producto,
+                              ),
+                            )
                           }
-                          title="Quitar producto de la lista"
                         >
                           ✕
                         </button>
@@ -795,19 +684,14 @@ export default function BodegaPage() {
                   ))}
                 </tbody>
               </table>
-
               <div
                 style={{
-                  marginTop: "1.5rem",
                   display: "flex",
                   justifyContent: "flex-end",
+                  marginTop: "1rem",
                 }}
               >
-                <button
-                  className={styles.btnPrimary}
-                  style={{ padding: "0.75rem 2rem", fontSize: "1.1rem" }}
-                  onClick={procesarEmision}
-                >
+                <button className={styles.btnPrimary} onClick={procesarEmision}>
                   Emitir Despacho de Traslado
                 </button>
               </div>
@@ -824,15 +708,14 @@ export default function BodegaPage() {
               className={styles.card}
               style={{ textAlign: "center", color: "gray", padding: "3rem" }}
             >
-              No hay envíos en tránsito hacia esta sucursal.
+              No hay envíos en tránsito.
             </div>
           ) : (
             recepciones.map((rec) => (
               <div key={rec.id_despacho} className={styles.card}>
                 <div className={styles.recepcionHeader}>
                   <h3 style={{ margin: 0 }}>Despacho #{rec.id_despacho}</h3>
-                  <span style={{ fontSize: "0.875rem", color: "gray" }}>
-                    Enviado el:{" "}
+                  <span>
                     {new Date(rec.fecha_emision).toLocaleDateString()}
                   </span>
                 </div>
@@ -842,16 +725,16 @@ export default function BodegaPage() {
                 <div
                   style={{
                     marginTop: "1rem",
-                    backgroundColor: "#f9fafb",
+                    background: "#f9fafb",
                     padding: "1rem",
-                    borderRadius: "0.5rem",
+                    borderRadius: "8px",
                     border: "1px solid #e2e8f0",
                   }}
                 >
                   <strong>Contenido esperado:</strong>
-                  <ul style={{ margin: "0.5rem 0 0 1.5rem" }}>
+                  <ul>
                     {rec.productos.map((p, i) => (
-                      <li key={i} style={{ marginBottom: "0.25rem" }}>
+                      <li key={i}>
                         {p.producto} (SKU: {p.sku}) -{" "}
                         <strong>x{p.cantidad}</strong>
                       </li>
@@ -863,7 +746,7 @@ export default function BodegaPage() {
                   style={{ marginTop: "1rem" }}
                   onClick={() => confirmarLlegada(rec.id_despacho)}
                 >
-                  ✓ Confirmar Recepción Física (Ingresar a Inventario)
+                  ✓ Confirmar Recepción Física
                 </button>
               </div>
             ))
@@ -871,79 +754,168 @@ export default function BodegaPage() {
         </div>
       )}
 
-      {/* TAB 4: AJUSTES */}
+      {/* TAB 4: AJUSTES (REDISEÑADA) */}
       {tabActual === "ajustes" && (
         <div className={styles.card}>
-          <h2 style={{ marginBottom: "1rem" }}>Ajuste Manual de Inventario</h2>
+          <h2 style={{ marginBottom: "1rem" }}>
+            Ajuste Manual de Inventario (Mermas)
+          </h2>
 
-          <div className={styles.grid2}>
-            <div className={styles.formGroup}>
-              <label className={styles.label}>Producto</label>
-              <select
-                className={styles.select}
-                value={ajuste.id_producto}
-                onChange={(e) =>
-                  setAjuste({ ...ajuste, id_producto: e.target.value })
-                }
-              >
-                <option value="">Seleccione producto...</option>
-                {inventario.map((i) => (
-                  <option key={i.id_producto} value={i.id_producto}>
-                    {i.nombre} (Stock: {i.cantidad_actual})
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className={styles.formGroup}>
-              <label className={styles.label}>Tipo de Ajuste</label>
-              <select
-                className={styles.select}
-                value={ajuste.tipo}
-                onChange={(e) => setAjuste({ ...ajuste, tipo: e.target.value })}
-              >
-                <option value="ajuste_negativo">
-                  Resta (Merma, dañado, robo)
-                </option>
-                <option value="ajuste_positivo">
-                  Suma (Sobrante por error de conteo)
-                </option>
-              </select>
-            </div>
-          </div>
-
-          <div className={styles.formGroup} style={{ maxWidth: "200px" }}>
-            <label className={styles.label}>Cantidad</label>
-            <input
-              type="number"
-              min={1}
-              className={styles.input}
-              value={ajuste.cantidad}
-              onChange={(e) =>
-                setAjuste({ ...ajuste, cantidad: Number(e.target.value) })
-              }
-            />
-          </div>
-
-          <div className={styles.formGroup}>
+          <div style={{ marginBottom: "1.5rem" }}>
             <label className={styles.label}>
-              Motivo / Justificación (Obligatorio)
+              1. Busque el producto a ajustar:
             </label>
-            <textarea
-              rows={3}
-              className={styles.input}
-              placeholder="Ej. El repuesto se cayó del estante y se quebró..."
-              value={ajuste.motivo}
-              onChange={(e) => setAjuste({ ...ajuste, motivo: e.target.value })}
-            />
+            {!prodSelectAjuste && (
+              <div style={{ display: "flex", gap: "0.5rem" }}>
+                <input
+                  type="text"
+                  className={styles.input}
+                  placeholder="SKU o Nombre..."
+                  value={busquedaAjuste}
+                  onChange={(e) => setBusquedaAjuste(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && buscarParaAjuste()}
+                />
+                <button
+                  className={styles.btnSecondary}
+                  onClick={buscarParaAjuste}
+                  disabled={cargandoAjuste}
+                >
+                  Buscar
+                </button>
+              </div>
+            )}
+
+            {resultadosAjuste.length > 0 && !prodSelectAjuste && (
+              <div className={styles.searchResultContainer}>
+                <table className={styles.searchResultTable}>
+                  <thead>
+                    <tr>
+                      <th>SKU</th>
+                      <th>Producto</th>
+                      <th>Stock Local</th>
+                      <th>Acción</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {resultadosAjuste.map((p) => (
+                      <tr key={p.id_producto}>
+                        <td>{p.sku}</td>
+                        <td>{p.nombre}</td>
+                        <td style={{ fontWeight: "bold" }}>
+                          {p.cantidad_actual}
+                        </td>
+                        <td>
+                          <button
+                            className={styles.btnSelectMini}
+                            onClick={() => seleccionarParaAjuste(p)}
+                          >
+                            Seleccionar
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
 
-          <button
-            className={styles.btnPrimary}
-            style={{ backgroundColor: "#ef4444" }}
-            onClick={procesarAjuste}
-          >
-            Registrar Ajuste en Bitácora
-          </button>
+          {prodSelectAjuste && (
+            <div
+              className={styles.selectedProductBox}
+              style={{ backgroundColor: "#fff1f2", borderColor: "#fecdd3" }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <h3 style={{ margin: 0, color: "#991b1b" }}>
+                  Modificando: {prodSelectAjuste.nombre}
+                </h3>
+                <button className={styles.btnRemove} onClick={cancelarAjuste}>
+                  Cancelar
+                </button>
+              </div>
+              <p style={{ margin: "10px 0", color: "#475569" }}>
+                SKU: <strong>{prodSelectAjuste.sku}</strong> | Stock actual en
+                bodega: <strong>{prodSelectAjuste.cantidad_actual}</strong>
+              </p>
+
+              <div className={styles.grid2} style={{ marginTop: "1.5rem" }}>
+                <div className={styles.formGroup}>
+                  <label className={styles.label}>Tipo de Ajuste:</label>
+                  <select
+                    className={styles.select}
+                    value={datosAjuste.tipo}
+                    onChange={(e) =>
+                      setDatosAjuste({ ...datosAjuste, tipo: e.target.value })
+                    }
+                  >
+                    <option value="ajuste_negativo">
+                      Resta (Merma, dañado, robo)
+                    </option>
+                    <option value="ajuste_positivo">
+                      Suma (Sobrante encontrado)
+                    </option>
+                  </select>
+                </div>
+                <div className={styles.formGroup}>
+                  <label className={styles.label}>Cantidad:</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={
+                      datosAjuste.tipo === "ajuste_negativo"
+                        ? prodSelectAjuste.cantidad_actual
+                        : 9999
+                    }
+                    className={styles.input}
+                    value={datosAjuste.cantidad}
+                    onChange={(e) =>
+                      setDatosAjuste({
+                        ...datosAjuste,
+                        cantidad: Number(e.target.value),
+                      })
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className={styles.formGroup} style={{ marginTop: "1rem" }}>
+                <label className={styles.label}>
+                  Motivo / Justificación (Obligatorio):
+                </label>
+                <textarea
+                  rows={3}
+                  className={styles.input}
+                  placeholder="Escriba el motivo del ajuste..."
+                  value={datosAjuste.motivo}
+                  onChange={(e) =>
+                    setDatosAjuste({ ...datosAjuste, motivo: e.target.value })
+                  }
+                />
+              </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  marginTop: "1.5rem",
+                }}
+              >
+                <button
+                  className={styles.btnPrimary}
+                  style={{ backgroundColor: "#ef4444", padding: "10px 20px" }}
+                  onClick={procesarAjuste}
+                >
+                  Registrar Ajuste en Bitácora
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -951,14 +923,11 @@ export default function BodegaPage() {
       {modalCompatAbierto && productoCompatSelect && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalContent}>
-            <h2 style={{ marginBottom: "0.5rem" }}>Vehículos Compatibles</h2>
+            <h2>Vehículos Compatibles</h2>
             <p>
-              <strong>Producto:</strong> {productoCompatSelect.nombre}{" "}
-              <span style={{ color: "gray" }}>
-                ({productoCompatSelect.sku})
-              </span>
+              <strong>Producto:</strong> {productoCompatSelect.nombre} (
+              {productoCompatSelect.sku})
             </p>
-
             <div
               style={{
                 marginTop: "1.5rem",
@@ -969,9 +938,7 @@ export default function BodegaPage() {
               }}
             >
               {productoCompatSelect.compatibilidades.length === 0 ? (
-                <p style={{ color: "gray", margin: 0, textAlign: "center" }}>
-                  No hay información de compatibilidad registrada.
-                </p>
+                <p style={{ textAlign: "center" }}>Sin información.</p>
               ) : productoCompatSelect.compatibilidades.some(
                   (c) => c.es_universal,
                 ) ? (
@@ -982,18 +949,15 @@ export default function BodegaPage() {
                     fontWeight: "bold",
                   }}
                 >
-                  Pieza Universal (Compatible con cualquier vehículo)
+                  🌐 Pieza Universal
                 </div>
               ) : (
                 <ul style={{ margin: 0, paddingLeft: "1.2rem" }}>
                   {productoCompatSelect.compatibilidades.map((comp, idx) => (
-                    <li
-                      key={idx}
-                      style={{ marginBottom: "0.5rem", color: "#334155" }}
-                    >
-                      <strong>{comp.marca}</strong> - {comp.modelo}
-                      {comp.anio_desde && comp.anio_hasta && (
-                        <span style={{ color: "gray", marginLeft: "0.5rem" }}>
+                    <li key={idx}>
+                      <strong>{comp.marca}</strong> - {comp.modelo}{" "}
+                      {comp.anio_desde && (
+                        <span>
                           ({comp.anio_desde} - {comp.anio_hasta})
                         </span>
                       )}
@@ -1002,7 +966,6 @@ export default function BodegaPage() {
                 </ul>
               )}
             </div>
-
             <div
               style={{
                 display: "flex",
@@ -1025,33 +988,18 @@ export default function BodegaPage() {
       {modalDetalleAbierto && productoDetalle && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalContent}>
-            <h2 style={{ marginBottom: "0.5rem" }}>
-              Disponibilidad por Sucursal
-            </h2>
+            <h2>Disponibilidad por Sucursal</h2>
             <p>
               <strong>Producto:</strong> {productoDetalle.nombre}
             </p>
-            <p>
-              <strong>SKU:</strong> {productoDetalle.sku}
-            </p>
-
             <ul className={styles.listDetalle}>
-              {productoDetalle.detalle_otras_sucursales.length === 0 ? (
-                <li style={{ color: "gray" }}>
-                  No hay inventario en otras sucursales.
+              {productoDetalle.detalle_otras_sucursales.map((det, i) => (
+                <li key={i}>
+                  <span>{det.sucursal}</span>
+                  <strong>{det.cantidad} und</strong>
                 </li>
-              ) : (
-                productoDetalle.detalle_otras_sucursales.map((det, index) => (
-                  <li key={index}>
-                    <span>{det.sucursal}</span>
-                    <strong style={{ fontSize: "1.1rem" }}>
-                      {det.cantidad} und
-                    </strong>
-                  </li>
-                ))
-              )}
+              ))}
             </ul>
-
             <div
               style={{
                 display: "flex",
