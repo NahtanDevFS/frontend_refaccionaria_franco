@@ -246,3 +246,88 @@
   padding-top: 1rem;
   border-top: 1px solid #e2e8f0;
 }
+
+.searchResultContainer {
+  max-height: 250px;
+  overflow-y: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  margin-top: 1rem;
+}
+
+.searchResultTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.searchResultTable th,
+.searchResultTable td {
+  padding: 0.5rem;
+  text-align: left;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.searchResultTable th {
+  background-color: #f8fafc;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.btnSelectMini {
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.btnSelectMini:hover {
+  background-color: #2563eb;
+}
+
+.cartTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+  background-color: white;
+}
+
+.cartTable th,
+.cartTable td {
+  padding: 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+}
+
+.cartTable th {
+  background-color: #f8fafc;
+  color: #475569;
+}
+
+.btnRemove {
+  background-color: #fee2e2;
+  color: #ef4444;
+  border: 1px solid #f87171;
+  padding: 0.35rem 0.6rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.2s;
+}
+
+.btnRemove:hover {
+  background-color: #ef4444;
+  color: white;
+}
+
+.selectedProductBox {
+  background-color: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 1rem;
+}

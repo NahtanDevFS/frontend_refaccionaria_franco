@@ -23,6 +23,7 @@ export default function BodegaPage() {
   >("stock");
   const [cargando, setCargando] = useState(false);
 
+  // Tab 1: Stock local
   const [inventario, setInventario] = useState<InventarioBodega[]>([]);
 
   const [categorias, setCategorias] = useState<
@@ -46,15 +47,28 @@ export default function BodegaPage() {
     id_modelo: "",
   });
 
+  // --- MODIFICADO: TAB 2 Emitir Despacho ---
   const [idSucursalDestino, setIdSucursalDestino] = useState("");
-  const [detallesDespacho, setDetallesDespacho] = useState<
-    { id_producto: number; cantidad: number }[]
-  >([]);
-  const [prodSelectTraslado, setProdSelectTraslado] = useState("");
-  const [cantSelectTraslado, setCantSelectTraslado] = useState(1);
 
+  // Búsqueda para traslado
+  const [busquedaTraslado, setBusquedaTraslado] = useState("");
+  const [resultadosTraslado, setResultadosTraslado] = useState<
+    InventarioBodega[]
+  >([]);
+  const [cargandoTraslado, setCargandoTraslado] = useState(false);
+
+  // Selección y Carrito
+  const [prodSelectTraslado, setProdSelectTraslado] =
+    useState<InventarioBodega | null>(null);
+  const [cantSelectTraslado, setCantSelectTraslado] = useState(1);
+  const [detallesDespacho, setDetallesDespacho] = useState<
+    { producto: InventarioBodega; cantidad: number }[]
+  >([]);
+
+  // Tab 3: Recepciones
   const [recepciones, setRecepciones] = useState<RecepcionPendiente[]>([]);
 
+  // Tab 4: Ajustes
   const [ajuste, setAjuste] = useState({
     id_producto: "",
     tipo: "ajuste_negativo",
@@ -70,6 +84,7 @@ export default function BodegaPage() {
   const [productoCompatSelect, setProductoCompatSelect] =
     useState<InventarioBodega | null>(null);
 
+  // Efecto Inicial
   useEffect(() => {
     cargarInventario();
     InventarioService.obtenerCategorias()
@@ -99,6 +114,7 @@ export default function BodegaPage() {
     }
   }, [busquedaVehiculo.id_marca]);
 
+  // Funciones Lógicas Stock
   const cargarInventario = async (filtros?: any) => {
     try {
       setCargando(true);
@@ -128,6 +144,115 @@ export default function BodegaPage() {
     cargarInventario();
   };
 
+  // --- LÓGICA DE TRASLADOS (NUEVA) ---
+  const buscarParaTraslado = async () => {
+    if (!busquedaTraslado.trim())
+      return alert("Ingrese un término de búsqueda (SKU o Nombre).");
+    try {
+      setCargandoTraslado(true);
+      const data = await BodegaService.obtenerInventario({
+        termino: busquedaTraslado,
+      });
+      setResultadosTraslado(data);
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setCargandoTraslado(false);
+    }
+  };
+
+  const seleccionarParaTraslado = (producto: InventarioBodega) => {
+    if (producto.cantidad_actual <= 0) {
+      return alert("Este producto no tiene stock disponible para enviar.");
+    }
+    setProdSelectTraslado(producto);
+    setCantSelectTraslado(1);
+    setResultadosTraslado([]);
+    setBusquedaTraslado("");
+  };
+
+  const cancelarSeleccionTraslado = () => {
+    setProdSelectTraslado(null);
+    setCantSelectTraslado(1);
+  };
+
+  const agregarAlDespacho = () => {
+    if (!prodSelectTraslado || cantSelectTraslado < 1) return;
+
+    const cantidadDeseada = cantSelectTraslado;
+    const stockMaximo = prodSelectTraslado.cantidad_actual;
+
+    // Verificar si ya existe en el carrito para no duplicar filas y sumar la cantidad
+    const index = detallesDespacho.findIndex(
+      (d) => d.producto.id_producto === prodSelectTraslado.id_producto,
+    );
+
+    if (index >= 0) {
+      const cantidadActualEnCarrito = detallesDespacho[index].cantidad;
+      const nuevaCantidadTotal = cantidadActualEnCarrito + cantidadDeseada;
+
+      if (nuevaCantidadTotal > stockMaximo) {
+        return alert(
+          `Stock insuficiente. Ya tienes ${cantidadActualEnCarrito} unidades en el listado y el stock máximo local es de ${stockMaximo}.`,
+        );
+      }
+
+      const nuevosDetalles = [...detallesDespacho];
+      nuevosDetalles[index].cantidad = nuevaCantidadTotal;
+      setDetallesDespacho(nuevosDetalles);
+    } else {
+      if (cantidadDeseada > stockMaximo) {
+        return alert(
+          `El stock máximo disponible para este producto es de ${stockMaximo} unidades.`,
+        );
+      }
+      setDetallesDespacho([
+        ...detallesDespacho,
+        { producto: prodSelectTraslado, cantidad: cantidadDeseada },
+      ]);
+    }
+
+    // Limpiar para buscar otro
+    cancelarSeleccionTraslado();
+  };
+
+  const quitarDelDespacho = (id_producto: number) => {
+    setDetallesDespacho(
+      detallesDespacho.filter((d) => d.producto.id_producto !== id_producto),
+    );
+  };
+
+  const procesarEmision = async () => {
+    if (!idSucursalDestino)
+      return alert(
+        "Seleccione la sucursal destino a donde enviará los productos.",
+      );
+    if (detallesDespacho.length === 0)
+      return alert("El listado de envío está vacío.");
+
+    try {
+      const detallesProcesados = detallesDespacho.map((d) => ({
+        id_producto: d.producto.id_producto,
+        cantidad: d.cantidad,
+      }));
+
+      await BodegaService.emitirDespacho({
+        id_sucursal_destino: Number(idSucursalDestino),
+        detalles: detallesProcesados,
+      });
+
+      alert(
+        "¡Despacho emitido exitosamente! La mercadería ha sido descontada de su inventario local.",
+      );
+      setDetallesDespacho([]);
+      setIdSucursalDestino("");
+      cargarInventario();
+    } catch (err: any) {
+      alert("Error: " + err.message);
+    }
+  };
+
+  // --- Lógica Recepción y Ajustes ---
   const cargarRecepciones = async () => {
     try {
       setCargando(true);
@@ -137,45 +262,6 @@ export default function BodegaPage() {
       alert(err.message);
     } finally {
       setCargando(false);
-    }
-  };
-
-  const agregarAlDespacho = () => {
-    if (!prodSelectTraslado || cantSelectTraslado < 1) return;
-    const invLocal = inventario.find(
-      (i) => i.id_producto === Number(prodSelectTraslado),
-    );
-
-    if (invLocal && cantSelectTraslado > invLocal.cantidad_actual) {
-      return alert(
-        `Solo tienes ${invLocal.cantidad_actual} unidades disponibles en stock local.`,
-      );
-    }
-
-    setDetallesDespacho([
-      ...detallesDespacho,
-      { id_producto: Number(prodSelectTraslado), cantidad: cantSelectTraslado },
-    ]);
-    setProdSelectTraslado("");
-    setCantSelectTraslado(1);
-  };
-
-  const procesarEmision = async () => {
-    if (!idSucursalDestino) return alert("Seleccione sucursal destino");
-    if (detallesDespacho.length === 0)
-      return alert("Agregue al menos un producto");
-
-    try {
-      await BodegaService.emitirDespacho({
-        id_sucursal_destino: Number(idSucursalDestino),
-        detalles: detallesDespacho,
-      });
-      alert("Despacho emitido y mercadería descontada del inventario.");
-      setDetallesDespacho([]);
-      setIdSucursalDestino("");
-      cargarInventario();
-    } catch (err: any) {
-      alert("Error: " + err.message);
     }
   };
 
@@ -401,7 +487,6 @@ export default function BodegaPage() {
                         </span>
                       </td>
 
-                      {/* NUEVAS COLUMNAS */}
                       <td style={{ color: "#475569" }}>
                         Q {item.costo.toFixed(2)}
                       </td>
@@ -478,12 +563,14 @@ export default function BodegaPage() {
       {/* TAB 2: EMITIR TRASLADO */}
       {tabActual === "emitir" && (
         <div className={styles.card}>
-          <h2 style={{ marginBottom: "1rem" }}>
+          <h2 style={{ marginBottom: "1.5rem" }}>
             Enviar Producto a Otra Sucursal
           </h2>
 
-          <div className={styles.formGroup}>
-            <label className={styles.label}>Sucursal Destino</label>
+          <div className={styles.formGroup} style={{ maxWidth: "400px" }}>
+            <label className={styles.label}>
+              1. Seleccione la Sucursal Destino:
+            </label>
             <select
               className={styles.select}
               value={idSucursalDestino}
@@ -499,72 +586,231 @@ export default function BodegaPage() {
           </div>
 
           <div
-            className={styles.grid2}
             style={{
-              marginTop: "1.5rem",
+              marginTop: "2rem",
               borderTop: "1px solid #e5e7eb",
-              paddingTop: "1rem",
+              paddingTop: "1.5rem",
             }}
           >
-            <div className={styles.formGroup}>
-              <label className={styles.label}>Producto</label>
-              <select
-                className={styles.select}
-                value={prodSelectTraslado}
-                onChange={(e) => setProdSelectTraslado(e.target.value)}
+            <label className={styles.label}>
+              2. Busque y agregue los productos a enviar:
+            </label>
+
+            {/* Buscador */}
+            {!prodSelectTraslado && (
+              <div
+                style={{
+                  display: "flex",
+                  gap: "0.5rem",
+                  alignItems: "flex-end",
+                }}
               >
-                <option value="">Seleccione producto...</option>
-                {inventario.map((i) => (
-                  <option key={i.id_producto} value={i.id_producto}>
-                    {i.nombre} (Hay {i.cantidad_actual})
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div
-              className={styles.formGroup}
-              style={{ flexDirection: "row", alignItems: "flex-end" }}
-            >
-              <div style={{ flex: 1 }}>
-                <label className={styles.label}>Cantidad a enviar</label>
-                <input
-                  type="number"
-                  min={1}
-                  className={styles.input}
-                  style={{ width: "100%" }}
-                  value={cantSelectTraslado}
-                  onChange={(e) =>
-                    setCantSelectTraslado(Number(e.target.value))
-                  }
-                />
+                <div style={{ flex: 1, maxWidth: "400px" }}>
+                  <input
+                    type="text"
+                    className={styles.input}
+                    placeholder="Buscar producto por nombre o SKU..."
+                    value={busquedaTraslado}
+                    onChange={(e) => setBusquedaTraslado(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && buscarParaTraslado()}
+                  />
+                </div>
+                <button
+                  className={styles.btnSecondary}
+                  onClick={buscarParaTraslado}
+                  disabled={cargandoTraslado}
+                >
+                  {cargandoTraslado ? "Buscando..." : "Buscar en Inventario"}
+                </button>
               </div>
-              <button
-                className={styles.btnSecondary}
-                onClick={agregarAlDespacho}
-              >
-                + Agregar
-              </button>
-            </div>
+            )}
+
+            {/* Resultados de búsqueda */}
+            {resultadosTraslado.length > 0 && !prodSelectTraslado && (
+              <div className={styles.searchResultContainer}>
+                <table className={styles.searchResultTable}>
+                  <thead>
+                    <tr>
+                      <th>SKU</th>
+                      <th>Producto</th>
+                      <th>Stock Local</th>
+                      <th>Acción</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {resultadosTraslado.map((p) => (
+                      <tr key={p.id_producto}>
+                        <td>{p.sku}</td>
+                        <td>
+                          {p.nombre} <br />{" "}
+                          <small style={{ color: "gray" }}>
+                            {p.marca_repuesto}
+                          </small>
+                        </td>
+                        <td
+                          style={{
+                            fontWeight: "bold",
+                            color: p.cantidad_actual === 0 ? "red" : "green",
+                          }}
+                        >
+                          {p.cantidad_actual}
+                        </td>
+                        <td>
+                          <button
+                            className={styles.btnSelectMini}
+                            onClick={() => seleccionarParaTraslado(p)}
+                            disabled={p.cantidad_actual === 0}
+                            style={
+                              p.cantidad_actual === 0
+                                ? {
+                                    backgroundColor: "#ccc",
+                                    cursor: "not-allowed",
+                                  }
+                                : {}
+                            }
+                          >
+                            Seleccionar
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Producto Seleccionado (Ingresar Cantidad) */}
+            {prodSelectTraslado && (
+              <div className={styles.selectedProductBox}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <h3 style={{ margin: 0, color: "#1e40af" }}>
+                    Añadiendo: {prodSelectTraslado.nombre}
+                  </h3>
+                  <button
+                    className={styles.btnRemove}
+                    style={{ padding: "0.2rem 0.5rem" }}
+                    onClick={cancelarSeleccionTraslado}
+                  >
+                    Cancelar
+                  </button>
+                </div>
+                <p
+                  style={{
+                    margin: "0.5rem 0",
+                    fontSize: "0.9rem",
+                    color: "#475569",
+                  }}
+                >
+                  SKU: <strong>{prodSelectTraslado.sku}</strong> | Stock
+                  disponible en bodega:{" "}
+                  <strong>{prodSelectTraslado.cantidad_actual}</strong>
+                </p>
+
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "1rem",
+                    alignItems: "flex-end",
+                    marginTop: "1rem",
+                  }}
+                >
+                  <div>
+                    <label
+                      className={styles.label}
+                      style={{ fontSize: "0.85rem" }}
+                    >
+                      Cantidad a extraer:
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={prodSelectTraslado.cantidad_actual}
+                      className={styles.input}
+                      style={{ width: "120px" }}
+                      value={cantSelectTraslado}
+                      onChange={(e) =>
+                        setCantSelectTraslado(Number(e.target.value))
+                      }
+                    />
+                  </div>
+                  <button
+                    className={styles.btnPrimary}
+                    onClick={agregarAlDespacho}
+                  >
+                    + Agregar a la caja de envío
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
+          {/* Tabla del Carrito de Traslados */}
           {detallesDespacho.length > 0 && (
-            <div style={{ marginTop: "1.5rem" }}>
-              <h3 style={{ marginBottom: "0.5rem" }}>Productos en la caja:</h3>
-              <ul style={{ marginBottom: "1.5rem" }}>
-                {detallesDespacho.map((d, index) => {
-                  const nombreProd = inventario.find(
-                    (i) => i.id_producto === d.id_producto,
-                  )?.nombre;
-                  return (
-                    <li key={index}>
-                      {nombreProd} - <strong>x{d.cantidad}</strong>
-                    </li>
-                  );
-                })}
-              </ul>
-              <button className={styles.btnPrimary} onClick={procesarEmision}>
-                Generar Nota y Despachar
-              </button>
+            <div
+              style={{
+                marginTop: "2.5rem",
+                borderTop: "2px dashed #e2e8f0",
+                paddingTop: "1.5rem",
+              }}
+            >
+              <h3 style={{ marginBottom: "1rem" }}>
+                Resumen de la Caja (Productos a Enviar)
+              </h3>
+
+              <table className={styles.cartTable}>
+                <thead>
+                  <tr>
+                    <th>SKU</th>
+                    <th>Descripción</th>
+                    <th style={{ textAlign: "center" }}>Cantidad</th>
+                    <th style={{ textAlign: "center" }}>Quitar</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {detallesDespacho.map((d, index) => (
+                    <tr key={index}>
+                      <td>{d.producto.sku}</td>
+                      <td>{d.producto.nombre}</td>
+                      <td style={{ textAlign: "center", fontWeight: "bold" }}>
+                        {d.cantidad}
+                      </td>
+                      <td style={{ textAlign: "center" }}>
+                        <button
+                          className={styles.btnRemove}
+                          onClick={() =>
+                            quitarDelDespacho(d.producto.id_producto)
+                          }
+                          title="Quitar producto de la lista"
+                        >
+                          ✕
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              <div
+                style={{
+                  marginTop: "1.5rem",
+                  display: "flex",
+                  justifyContent: "flex-end",
+                }}
+              >
+                <button
+                  className={styles.btnPrimary}
+                  style={{ padding: "0.75rem 2rem", fontSize: "1.1rem" }}
+                  onClick={procesarEmision}
+                >
+                  Emitir Despacho de Traslado
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -576,7 +822,7 @@ export default function BodegaPage() {
           {recepciones.length === 0 ? (
             <div
               className={styles.card}
-              style={{ textAlign: "center", color: "gray" }}
+              style={{ textAlign: "center", color: "gray", padding: "3rem" }}
             >
               No hay envíos en tránsito hacia esta sucursal.
             </div>
@@ -599,12 +845,13 @@ export default function BodegaPage() {
                     backgroundColor: "#f9fafb",
                     padding: "1rem",
                     borderRadius: "0.5rem",
+                    border: "1px solid #e2e8f0",
                   }}
                 >
                   <strong>Contenido esperado:</strong>
                   <ul style={{ margin: "0.5rem 0 0 1.5rem" }}>
                     {rec.productos.map((p, i) => (
-                      <li key={i}>
+                      <li key={i} style={{ marginBottom: "0.25rem" }}>
                         {p.producto} (SKU: {p.sku}) -{" "}
                         <strong>x{p.cantidad}</strong>
                       </li>
@@ -616,7 +863,7 @@ export default function BodegaPage() {
                   style={{ marginTop: "1rem" }}
                   onClick={() => confirmarLlegada(rec.id_despacho)}
                 >
-                  Confirmar Recepción Física
+                  ✓ Confirmar Recepción Física (Ingresar a Inventario)
                 </button>
               </div>
             ))
@@ -628,6 +875,7 @@ export default function BodegaPage() {
       {tabActual === "ajustes" && (
         <div className={styles.card}>
           <h2 style={{ marginBottom: "1rem" }}>Ajuste Manual de Inventario</h2>
+
           <div className={styles.grid2}>
             <div className={styles.formGroup}>
               <label className={styles.label}>Producto</label>
@@ -734,7 +982,7 @@ export default function BodegaPage() {
                     fontWeight: "bold",
                   }}
                 >
-                  🌐 Pieza Universal (Compatible con cualquier vehículo)
+                  Pieza Universal (Compatible con cualquier vehículo)
                 </div>
               ) : (
                 <ul style={{ margin: 0, paddingLeft: "1.2rem" }}>
