@@ -6,13 +6,139 @@
 .header {
   border-bottom: 2px solid var(--primary-blue);
   padding-bottom: 1rem;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
 }
 
 .title {
   color: var(--primary-blue);
 }
 
+/* ─── Selector de sucursal ─────────────────────────────── */
+.sucursalSelector {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  background-color: var(--white);
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
+.sucursalSelector label {
+  font-weight: bold;
+  color: var(--primary-blue);
+  font-size: 0.9rem;
+}
+
+.select {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 0.9rem;
+  background-color: var(--white);
+  color: var(--primary-blue);
+  min-width: 220px;
+  cursor: pointer;
+}
+
+.select:focus {
+  outline: none;
+  border-color: var(--secondary-blue);
+}
+
+/* ─── Tabs ─────────────────────────────────────────────── */
+.tabs {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid var(--border-color);
+}
+
+.tab {
+  background: none;
+  border: none;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0.75rem 1.25rem;
+  border-bottom: 3px solid transparent;
+  transition: all 0.2s;
+  margin-bottom: -2px;
+}
+
+.tab:hover {
+  color: var(--primary-blue);
+  background-color: var(--light-blue);
+}
+
+.tabActive {
+  color: var(--primary-blue);
+  border-bottom: 3px solid var(--secondary-blue);
+}
+
+/* ─── Card consolidado ─────────────────────────────────── */
+.consolidadoCard {
+  background: linear-gradient(
+    135deg,
+    var(--primary-blue),
+    var(--secondary-blue)
+  );
+  color: var(--white);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 8px rgba(0, 51, 102, 0.15);
+}
+
+.consolidadoTitle {
+  font-size: 1.1rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+  opacity: 0.95;
+}
+
+.consolidadoStats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.consolidadoStat {
+  display: flex;
+  flex-direction: column;
+}
+
+.consolidadoStatLabel {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  opacity: 0.85;
+  letter-spacing: 0.5px;
+}
+
+.consolidadoStatValue {
+  font-size: 1.4rem;
+  font-weight: bold;
+  margin-top: 0.25rem;
+}
+
+.consolidadoProgress {
+  width: 100%;
+  height: 14px;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 7px;
+  overflow: hidden;
+}
+
+.consolidadoProgressBar {
+  height: 100%;
+  background-color: var(--white);
+  transition: width 0.3s ease;
+}
+
+/* ─── Grid de cards por empleado (existente) ───────────── */
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -30,8 +156,14 @@
 .cardTitle {
   font-size: 1.1rem;
   color: var(--primary-blue);
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
   font-weight: bold;
+}
+
+.cardSubtitle {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin-bottom: 1rem;
 }
 
 .statsRow {
@@ -73,6 +205,16 @@
   font-weight: 500;
 }
 
+.alertBoxSoft {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background-color: #fff8e6;
+  border-left: 4px solid #d97706;
+  color: #92400e;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
 .loading,
 .error {
   text-align: center;
@@ -82,4 +224,275 @@
 
 .error {
   color: var(--error-color);
+}
+
+.emptyState {
+  text-align: center;
+  padding: 2rem;
+  color: #6b7280;
+  background-color: var(--white);
+  border: 1px dashed var(--border-color);
+  border-radius: 8px;
+}
+
+/* ─── Tab de Asignar Meta ──────────────────────────────── */
+.formContainer {
+  background-color: var(--white);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.formRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.formGroup label {
+  font-size: 0.85rem;
+  color: var(--primary-blue);
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+}
+
+.input {
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 0.95rem;
+  color: #111;
+  background-color: var(--white);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--secondary-blue);
+}
+
+.input:disabled {
+  background-color: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.vendedoresList {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.vendedorCard {
+  border: 2px solid var(--border-color);
+  border-radius: 6px;
+  padding: 0.85rem;
+  cursor: pointer;
+  background-color: var(--white);
+  transition: all 0.15s;
+}
+
+.vendedorCard:hover {
+  border-color: var(--secondary-blue);
+  background-color: var(--light-blue);
+}
+
+.vendedorCardActiva {
+  border-color: var(--secondary-blue);
+  background-color: var(--light-blue);
+  box-shadow: 0 0 0 2px var(--secondary-blue);
+}
+
+.vendedorCardConMeta {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.vendedorNombre {
+  font-weight: bold;
+  color: var(--primary-blue);
+  margin-bottom: 0.25rem;
+}
+
+.vendedorEstado {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.vendedorEstadoConMeta {
+  color: #16a34a;
+  font-weight: 600;
+}
+
+.suggestionBox {
+  background-color: #f0f7ff;
+  border-left: 4px solid var(--secondary-blue);
+  padding: 1rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+}
+
+.suggestionBoxOk {
+  background-color: #ecfdf5;
+  border-left-color: #16a34a;
+}
+
+.suggestionBoxWarn {
+  background-color: #fff8e6;
+  border-left-color: #d97706;
+}
+
+.suggestionTitle {
+  font-weight: bold;
+  color: var(--primary-blue);
+  margin-bottom: 0.5rem;
+}
+
+.suggestionDetail {
+  font-size: 0.85rem;
+  color: #4b5563;
+  line-height: 1.5;
+}
+
+.suggestionDetail strong {
+  color: var(--primary-blue);
+}
+
+.btnPrimary {
+  background-color: var(--primary-blue);
+  color: var(--white);
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-weight: bold;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.btnPrimary:hover {
+  opacity: 0.9;
+}
+
+.btnPrimary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btnSecondary {
+  background-color: var(--white);
+  color: var(--primary-blue);
+  border: 1px solid var(--border-color);
+  padding: 0.6rem 1.25rem;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.btnSecondary:hover {
+  background-color: var(--light-blue);
+}
+
+.successMsg {
+  background-color: #ecfdf5;
+  border-left: 4px solid #16a34a;
+  color: #065f46;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  font-weight: 500;
+}
+
+.errorMsg {
+  background-color: #fff0f0;
+  border-left: 4px solid var(--error-color);
+  color: var(--error-color);
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  font-weight: 500;
+}
+
+/* ─── Tab Historial ────────────────────────────────────── */
+.historyTable {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: var(--white);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.historyTable th,
+.historyTable td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 0.9rem;
+}
+
+.historyTable th {
+  background-color: var(--light-blue);
+  color: var(--primary-blue);
+  font-weight: 600;
+}
+
+.historyTable tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.historyTable tbody tr:hover {
+  background-color: #fafbfc;
+}
+
+.miniProgressContainer {
+  width: 100%;
+  height: 10px;
+  background-color: var(--light-blue);
+  border-radius: 5px;
+  overflow: hidden;
+  min-width: 100px;
+}
+
+.miniProgressBar {
+  height: 100%;
+  background-color: var(--secondary-blue);
+  transition: width 0.3s ease;
+}
+
+.miniProgressBarFull {
+  background-color: #16a34a;
+}
+
+.badgeCumplio {
+  background-color: #d1fae5;
+  color: #065f46;
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.badgeNoCumplio {
+  background-color: #fee2e2;
+  color: #991b1b;
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.empleadoSelectorRow {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-end;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
 }
