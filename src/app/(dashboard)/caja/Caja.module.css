@@ -12,6 +12,7 @@
   margin-bottom: 1.5rem;
 }
 
+/* Tabs */
 .tabs {
   display: flex;
   gap: 1rem;
@@ -23,7 +24,7 @@
 .tabBtn {
   background: none;
   border: none;
-  font-size: 1.125rem;
+  font-size: 1rem;
   font-weight: 600;
   color: #6b7280;
   cursor: pointer;
@@ -42,7 +43,7 @@
   border-bottom: 3px solid #3b82f6;
 }
 
-/* Tablas y Tarjetas */
+/* Card */
 .card {
   background: white;
   padding: 1.5rem;
@@ -51,6 +52,7 @@
   margin-bottom: 1.5rem;
 }
 
+/* Tabla */
 .table {
   width: 100%;
   border-collapse: collapse;
@@ -66,12 +68,17 @@
 }
 
 .table td {
-  padding: 1rem;
+  padding: 0.85rem 1rem;
   font-size: 0.875rem;
   color: #374151;
   border-bottom: 1px solid #e5e7eb;
 }
 
+.table tbody tr:hover {
+  background-color: #f9fafb;
+}
+
+/* Badges */
 .badgeNormal {
   background-color: #fef3c7;
   color: #b45309;
@@ -90,6 +97,7 @@
   font-weight: bold;
 }
 
+/* Botones */
 .btnCobrar {
   background-color: #10b981;
   color: white;
@@ -105,7 +113,51 @@
   background-color: #059669;
 }
 
-/* Modales e Inputs */
+/* Arqueo */
+.arqueoGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .arqueoGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.resumenList {
+  list-style: none;
+  padding: 0;
+}
+
+.resumenList li {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 1rem;
+}
+
+.btnCerrarCaja {
+  margin-top: 1.5rem;
+  width: 100%;
+  background-color: #ef4444;
+  color: white;
+  padding: 0.875rem;
+  border-radius: 0.5rem;
+  border: none;
+  font-weight: bold;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.btnCerrarCaja:hover {
+  background-color: #dc2626;
+}
+
+/* Modales */
 .modalOverlay {
   position: fixed;
   top: 0;
@@ -117,6 +169,7 @@
   align-items: center;
   justify-content: center;
   z-index: 50;
+  padding: 1rem;
 }
 
 .modalContent {
@@ -127,6 +180,30 @@
   max-width: 450px;
 }
 
+/* Inputs */
+.inputGroup {
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.input {
+  padding: 0.625rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  font-size: 1rem;
+  font-family: inherit;
+  width: 100%;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+/* Métodos de pago */
 .paymentMethods {
   display: flex;
   gap: 0.5rem;
@@ -140,9 +217,15 @@
   border: 2px solid #e5e7eb;
   border-radius: 0.5rem;
   background: white;
-  font-weight: 600;
   cursor: pointer;
+  font-weight: 600;
+  font-size: 0.875rem;
   transition: 0.2s;
+}
+
+.methodBtn:hover {
+  border-color: #3b82f6;
+  color: #3b82f6;
 }
 
 .methodActive {
@@ -151,57 +234,318 @@
   color: #1d4ed8;
 }
 
-.inputGroup {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+.vueltoBox {
+  background-color: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
   margin-bottom: 1rem;
-}
-
-.input {
-  padding: 0.75rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.375rem;
   font-size: 1rem;
 }
 
-.inputError {
-  border-color: #ef4444;
+.modalActions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  justify-content: flex-end;
 }
 
-/* Arqueo */
-.arqueoGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2rem;
+.btnCancelar {
+  background: white;
+  border: 1px solid #d1d5db;
+  padding: 0.625rem 1.25rem;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  font-weight: 600;
+  color: #374151;
 }
 
-.resumenList {
-  list-style: none;
-  padding: 0;
+.btnCancelar:hover {
+  background-color: #f3f4f6;
 }
 
-.resumenList li {
+/* ── HISTORIAL ──────────────────────────────────────────────────────────────── */
+
+.historialFiltros {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.filtroGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.filtroGroup label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.inputFecha {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+
+.btnBuscar {
+  background-color: #3b82f6;
+  color: white;
+  padding: 0.5rem 1.25rem;
+  border-radius: 0.375rem;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+  height: 38px;
+}
+
+.btnBuscar:hover {
+  background-color: #2563eb;
+}
+
+.historialResumen {
   display: flex;
   justify-content: space-between;
-  padding: 0.75rem 0;
-  border-bottom: 1px solid #e5e7eb;
-  font-size: 1.125rem;
+  align-items: center;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 0.75rem 1rem;
+  border-radius: 0.375rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  color: #374151;
 }
 
-.btnCerrarCaja {
-  background-color: #ef4444;
-  color: white;
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 0.5rem;
-  font-size: 1.125rem;
-  font-weight: bold;
+.totalDestacado {
+  color: #0369a1;
+}
+
+.nitBadge {
+  background-color: #f3f4f6;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-family: monospace;
+  color: #374151;
+}
+
+.btnVerFactura {
+  background-color: white;
+  color: #3b82f6;
+  border: 1px solid #3b82f6;
+  padding: 0.35rem 0.875rem;
+  border-radius: 0.375rem;
   cursor: pointer;
-  width: 100%;
-  margin-top: 1.5rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: 0.2s;
 }
 
-.btnCerrarCaja:hover {
-  background-color: #dc2626;
+.btnVerFactura:hover {
+  background-color: #eff6ff;
+}
+
+/* ── MODAL COMPROBANTE ──────────────────────────────────────────────────────── */
+
+.modalFacturaContent {
+  background: white;
+  border-radius: 0.5rem;
+  width: 100%;
+  max-width: 580px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.modalFacturaHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.modalFacturaHeader h2 {
+  font-size: 1rem;
+  font-weight: bold;
+  color: #111827;
+  margin-bottom: 0.25rem;
+}
+
+.modalFacturaSubtitle {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.modalFacturaBtns {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.btnImprimir {
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: 0.2s;
+}
+
+.btnImprimir:hover {
+  background-color: #2563eb;
+}
+
+/* ── CUERPO DEL COMPROBANTE ─────────────────────────────────────────────────── */
+
+.facturaBody {
+  overflow-y: auto;
+  padding: 1.5rem;
+  font-family: Arial, sans-serif;
+  font-size: 13px;
+  color: #111;
+}
+
+.facturaBody :global(.imp-empresa) {
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.facturaBody :global(.imp-empresa h2) {
+  font-size: 15px;
+  font-weight: bold;
+  margin-bottom: 4px;
+  color: #111827;
+}
+
+.facturaBody :global(.imp-empresa p) {
+  color: #6b7280;
+  font-size: 11px;
+  margin: 2px 0;
+}
+
+.facturaBody :global(.imp-numero) {
+  font-size: 12px;
+  font-weight: bold;
+  color: #374151;
+  margin: 16px 0 20px;
+  letter-spacing: 0.02em;
+}
+
+.facturaBody :global(.imp-seccion) {
+  margin-bottom: 20px;
+}
+
+.facturaBody :global(.imp-seccion h3) {
+  font-size: 10px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #9ca3af;
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.facturaBody :global(.imp-fila) {
+  display: flex;
+  justify-content: space-between;
+  padding: 5px 0;
+  border-bottom: 1px solid #f9fafb;
+  font-size: 12px;
+}
+
+.facturaBody :global(.imp-fila span:first-child) {
+  color: #6b7280;
+}
+
+.facturaBody :global(table) {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.facturaBody :global(table th) {
+  text-align: left;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #9ca3af;
+  padding: 4px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.facturaBody :global(table th:last-child),
+.facturaBody :global(table td:last-child) {
+  text-align: right;
+}
+
+.facturaBody :global(table th:nth-child(2)),
+.facturaBody :global(table td:nth-child(2)) {
+  text-align: center;
+}
+
+.facturaBody :global(table th:nth-child(3)),
+.facturaBody :global(table td:nth-child(3)) {
+  text-align: right;
+}
+
+.facturaBody :global(table td) {
+  padding: 7px 0;
+  font-size: 12px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.facturaBody :global(.imp-totales) {
+  margin-top: 12px;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 12px;
+}
+
+.facturaBody :global(.imp-fila-total) {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  font-size: 12px;
+  color: #374151;
+}
+
+.facturaBody :global(.imp-fila-total span:first-child) {
+  color: #6b7280;
+}
+
+.facturaBody :global(.imp-total-final) {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  font-weight: bold;
+  color: #111827;
+  padding: 10px 0 6px;
+  border-top: 2px solid #111827;
+  margin-top: 8px;
+}
+
+.facturaBody :global(.imp-footer) {
+  margin-top: 20px;
+  border-top: 1px solid #f3f4f6;
+  padding-top: 12px;
+  font-size: 10px;
+  color: #9ca3af;
+}
+
+.facturaBody :global(.imp-footer p) {
+  margin: 2px 0;
 }

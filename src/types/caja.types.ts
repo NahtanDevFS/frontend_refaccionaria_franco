@@ -25,3 +25,32 @@ export interface RegistrarArqueoDTO {
   efectivo_contado: number;
   observaciones?: string;
 }
+
+// ─── NUEVO: Historial de Cobros ───────────────────────────────────────────────
+
+export interface DetalleFactura {
+  id_producto: number;
+  producto: string;
+  sku: string;
+  cantidad: number;
+  precio_unitario: number;
+  subtotal_linea: number;
+  monto_iva: number;
+}
+
+export interface HistorialCobro {
+  id_pago: number;
+  id_venta: number;
+  fecha_pago: string;
+  metodo_pago: "efectivo" | "tarjeta" | "transferencia";
+  monto: number;
+  referencia: string | null;
+  cliente: string;
+  nit: string | null;
+  direccion_cliente: string | null;
+  cajero: string;
+  subtotal: number;
+  descuento_monto: number;
+  total: number;
+  detalles: DetalleFactura[];
+}

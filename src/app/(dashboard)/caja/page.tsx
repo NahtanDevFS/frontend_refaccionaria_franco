@@ -1,39 +1,63 @@
 // src/app/(dashboard)/caja/page.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CajaService } from "@/services/caja.service";
-import { OrdenPendienteCaja, ResumenCaja } from "@/types/caja.types";
+import {
+  OrdenPendienteCaja,
+  ResumenCaja,
+  HistorialCobro,
+} from "@/types/caja.types";
 import styles from "./Caja.module.css";
 
+const EMPRESA = {
+  nombre: "TECNO STORE, S.A.",
+  nit: "123456-7",
+  direccion: "9a. Calle 5-56, Zona 1, Ciudad de Guatemala",
+  telefono: "(502) 2222-3333",
+  regimen: "Régimen de Pequeño Contribuyente / IVA incluido",
+};
+
 export default function CajaPage() {
-  const [tabActual, setTabActual] = useState<"cobros" | "arqueo">("cobros");
+  const [tabActual, setTabActual] = useState<"cobros" | "arqueo" | "historial">(
+    "cobros",
+  );
   const [cargando, setCargando] = useState(false);
 
-  // Estados Tab 1: Cobros
+  // Tab 1: Cobros
   const [pendientes, setPendientes] = useState<OrdenPendienteCaja[]>([]);
   const [modalCobro, setModalCobro] = useState(false);
   const [ordenSeleccionada, setOrdenSeleccionada] =
     useState<OrdenPendienteCaja | null>(null);
-
-  // Formulario Cobro
   const [metodoPago, setMetodoPago] = useState<
     "efectivo" | "tarjeta" | "transferencia"
   >("efectivo");
   const [monto, setMonto] = useState("");
   const [referencia, setReferencia] = useState("");
 
-  // Estados Tab 2: Arqueo
+  // Tab 2: Arqueo
   const [resumen, setResumen] = useState<ResumenCaja[]>([]);
   const [efectivoContado, setEfectivoContado] = useState("");
   const [obsArqueo, setObservacionesArqueo] = useState("");
 
+  // Tab 3: Historial
+  const [historial, setHistorial] = useState<HistorialCobro[]>([]);
+  const [fechaDesde, setFechaDesde] = useState(hoy());
+  const [fechaHasta, setFechaHasta] = useState(hoy());
+  const [modalFactura, setModalFactura] = useState<HistorialCobro | null>(null);
+  const facturaRef = useRef<HTMLDivElement>(null);
+
+  function hoy() {
+    return new Date().toISOString().split("T")[0];
+  }
+
   useEffect(() => {
     if (tabActual === "cobros") cargarPendientes();
     if (tabActual === "arqueo") cargarResumen();
+    if (tabActual === "historial") cargarHistorial();
   }, [tabActual]);
 
-  // --- Lógica Pestaña: COBROS ---
+  // Lógica Tab 1
   const cargarPendientes = async () => {
     try {
       setCargando(true);
@@ -56,14 +80,12 @@ export default function CajaPage() {
 
   const procesarPago = async () => {
     if (!ordenSeleccionada) return;
-    if (Number(monto) < ordenSeleccionada.total) {
+    if (Number(monto) < ordenSeleccionada.total)
       return alert("El monto ingresado es menor al total de la orden.");
-    }
-    if (metodoPago !== "efectivo" && !referencia) {
+    if (metodoPago !== "efectivo" && !referencia)
       return alert(
         "Debe ingresar un número de autorización o referencia para tarjeta/transferencia.",
       );
-    }
 
     try {
       await CajaService.registrarPago({
@@ -72,7 +94,7 @@ export default function CajaPage() {
         monto: Number(monto),
         referencia: referencia || undefined,
       });
-      alert("¡Pago registrado exitosamente!");
+      alert("Pago registrado exitosamente.");
       setModalCobro(false);
       cargarPendientes();
     } catch (error: any) {
@@ -80,7 +102,7 @@ export default function CajaPage() {
     }
   };
 
-  // --- Lógica Pestaña: ARQUEO ---
+  // Lógica Tab 2
   const cargarResumen = async () => {
     try {
       setCargando(true);
@@ -94,9 +116,8 @@ export default function CajaPage() {
   };
 
   const procesarArqueo = async () => {
-    if (!efectivoContado || Number(efectivoContado) < 0) {
+    if (!efectivoContado || Number(efectivoContado) < 0)
       return alert("Debe ingresar un monto válido de efectivo físico.");
-    }
 
     if (
       confirm(
@@ -112,16 +133,84 @@ export default function CajaPage() {
         setEfectivoContado("");
         setObservacionesArqueo("");
         cargarResumen();
-        // Opcional: Podrías forzar el cierre de sesión aquí si así lo requiere la empresa.
       } catch (error: any) {
         alert("Error: " + error.message);
       }
     }
   };
 
-  // Helper para el total de efectivo en sistema
   const efectivoSistema =
     resumen.find((r) => r.metodo_pago === "efectivo")?.total || 0;
+
+  // Lógica Tab 3
+  const cargarHistorial = async () => {
+    try {
+      setCargando(true);
+      const data = await CajaService.obtenerHistorial(fechaDesde, fechaHasta);
+      setHistorial(data);
+    } catch (error: any) {
+      alert("Error: " + error.message);
+    } finally {
+      setCargando(false);
+    }
+  };
+
+  const imprimirFactura = () => {
+    if (!facturaRef.current) return;
+    const contenido = facturaRef.current.innerHTML;
+    const ventana = window.open("", "_blank", "width=800,height=600");
+    if (!ventana) return;
+    ventana.document.write(`
+      <html>
+        <head>
+          <title>Comprobante de Pago</title>
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: Arial, sans-serif; font-size: 12px; padding: 32px; color: #111; }
+            h2 { font-size: 16px; }
+            .imp-empresa { margin-bottom: 20px; padding-bottom: 16px; border-bottom: 2px solid #111; }
+            .imp-empresa h2 { font-size: 17px; font-weight: bold; margin-bottom: 6px; }
+            .imp-empresa p { color: #555; margin: 2px 0; }
+            .imp-numero { font-size: 13px; font-weight: bold; margin: 16px 0 20px; }
+            .imp-seccion { margin-bottom: 20px; }
+            .imp-seccion h3 { font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em; color: #888; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid #e5e7eb; }
+            .imp-fila { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #f3f4f6; font-size: 12px; }
+            .imp-fila span:first-child { color: #555; }
+            table { width: 100%; border-collapse: collapse; }
+            table th { text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: #888; padding: 4px 0; border-bottom: 1px solid #e5e7eb; }
+            table th:last-child, table td:last-child { text-align: right; }
+            table th:nth-child(2), table td:nth-child(2) { text-align: center; }
+            table th:nth-child(3), table td:nth-child(3) { text-align: right; }
+            table td { padding: 6px 0; font-size: 12px; border-bottom: 1px solid #f3f4f6; }
+            .imp-totales { margin-top: 12px; }
+            .imp-fila-total { display: flex; justify-content: space-between; padding: 4px 0; font-size: 12px; }
+            .imp-fila-total span:first-child { color: #555; }
+            .imp-total-final { display: flex; justify-content: space-between; font-size: 15px; font-weight: bold; padding: 10px 0 6px; border-top: 2px solid #111; margin-top: 8px; }
+            .imp-footer { margin-top: 24px; color: #999; font-size: 10px; border-top: 1px solid #e5e7eb; padding-top: 12px; }
+          </style>
+        </head>
+        <body>${contenido}</body>
+      </html>
+    `);
+    ventana.document.close();
+    ventana.focus();
+    setTimeout(() => ventana.print(), 300);
+  };
+
+  const fmtQ = (n: number) => `Q ${n.toFixed(2)}`;
+  const fmtFecha = (iso: string) => new Date(iso).toLocaleString("es-GT");
+  const labelMetodo = (m: string) =>
+    m === "efectivo"
+      ? "Efectivo"
+      : m === "tarjeta"
+        ? "Tarjeta POS"
+        : "Transferencia";
+
+  const calcularIva = (cobro: HistorialCobro) => {
+    const baseImponible = cobro.total / 1.12;
+    const iva = cobro.total - baseImponible;
+    return { baseImponible, iva };
+  };
 
   return (
     <div className={styles.container}>
@@ -139,6 +228,12 @@ export default function CajaPage() {
           onClick={() => setTabActual("arqueo")}
         >
           Arqueo (Cierre de Caja)
+        </button>
+        <button
+          className={`${styles.tabBtn} ${tabActual === "historial" ? styles.tabActive : ""}`}
+          onClick={() => setTabActual("historial")}
+        >
+          Historial de Cobros
         </button>
       </div>
 
@@ -207,7 +302,7 @@ export default function CajaPage() {
             </div>
           )}
 
-          {/* VISTA 2: ARQUEO DE CAJA */}
+          {/* VISTA 2: ARQUEO */}
           {tabActual === "arqueo" && (
             <div className={styles.arqueoGrid}>
               <div className={styles.card}>
@@ -224,15 +319,10 @@ export default function CajaPage() {
                   {resumen.length === 0 ? (
                     <li>No hay cobros registrados hoy.</li>
                   ) : null}
-
                   {resumen.map((r, i) => (
                     <li key={i}>
                       <span style={{ textTransform: "capitalize" }}>
-                        {r.metodo_pago === "efectivo"
-                          ? "💵 Efectivo"
-                          : r.metodo_pago === "tarjeta"
-                            ? "💳 Tarjeta POS"
-                            : "🏦 Transferencia"}
+                        {labelMetodo(r.metodo_pago)}
                       </span>
                       <strong>Q {r.total.toFixed(2)}</strong>
                     </li>
@@ -258,7 +348,6 @@ export default function CajaPage() {
 
               <div className={styles.card}>
                 <h2 style={{ marginBottom: "1.5rem" }}>Cierre Físico</h2>
-
                 <div className={styles.inputGroup}>
                   <label style={{ fontWeight: "bold" }}>
                     Efectivo físico contado (Q):
@@ -272,7 +361,6 @@ export default function CajaPage() {
                     onChange={(e) => setEfectivoContado(e.target.value)}
                   />
                 </div>
-
                 <div
                   className={styles.inputGroup}
                   style={{ marginTop: "1rem" }}
@@ -286,7 +374,6 @@ export default function CajaPage() {
                     onChange={(e) => setObservacionesArqueo(e.target.value)}
                   />
                 </div>
-
                 <button
                   className={styles.btnCerrarCaja}
                   onClick={procesarArqueo}
@@ -294,6 +381,111 @@ export default function CajaPage() {
                   Registrar Arqueo y Cerrar Caja
                 </button>
               </div>
+            </div>
+          )}
+
+          {/* VISTA 3: HISTORIAL DE COBROS */}
+          {tabActual === "historial" && (
+            <div className={styles.card}>
+              <div className={styles.historialFiltros}>
+                <div className={styles.filtroGroup}>
+                  <label>Desde:</label>
+                  <input
+                    type="date"
+                    className={styles.inputFecha}
+                    value={fechaDesde}
+                    onChange={(e) => setFechaDesde(e.target.value)}
+                  />
+                </div>
+                <div className={styles.filtroGroup}>
+                  <label>Hasta:</label>
+                  <input
+                    type="date"
+                    className={styles.inputFecha}
+                    value={fechaHasta}
+                    onChange={(e) => setFechaHasta(e.target.value)}
+                  />
+                </div>
+                <button className={styles.btnBuscar} onClick={cargarHistorial}>
+                  Buscar
+                </button>
+              </div>
+
+              {historial.length > 0 && (
+                <div className={styles.historialResumen}>
+                  <span>
+                    <strong>{historial.length}</strong> cobros encontrados
+                  </span>
+                  <span>
+                    Total recaudado:{" "}
+                    <strong className={styles.totalDestacado}>
+                      Q {historial.reduce((s, h) => s + h.monto, 0).toFixed(2)}
+                    </strong>
+                  </span>
+                </div>
+              )}
+
+              {historial.length === 0 ? (
+                <p
+                  style={{
+                    textAlign: "center",
+                    color: "gray",
+                    padding: "2rem",
+                  }}
+                >
+                  No se encontraron cobros en el período seleccionado.
+                </p>
+              ) : (
+                <div style={{ overflowX: "auto" }}>
+                  <table className={styles.table}>
+                    <thead>
+                      <tr>
+                        <th>ID Pago</th>
+                        <th>Venta</th>
+                        <th>Fecha y Hora</th>
+                        <th>Cliente</th>
+                        <th>NIT</th>
+                        <th>Método</th>
+                        <th>Monto</th>
+                        <th>Cajero</th>
+                        <th>Comprobante</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {historial.map((h) => (
+                        <tr key={h.id_pago}>
+                          <td style={{ fontWeight: "bold" }}>#{h.id_pago}</td>
+                          <td>#{h.id_venta}</td>
+                          <td style={{ whiteSpace: "nowrap" }}>
+                            {fmtFecha(h.fecha_pago)}
+                          </td>
+                          <td>{h.cliente}</td>
+                          <td>
+                            <span className={styles.nitBadge}>
+                              {h.nit ?? "CF"}
+                            </span>
+                          </td>
+                          <td>{labelMetodo(h.metodo_pago)}</td>
+                          <td style={{ fontWeight: "bold" }}>
+                            {fmtQ(h.monto)}
+                          </td>
+                          <td style={{ fontSize: "0.8rem", color: "#6b7280" }}>
+                            {h.cajero}
+                          </td>
+                          <td>
+                            <button
+                              className={styles.btnVerFactura}
+                              onClick={() => setModalFactura(h)}
+                            >
+                              Ver
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
         </>
@@ -313,24 +505,19 @@ export default function CajaPage() {
 
             <label style={{ fontWeight: "bold" }}>Método de Pago:</label>
             <div className={styles.paymentMethods}>
-              <button
-                className={`${styles.methodBtn} ${metodoPago === "efectivo" ? styles.methodActive : ""}`}
-                onClick={() => setMetodoPago("efectivo")}
-              >
-                💵 Efectivo
-              </button>
-              <button
-                className={`${styles.methodBtn} ${metodoPago === "tarjeta" ? styles.methodActive : ""}`}
-                onClick={() => setMetodoPago("tarjeta")}
-              >
-                💳 Tarjeta
-              </button>
-              <button
-                className={`${styles.methodBtn} ${metodoPago === "transferencia" ? styles.methodActive : ""}`}
-                onClick={() => setMetodoPago("transferencia")}
-              >
-                🏦 Transf.
-              </button>
+              {(["efectivo", "tarjeta", "transferencia"] as const).map((m) => (
+                <button
+                  key={m}
+                  className={`${styles.methodBtn} ${metodoPago === m ? styles.methodActive : ""}`}
+                  onClick={() => setMetodoPago(m)}
+                >
+                  {m === "efectivo"
+                    ? "Efectivo"
+                    : m === "tarjeta"
+                      ? "Tarjeta"
+                      : "Transferencia"}
+                </button>
+              ))}
             </div>
 
             <div className={styles.inputGroup}>
@@ -349,40 +536,188 @@ export default function CajaPage() {
                 <input
                   type="text"
                   className={styles.input}
-                  placeholder="Ej. 049582"
+                  placeholder="Ej. 123456"
                   value={referencia}
                   onChange={(e) => setReferencia(e.target.value)}
                 />
               </div>
             )}
 
-            <div
-              style={{
-                display: "flex",
-                gap: "1rem",
-                marginTop: "2rem",
-                justifyContent: "flex-end",
-              }}
-            >
+            {metodoPago === "efectivo" &&
+              Number(monto) > ordenSeleccionada.total && (
+                <div className={styles.vueltoBox}>
+                  Vuelto a entregar:{" "}
+                  <strong>
+                    Q {(Number(monto) - ordenSeleccionada.total).toFixed(2)}
+                  </strong>
+                </div>
+              )}
+
+            <div className={styles.modalActions}>
               <button
+                className={styles.btnCancelar}
                 onClick={() => setModalCobro(false)}
-                style={{
-                  padding: "0.75rem 1rem",
-                  border: "1px solid #ccc",
-                  background: "white",
-                  borderRadius: "0.5rem",
-                  cursor: "pointer",
-                }}
               >
                 Cancelar
               </button>
-              <button
-                className={styles.btnCobrar}
-                style={{ padding: "0.75rem 1.5rem", fontSize: "1rem" }}
-                onClick={procesarPago}
-              >
-                Confirmar Cobro
+              <button className={styles.btnCobrar} onClick={procesarPago}>
+                Registrar Cobro
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL COMPROBANTE */}
+      {modalFactura && (
+        <div
+          className={styles.modalOverlay}
+          onClick={() => setModalFactura(null)}
+        >
+          <div
+            className={styles.modalFacturaContent}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className={styles.modalFacturaHeader}>
+              <div>
+                <h2>Comprobante de Pago</h2>
+                <p className={styles.modalFacturaSubtitle}>
+                  Pago #{modalFactura.id_pago} — Venta #{modalFactura.id_venta}
+                </p>
+              </div>
+              <div className={styles.modalFacturaBtns}>
+                <button
+                  className={styles.btnImprimir}
+                  onClick={imprimirFactura}
+                >
+                  Imprimir
+                </button>
+                <button
+                  className={styles.btnCancelar}
+                  onClick={() => setModalFactura(null)}
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+
+            <div ref={facturaRef} className={styles.facturaBody}>
+              <div className="imp-empresa">
+                <h2>{EMPRESA.nombre}</h2>
+                <p>NIT: {EMPRESA.nit}</p>
+                <p>
+                  {EMPRESA.direccion} — Tel. {EMPRESA.telefono}
+                </p>
+                <p>{EMPRESA.regimen}</p>
+              </div>
+
+              <div className="imp-numero">
+                Comprobante No. {String(modalFactura.id_pago).padStart(8, "0")}
+              </div>
+
+              <div className="imp-seccion">
+                <h3>Datos del cobro</h3>
+                <div className="imp-fila">
+                  <span>Fecha</span>
+                  <span>{fmtFecha(modalFactura.fecha_pago)}</span>
+                </div>
+                <div className="imp-fila">
+                  <span>Cliente</span>
+                  <span>{modalFactura.cliente}</span>
+                </div>
+                <div className="imp-fila">
+                  <span>NIT</span>
+                  <span>{modalFactura.nit ?? "CF"}</span>
+                </div>
+                {modalFactura.direccion_cliente && (
+                  <div className="imp-fila">
+                    <span>Dirección</span>
+                    <span>{modalFactura.direccion_cliente}</span>
+                  </div>
+                )}
+                <div className="imp-fila">
+                  <span>Atendido por</span>
+                  <span>{modalFactura.cajero}</span>
+                </div>
+                <div className="imp-fila">
+                  <span>Forma de pago</span>
+                  <span>{labelMetodo(modalFactura.metodo_pago)}</span>
+                </div>
+                {modalFactura.referencia && (
+                  <div className="imp-fila">
+                    <span>No. Autorización</span>
+                    <span>{modalFactura.referencia}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="imp-seccion">
+                <h3>Detalle</h3>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Descripción</th>
+                      <th>Cant.</th>
+                      <th>Precio</th>
+                      <th>Subtotal</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {modalFactura.detalles.map((d, i) => (
+                      <tr key={i}>
+                        <td>
+                          {d.producto}
+                          <br />
+                          <small style={{ color: "#9ca3af" }}>
+                            SKU: {d.sku}
+                          </small>
+                        </td>
+                        <td style={{ textAlign: "center" }}>{d.cantidad}</td>
+                        <td style={{ textAlign: "right" }}>
+                          {fmtQ(d.precio_unitario)}
+                        </td>
+                        <td style={{ textAlign: "right" }}>
+                          {fmtQ(d.subtotal_linea)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {(() => {
+                const { baseImponible, iva } = calcularIva(modalFactura);
+                return (
+                  <div className="imp-totales">
+                    {modalFactura.descuento_monto > 0 && (
+                      <div className="imp-fila-total">
+                        <span>Descuento</span>
+                        <span>- {fmtQ(modalFactura.descuento_monto)}</span>
+                      </div>
+                    )}
+                    <div className="imp-fila-total">
+                      <span>Base imponible (sin IVA)</span>
+                      <span>{fmtQ(baseImponible)}</span>
+                    </div>
+                    <div className="imp-fila-total">
+                      <span>IVA (12%)</span>
+                      <span>{fmtQ(iva)}</span>
+                    </div>
+                    <div className="imp-total-final">
+                      <span>Total</span>
+                      <span>{fmtQ(modalFactura.total)}</span>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              <div className="imp-footer">
+                <p>
+                  Conforme al Decreto 27-92 (Ley del IVA), Guatemala. IVA
+                  incluido al 12%.
+                </p>
+                <p>Documento interno — comprobante de pago.</p>
+              </div>
             </div>
           </div>
         </div>

@@ -4,6 +4,7 @@ import {
   ResumenCaja,
   RegistrarPagoDTO,
   RegistrarArqueoDTO,
+  HistorialCobro,
 } from "../types/caja.types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
@@ -68,6 +69,25 @@ export const CajaService = {
     const data = await res.json();
     if (!res.ok || !data.success)
       throw new Error(data.message || "Error al registrar arqueo");
+    return data.data;
+  },
+
+  // ─── NUEVO ────────────────────────────────────────────────────────────────
+  async obtenerHistorial(
+    fechaDesde?: string,
+    fechaHasta?: string,
+  ): Promise<HistorialCobro[]> {
+    const token = obtenerToken();
+    const params = new URLSearchParams();
+    if (fechaDesde) params.append("desde", fechaDesde);
+    if (fechaHasta) params.append("hasta", fechaHasta);
+
+    const res = await fetch(`${API_URL}/caja/historial?${params.toString()}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success)
+      throw new Error(data.message || "Error al obtener historial de cobros");
     return data.data;
   },
 };
