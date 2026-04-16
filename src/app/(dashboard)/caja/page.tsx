@@ -10,14 +10,6 @@ import {
 } from "@/types/caja.types";
 import styles from "./Caja.module.css";
 
-const EMPRESA = {
-  nombre: "TECNO STORE, S.A.",
-  nit: "123456-7",
-  direccion: "9a. Calle 5-56, Zona 1, Ciudad de Guatemala",
-  telefono: "(502) 2222-3333",
-  regimen: "Régimen de Pequeño Contribuyente / IVA incluido",
-};
-
 export default function CajaPage() {
   const [tabActual, setTabActual] = useState<"cobros" | "arqueo" | "historial">(
     "cobros",
@@ -603,12 +595,7 @@ export default function CajaPage() {
 
             <div ref={facturaRef} className={styles.facturaBody}>
               <div className="imp-empresa">
-                <h2>{EMPRESA.nombre}</h2>
-                <p>NIT: {EMPRESA.nit}</p>
-                <p>
-                  {EMPRESA.direccion} — Tel. {EMPRESA.telefono}
-                </p>
-                <p>{EMPRESA.regimen}</p>
+                <h2>Refaccionaria Franco</h2>
               </div>
 
               <div className="imp-numero">
