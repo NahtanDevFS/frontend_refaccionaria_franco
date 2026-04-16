@@ -7,7 +7,6 @@ import { InventarioService } from "@/services/inventario.service";
 import { InventarioBodega, RecepcionPendiente } from "@/types/bodega.types";
 import styles from "./Bodega.module.css";
 
-// Lista temporal de sucursales para el select de destino
 const SUCURSALES = [
   { id: 1, nombre: "Sucursal Chiquimula Principal" },
   { id: 2, nombre: "Sede Central - Puerto Barrios" },
@@ -24,10 +23,8 @@ export default function BodegaPage() {
   >("stock");
   const [cargando, setCargando] = useState(false);
 
-  // Tab 1: Stock local
   const [inventario, setInventario] = useState<InventarioBodega[]>([]);
 
-  // Filtros de Bodega
   const [categorias, setCategorias] = useState<
     { id_categoria: number; nombre: string }[]
   >([]);
@@ -49,7 +46,6 @@ export default function BodegaPage() {
     id_modelo: "",
   });
 
-  // Tab 2: Emitir Despacho (Traslado)
   const [idSucursalDestino, setIdSucursalDestino] = useState("");
   const [detallesDespacho, setDetallesDespacho] = useState<
     { id_producto: number; cantidad: number }[]
@@ -57,10 +53,8 @@ export default function BodegaPage() {
   const [prodSelectTraslado, setProdSelectTraslado] = useState("");
   const [cantSelectTraslado, setCantSelectTraslado] = useState(1);
 
-  // Tab 3: Recepciones
   const [recepciones, setRecepciones] = useState<RecepcionPendiente[]>([]);
 
-  // Tab 4: Ajustes
   const [ajuste, setAjuste] = useState({
     id_producto: "",
     tipo: "ajuste_negativo",
@@ -68,21 +62,16 @@ export default function BodegaPage() {
     motivo: "",
   });
 
-  // Modales
   const [modalDetalleAbierto, setModalDetalleAbierto] = useState(false);
   const [productoDetalle, setProductoDetalle] =
     useState<InventarioBodega | null>(null);
 
-  // <-- NUEVO: Modal de Vehículos Compatibles
   const [modalCompatAbierto, setModalCompatAbierto] = useState(false);
   const [productoCompatSelect, setProductoCompatSelect] =
     useState<InventarioBodega | null>(null);
 
-  // Efecto Inicial
   useEffect(() => {
     cargarInventario();
-
-    // Cargar Catálogos Globales
     InventarioService.obtenerCategorias()
       .then(setCategorias)
       .catch(console.error);
@@ -98,7 +87,6 @@ export default function BodegaPage() {
     if (tabActual === "recibir") cargarRecepciones();
   }, [tabActual]);
 
-  // Cargar Modelos al seleccionar una Marca de Vehículo
   useEffect(() => {
     if (busquedaVehiculo.id_marca) {
       InventarioService.obtenerModelosPorMarca(
@@ -111,7 +99,6 @@ export default function BodegaPage() {
     }
   }, [busquedaVehiculo.id_marca]);
 
-  // Funciones Lógicas
   const cargarInventario = async (filtros?: any) => {
     try {
       setCargando(true);
@@ -387,9 +374,11 @@ export default function BodegaPage() {
                     <th>Producto</th>
                     <th>Categoría</th>
                     <th>Marca</th>
+                    <th>Costo</th>
+                    <th>Precio Venta</th>
                     <th>Stock Local</th>
                     <th>Estado</th>
-                    <th>Vehículos Compatibles</th>
+                    <th>Compatibilidad</th>
                     <th>Otras Sucursales</th>
                   </tr>
                 </thead>
@@ -411,6 +400,15 @@ export default function BodegaPage() {
                           {item.marca_repuesto || "Genérica"}
                         </span>
                       </td>
+
+                      {/* NUEVAS COLUMNAS */}
+                      <td style={{ color: "#475569" }}>
+                        Q {item.costo.toFixed(2)}
+                      </td>
+                      <td style={{ color: "#047857", fontWeight: "500" }}>
+                        Q {item.precio_venta.toFixed(2)}
+                      </td>
+
                       <td style={{ fontWeight: "bold" }}>
                         {item.cantidad_actual}
                       </td>
@@ -436,7 +434,7 @@ export default function BodegaPage() {
                             setModalCompatAbierto(true);
                           }}
                         >
-                          Ver Vehículos
+                          Vehículos
                         </button>
                       </td>
                       <td>
@@ -463,7 +461,7 @@ export default function BodegaPage() {
                   {inventario.length === 0 && (
                     <tr>
                       <td
-                        colSpan={8}
+                        colSpan={10}
                         style={{ textAlign: "center", padding: "2rem" }}
                       >
                         No se encontraron resultados para los filtros aplicados.

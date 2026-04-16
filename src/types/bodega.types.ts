@@ -1,5 +1,4 @@
 // src/types/bodega.types.ts
-
 export interface InventarioBodega {
   id_inventario: number;
   id_producto: number;
@@ -13,6 +12,9 @@ export interface InventarioBodega {
 
   categoria?: string;
   marca_repuesto?: string;
+  precio_venta: number;
+  costo: number;
+
   compatibilidades: {
     marca: string | null;
     modelo: string | null;
