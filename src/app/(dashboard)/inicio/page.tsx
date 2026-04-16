@@ -99,7 +99,11 @@ export default function InicioPage() {
     setLoadingRend(true);
     setErrorRend("");
     try {
-      const idSuc = sucursalFiltro === "" ? undefined : Number(sucursalFiltro);
+      const idSuc = esRolGlobal(usuario.rol)
+        ? sucursalFiltro === ""
+          ? undefined
+          : Number(sucursalFiltro)
+        : usuario.id_sucursal;
       const [rend, cons] = await Promise.all([
         MetaService.obtenerRendimientoMensual(idSuc),
         MetaService.obtenerConsolidado(idSuc),
@@ -311,11 +315,13 @@ export default function InicioPage() {
                   <div className={styles.consolidadoCard}>
                     <div className={styles.consolidadoTitle}>
                       Consolidado del mes —{" "}
-                      {sucursalFiltro === ""
-                        ? "Todas las sucursales"
-                        : sucursales.find(
-                            (s) => s.id_sucursal === sucursalFiltro,
-                          )?.nombre || "Sucursal"}
+                      {rolGlobal
+                        ? sucursalFiltro === ""
+                          ? "Todas las sucursales"
+                          : sucursales.find(
+                              (s) => s.id_sucursal === sucursalFiltro,
+                            )?.nombre || "Sucursal"
+                        : rendimientos[0]?.nombre_sucursal || "Mi Sucursal"}
                     </div>
                     <div className={styles.consolidadoStats}>
                       <div className={styles.consolidadoStat}>
