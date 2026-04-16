@@ -16,8 +16,21 @@ function obtenerToken(): string {
 }
 
 export const BodegaService = {
-  async obtenerInventario(): Promise<InventarioBodega[]> {
-    const res = await fetch(`${API_URL}/bodega/inventario`, {
+  // Acepta parámetros de filtro y los adjunta a la URL
+  async obtenerInventario(filtros?: any): Promise<InventarioBodega[]> {
+    let queryParams = "";
+    if (filtros) {
+      const params = new URLSearchParams();
+      if (filtros.termino) params.append("termino", filtros.termino);
+      if (filtros.id_categoria)
+        params.append("id_categoria", filtros.id_categoria);
+      if (filtros.id_marca) params.append("id_marca", filtros.id_marca);
+      if (filtros.id_modelo_vehiculo)
+        params.append("id_modelo_vehiculo", filtros.id_modelo_vehiculo);
+      queryParams = `?${params.toString()}`;
+    }
+
+    const res = await fetch(`${API_URL}/bodega/inventario${queryParams}`, {
       headers: { Authorization: `Bearer ${obtenerToken()}` },
     });
     const data = await res.json();

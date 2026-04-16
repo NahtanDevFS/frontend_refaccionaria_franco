@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { BodegaService } from "@/services/bodega.service";
+import { InventarioService } from "@/services/inventario.service";
 import { InventarioBodega, RecepcionPendiente } from "@/types/bodega.types";
 import styles from "./Bodega.module.css";
 
@@ -25,6 +26,28 @@ export default function BodegaPage() {
 
   // Tab 1: Stock local
   const [inventario, setInventario] = useState<InventarioBodega[]>([]);
+
+  // Filtros de Bodega
+  const [categorias, setCategorias] = useState<
+    { id_categoria: number; nombre: string }[]
+  >([]);
+  const [marcasRepuesto, setMarcasRepuesto] = useState<
+    { id_marca: number; nombre: string }[]
+  >([]);
+  const [marcasVehiculo, setMarcasVehiculo] = useState<
+    { id_marca_vehiculo: number; nombre: string }[]
+  >([]);
+  const [modelosVehiculo, setModelosVehiculo] = useState<
+    { id_modelo: number; nombre: string }[]
+  >([]);
+
+  const [filtroTermino, setFiltroTermino] = useState("");
+  const [filtroCategoria, setFiltroCategoria] = useState("");
+  const [filtroMarcaRepuesto, setFiltroMarcaRepuesto] = useState("");
+  const [busquedaVehiculo, setBusquedaVehiculo] = useState({
+    id_marca: "",
+    id_modelo: "",
+  });
 
   // Tab 2: Emitir Despacho (Traslado)
   const [idSucursalDestino, setIdSucursalDestino] = useState("");
@@ -50,24 +73,67 @@ export default function BodegaPage() {
   const [productoDetalle, setProductoDetalle] =
     useState<InventarioBodega | null>(null);
 
+  // Efecto Inicial
   useEffect(() => {
-    cargarInventario(); // Se carga siempre porque lo usamos para los selects
+    cargarInventario();
+
+    // Cargar Catálogos Globales
+    InventarioService.obtenerCategorias()
+      .then(setCategorias)
+      .catch(console.error);
+    InventarioService.obtenerMarcasRepuesto()
+      .then(setMarcasRepuesto)
+      .catch(console.error);
+    InventarioService.obtenerMarcasVehiculo()
+      .then(setMarcasVehiculo)
+      .catch(console.error);
   }, []);
 
   useEffect(() => {
     if (tabActual === "recibir") cargarRecepciones();
   }, [tabActual]);
 
-  const cargarInventario = async () => {
+  // Cargar Modelos al seleccionar una Marca de Vehículo
+  useEffect(() => {
+    if (busquedaVehiculo.id_marca) {
+      InventarioService.obtenerModelosPorMarca(
+        parseInt(busquedaVehiculo.id_marca),
+      )
+        .then(setModelosVehiculo)
+        .catch(console.error);
+    } else {
+      setModelosVehiculo([]);
+    }
+  }, [busquedaVehiculo.id_marca]);
+
+  // Funciones Lógicas
+  const cargarInventario = async (filtros?: any) => {
     try {
       setCargando(true);
-      const data = await BodegaService.obtenerInventario();
+      const data = await BodegaService.obtenerInventario(filtros);
       setInventario(data);
     } catch (err: any) {
       alert(err.message);
     } finally {
       setCargando(false);
     }
+  };
+
+  const aplicarFiltros = () => {
+    cargarInventario({
+      termino: filtroTermino,
+      id_categoria: filtroCategoria,
+      id_marca: filtroMarcaRepuesto,
+      id_modelo_vehiculo: busquedaVehiculo.id_modelo,
+    });
+  };
+
+  const limpiarFiltros = () => {
+    setFiltroTermino("");
+    setFiltroCategoria("");
+    setFiltroMarcaRepuesto("");
+    setBusquedaVehiculo({ id_marca: "", id_modelo: "" });
+    cargarInventario();
   };
 
   const cargarRecepciones = async () => {
@@ -82,7 +148,6 @@ export default function BodegaPage() {
     }
   };
 
-  // Lógica Emisión
   const agregarAlDespacho = () => {
     if (!prodSelectTraslado || cantSelectTraslado < 1) return;
     const invLocal = inventario.find(
@@ -116,13 +181,12 @@ export default function BodegaPage() {
       alert("Despacho emitido y mercadería descontada del inventario.");
       setDetallesDespacho([]);
       setIdSucursalDestino("");
-      cargarInventario(); // Refrescar stock
+      cargarInventario();
     } catch (err: any) {
       alert("Error: " + err.message);
     }
   };
 
-  // Lógica Recepción
   const confirmarLlegada = async (id_despacho: number) => {
     if (
       confirm(
@@ -133,14 +197,13 @@ export default function BodegaPage() {
         await BodegaService.confirmarRecepcion(id_despacho);
         alert("¡Recepción confirmada e inventario actualizado!");
         cargarRecepciones();
-        cargarInventario(); // Refrescar stock
+        cargarInventario();
       } catch (err: any) {
         alert("Error: " + err.message);
       }
     }
   };
 
-  // Lógica Ajuste
   const procesarAjuste = async () => {
     if (!ajuste.id_producto || !ajuste.motivo || ajuste.cantidad < 1) {
       return alert("Complete todos los campos del ajuste correctamente.");
@@ -159,7 +222,7 @@ export default function BodegaPage() {
         cantidad: 1,
         motivo: "",
       });
-      cargarInventario(); // Refrescar stock
+      cargarInventario();
     } catch (err: any) {
       alert("Error: " + err.message);
     }
@@ -196,62 +259,185 @@ export default function BodegaPage() {
         </button>
       </div>
 
-      {cargando && <p>Cargando información...</p>}
-
       {/* TAB 1: STOCK */}
-      {tabActual === "stock" && !cargando && (
+      {tabActual === "stock" && (
         <div className={styles.card}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>SKU</th>
-                <th>Producto</th>
-                <th>Stock Local</th>
-                <th>Estado</th>
-                <th>Otras Sucursales</th>
-              </tr>
-            </thead>
-            <tbody>
-              {inventario.map((item) => (
-                <tr
-                  key={item.id_producto}
-                  className={item.requiere_reorden ? styles.rowAlert : ""}
+          <div className={styles.filterSection}>
+            <h3
+              style={{ marginTop: 0, marginBottom: "1rem", fontSize: "1.1rem" }}
+            >
+              Filtros de Búsqueda
+            </h3>
+            <div className={styles.filterGrid}>
+              <div className={styles.formGroup}>
+                <label className={styles.label}>Buscar por Nombre o SKU</label>
+                <input
+                  type="text"
+                  className={styles.input}
+                  placeholder="Ej. FRIC-001..."
+                  value={filtroTermino}
+                  onChange={(e) => setFiltroTermino(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && aplicarFiltros()}
+                />
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.label}>Categoría</label>
+                <select
+                  className={styles.select}
+                  value={filtroCategoria}
+                  onChange={(e) => setFiltroCategoria(e.target.value)}
                 >
-                  <td>{item.sku}</td>
-                  <td>{item.nombre}</td>
-                  <td style={{ fontWeight: "bold" }}>{item.cantidad_actual}</td>
-                  <td>
-                    {item.requiere_reorden ? (
-                      <span className={styles.badgeWarning}>
-                        Reorden ({item.punto_reorden})
-                      </span>
-                    ) : (
-                      <span className={styles.badgeOk}>Suficiente</span>
-                    )}
-                  </td>
-                  <td>
-                    {item.stock_otras_sucursales} und
-                    {item.stock_otras_sucursales > 0 && (
-                      <button
-                        className={styles.btnSecondary}
-                        style={{
-                          marginLeft: "10px",
-                          padding: "0.25rem 0.5rem",
-                          fontSize: "0.75rem",
-                        }}
-                        onClick={() => {
-                          setProductoDetalle(item);
-                          setModalDetalleAbierto(true);
-                        }}
-                      >
-                        Ver
-                      </button>
-                    )}
-                  </td>
+                  <option value="">Todas las categorías</option>
+                  {categorias.map((c) => (
+                    <option key={c.id_categoria} value={c.id_categoria}>
+                      {c.nombre}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.label}>Marca Repuesto</label>
+                <select
+                  className={styles.select}
+                  value={filtroMarcaRepuesto}
+                  onChange={(e) => setFiltroMarcaRepuesto(e.target.value)}
+                >
+                  <option value="">Todas las marcas</option>
+                  {marcasRepuesto.map((m) => (
+                    <option key={m.id_marca} value={m.id_marca}>
+                      {m.nombre}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.label}>Vehículo (Marca)</label>
+                <select
+                  className={styles.select}
+                  value={busquedaVehiculo.id_marca}
+                  onChange={(e) =>
+                    setBusquedaVehiculo({
+                      ...busquedaVehiculo,
+                      id_marca: e.target.value,
+                      id_modelo: "",
+                    })
+                  }
+                >
+                  <option value="">Seleccione...</option>
+                  {marcasVehiculo.map((m) => (
+                    <option
+                      key={m.id_marca_vehiculo}
+                      value={m.id_marca_vehiculo}
+                    >
+                      {m.nombre.toUpperCase()}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.label}>Vehículo (Modelo)</label>
+                <select
+                  className={styles.select}
+                  disabled={!busquedaVehiculo.id_marca}
+                  value={busquedaVehiculo.id_modelo}
+                  onChange={(e) =>
+                    setBusquedaVehiculo({
+                      ...busquedaVehiculo,
+                      id_modelo: e.target.value,
+                    })
+                  }
+                >
+                  <option value="">Todos los modelos...</option>
+                  {modelosVehiculo.map((m) => (
+                    <option key={m.id_modelo} value={m.id_modelo}>
+                      {m.nombre.toUpperCase()}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className={styles.filterActions}>
+              <button className={styles.btnSecondary} onClick={limpiarFiltros}>
+                Limpiar
+              </button>
+              <button className={styles.btnPrimary} onClick={aplicarFiltros}>
+                Buscar
+              </button>
+            </div>
+          </div>
+
+          {cargando ? (
+            <p>Cargando información...</p>
+          ) : (
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th>SKU</th>
+                  <th>Producto</th>
+                  <th>Stock Local</th>
+                  <th>Estado</th>
+                  <th>Otras Sucursales</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {inventario.map((item) => (
+                  <tr
+                    key={item.id_inventario}
+                    className={item.requiere_reorden ? styles.rowAlert : ""}
+                  >
+                    <td>{item.sku}</td>
+                    <td>{item.nombre}</td>
+                    <td style={{ fontWeight: "bold" }}>
+                      {item.cantidad_actual}
+                    </td>
+                    <td>
+                      {item.requiere_reorden ? (
+                        <span className={styles.badgeWarning}>
+                          Reorden ({item.punto_reorden})
+                        </span>
+                      ) : (
+                        <span className={styles.badgeOk}>Suficiente</span>
+                      )}
+                    </td>
+                    <td>
+                      {item.stock_otras_sucursales} und
+                      {item.stock_otras_sucursales > 0 && (
+                        <button
+                          className={styles.btnSecondary}
+                          style={{
+                            marginLeft: "10px",
+                            padding: "0.25rem 0.5rem",
+                            fontSize: "0.75rem",
+                          }}
+                          onClick={() => {
+                            setProductoDetalle(item);
+                            setModalDetalleAbierto(true);
+                          }}
+                        >
+                          Ver
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+                {inventario.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={5}
+                      style={{ textAlign: "center", padding: "2rem" }}
+                    >
+                      No se encontraron resultados para los filtros aplicados.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          )}
         </div>
       )}
 
@@ -478,6 +664,7 @@ export default function BodegaPage() {
           </button>
         </div>
       )}
+
       {/* MODAL DETALLE OTRAS SUCURSALES */}
       {modalDetalleAbierto && productoDetalle && (
         <div className={styles.modalOverlay}>
