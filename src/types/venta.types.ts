@@ -1,3 +1,5 @@
+// src/types/venta.types.ts
+
 export interface Producto {
   id_producto: number;
   sku: string;
@@ -45,6 +47,7 @@ export interface VentaResumen {
 }
 
 export interface FiltrosHistorialVentas {
+  id_venta?: number | string; // NUEVO
   fechaInicio?: string;
   fechaFin?: string;
   id_vendedor?: number | string;

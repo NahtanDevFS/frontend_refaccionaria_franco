@@ -8,7 +8,6 @@ import {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
 
-// Función auxiliar sencilla para leer cookies en el cliente
 function obtenerToken(): string {
   const match = document.cookie.match(new RegExp("(^| )token=([^;]+)"));
   if (match) return match[2];
@@ -22,24 +21,21 @@ export const VentaService = {
     const token = obtenerToken();
     let url = `${API_URL}/ventas`;
 
-    // Construir los query params si existen filtros
     if (filtros) {
       const params = new URLSearchParams();
+      if (filtros.id_venta)
+        params.append("id_venta", filtros.id_venta.toString()); // NUEVO
       if (filtros.fechaInicio)
         params.append("fechaInicio", filtros.fechaInicio);
       if (filtros.fechaFin) params.append("fechaFin", filtros.fechaFin);
       if (filtros.id_vendedor)
         params.append("id_vendedor", filtros.id_vendedor.toString());
       if (filtros.estado) params.append("estado", filtros.estado);
-
-      // 👇 Añadimos los parámetros de paginación
       if (filtros.page) params.append("page", filtros.page.toString());
       if (filtros.limit) params.append("limit", filtros.limit.toString());
 
       const queryString = params.toString();
-      if (queryString) {
-        url += `?${queryString}`;
-      }
+      if (queryString) url += `?${queryString}`;
     }
 
     const response = await fetch(url, {
@@ -47,8 +43,6 @@ export const VentaService = {
     });
 
     if (!response.ok) throw new Error("Error al obtener las ventas");
-
-    // 👇 Ahora devolvemos TODO el objeto (success, data y meta)
     return response.json();
   },
 
@@ -56,20 +50,16 @@ export const VentaService = {
     { id_empleado: number; nombre: string; apellido: string }[]
   > {
     const token = obtenerToken();
-    // Nota: Deberás asegurarte de tener este endpoint o uno similar en tu backend
     const response = await fetch(`${API_URL}/ventas/vendedores/activos`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-
     if (!response.ok) throw new Error("Error al obtener vendedores");
-
     const data = await response.json();
     return data.data || data;
   },
 
   async crearVenta(data: CrearVentaDTO): Promise<void> {
     const token = obtenerToken();
-    // OJO: Tu backend espera la creación en /ventas/mostrador, no en /ventas
     const response = await fetch(`${API_URL}/ventas/mostrador`, {
       method: "POST",
       headers: {
@@ -78,7 +68,6 @@ export const VentaService = {
       },
       body: JSON.stringify(data),
     });
-
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.message || "Error al procesar la venta");
@@ -104,13 +93,11 @@ export const VentaService = {
   async obtenerRepartidores(): Promise<
     { id_empleado: number; nombre: string; apellido: string }[]
   > {
-    const token = document.cookie.match(new RegExp("(^| )token=([^;]+)"))?.[2];
+    const token =
+      document.cookie.match(new RegExp("(^| )token=([^;]+)"))?.[2] ?? "";
     const response = await fetch(`${API_URL}/ventas/repartidores/activos`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers: { Authorization: `Bearer ${token}` },
     });
-
     if (!response.ok) throw new Error("Error al obtener repartidores");
     return response.json();
   },
