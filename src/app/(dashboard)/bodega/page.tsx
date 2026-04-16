@@ -68,9 +68,14 @@ export default function BodegaPage() {
     motivo: "",
   });
 
-  // Modal de Detalle de Sucursales
+  // Modales
   const [modalDetalleAbierto, setModalDetalleAbierto] = useState(false);
   const [productoDetalle, setProductoDetalle] =
+    useState<InventarioBodega | null>(null);
+
+  // <-- NUEVO: Modal de Vehículos Compatibles
+  const [modalCompatAbierto, setModalCompatAbierto] = useState(false);
+  const [productoCompatSelect, setProductoCompatSelect] =
     useState<InventarioBodega | null>(null);
 
   // Efecto Inicial
@@ -374,69 +379,100 @@ export default function BodegaPage() {
           {cargando ? (
             <p>Cargando información...</p>
           ) : (
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th>SKU</th>
-                  <th>Producto</th>
-                  <th>Stock Local</th>
-                  <th>Estado</th>
-                  <th>Otras Sucursales</th>
-                </tr>
-              </thead>
-              <tbody>
-                {inventario.map((item) => (
-                  <tr
-                    key={item.id_inventario}
-                    className={item.requiere_reorden ? styles.rowAlert : ""}
-                  >
-                    <td>{item.sku}</td>
-                    <td>{item.nombre}</td>
-                    <td style={{ fontWeight: "bold" }}>
-                      {item.cantidad_actual}
-                    </td>
-                    <td>
-                      {item.requiere_reorden ? (
-                        <span className={styles.badgeWarning}>
-                          Reorden ({item.punto_reorden})
+            <div style={{ overflowX: "auto" }}>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>SKU</th>
+                    <th>Producto</th>
+                    <th>Categoría</th>
+                    <th>Marca</th>
+                    <th>Stock Local</th>
+                    <th>Estado</th>
+                    <th>Vehículos Compatibles</th>
+                    <th>Otras Sucursales</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {inventario.map((item) => (
+                    <tr
+                      key={item.id_inventario}
+                      className={item.requiere_reorden ? styles.rowAlert : ""}
+                    >
+                      <td>{item.sku}</td>
+                      <td>{item.nombre}</td>
+                      <td>
+                        <span style={{ fontSize: "0.85rem", color: "gray" }}>
+                          {item.categoria || "N/A"}
                         </span>
-                      ) : (
-                        <span className={styles.badgeOk}>Suficiente</span>
-                      )}
-                    </td>
-                    <td>
-                      {item.stock_otras_sucursales} und
-                      {item.stock_otras_sucursales > 0 && (
+                      </td>
+                      <td>
+                        <span style={{ fontSize: "0.85rem", color: "gray" }}>
+                          {item.marca_repuesto || "Genérica"}
+                        </span>
+                      </td>
+                      <td style={{ fontWeight: "bold" }}>
+                        {item.cantidad_actual}
+                      </td>
+                      <td>
+                        {item.requiere_reorden ? (
+                          <span className={styles.badgeWarning}>
+                            Reorden ({item.punto_reorden})
+                          </span>
+                        ) : (
+                          <span className={styles.badgeOk}>Suficiente</span>
+                        )}
+                      </td>
+                      <td>
                         <button
                           className={styles.btnSecondary}
                           style={{
-                            marginLeft: "10px",
                             padding: "0.25rem 0.5rem",
                             fontSize: "0.75rem",
+                            margin: 0,
                           }}
                           onClick={() => {
-                            setProductoDetalle(item);
-                            setModalDetalleAbierto(true);
+                            setProductoCompatSelect(item);
+                            setModalCompatAbierto(true);
                           }}
                         >
-                          Ver
+                          Ver Vehículos
                         </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-                {inventario.length === 0 && (
-                  <tr>
-                    <td
-                      colSpan={5}
-                      style={{ textAlign: "center", padding: "2rem" }}
-                    >
-                      No se encontraron resultados para los filtros aplicados.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                      </td>
+                      <td>
+                        {item.stock_otras_sucursales} und
+                        {item.stock_otras_sucursales > 0 && (
+                          <button
+                            className={styles.btnSecondary}
+                            style={{
+                              marginLeft: "10px",
+                              padding: "0.25rem 0.5rem",
+                              fontSize: "0.75rem",
+                            }}
+                            onClick={() => {
+                              setProductoDetalle(item);
+                              setModalDetalleAbierto(true);
+                            }}
+                          >
+                            Ver
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                  {inventario.length === 0 && (
+                    <tr>
+                      <td
+                        colSpan={8}
+                        style={{ textAlign: "center", padding: "2rem" }}
+                      >
+                        No se encontraron resultados para los filtros aplicados.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       )}
@@ -662,6 +698,80 @@ export default function BodegaPage() {
           >
             Registrar Ajuste en Bitácora
           </button>
+        </div>
+      )}
+
+      {/* MODAL DETALLE COMPATIBILIDAD VEHÍCULOS */}
+      {modalCompatAbierto && productoCompatSelect && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalContent}>
+            <h2 style={{ marginBottom: "0.5rem" }}>Vehículos Compatibles</h2>
+            <p>
+              <strong>Producto:</strong> {productoCompatSelect.nombre}{" "}
+              <span style={{ color: "gray" }}>
+                ({productoCompatSelect.sku})
+              </span>
+            </p>
+
+            <div
+              style={{
+                marginTop: "1.5rem",
+                padding: "1rem",
+                backgroundColor: "#f8fafc",
+                borderRadius: "8px",
+                border: "1px solid #e2e8f0",
+              }}
+            >
+              {productoCompatSelect.compatibilidades.length === 0 ? (
+                <p style={{ color: "gray", margin: 0, textAlign: "center" }}>
+                  No hay información de compatibilidad registrada.
+                </p>
+              ) : productoCompatSelect.compatibilidades.some(
+                  (c) => c.es_universal,
+                ) ? (
+                <div
+                  style={{
+                    textAlign: "center",
+                    color: "var(--primary-color)",
+                    fontWeight: "bold",
+                  }}
+                >
+                  🌐 Pieza Universal (Compatible con cualquier vehículo)
+                </div>
+              ) : (
+                <ul style={{ margin: 0, paddingLeft: "1.2rem" }}>
+                  {productoCompatSelect.compatibilidades.map((comp, idx) => (
+                    <li
+                      key={idx}
+                      style={{ marginBottom: "0.5rem", color: "#334155" }}
+                    >
+                      <strong>{comp.marca}</strong> - {comp.modelo}
+                      {comp.anio_desde && comp.anio_hasta && (
+                        <span style={{ color: "gray", marginLeft: "0.5rem" }}>
+                          ({comp.anio_desde} - {comp.anio_hasta})
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                marginTop: "1.5rem",
+              }}
+            >
+              <button
+                className={styles.btnSecondary}
+                onClick={() => setModalCompatAbierto(false)}
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
