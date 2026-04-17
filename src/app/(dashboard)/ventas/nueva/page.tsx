@@ -409,7 +409,7 @@ export default function NuevaVentaPage() {
                 margin: 0,
                 padding: "0.4rem 1rem",
                 background:
-                  tipoBusqueda === "texto" ? "var(--primary-color)" : "#ccc",
+                  tipoBusqueda === "texto" ? "var(--primary-blue)" : "#ccc",
               }}
               onClick={() => setTipoBusqueda("texto")}
             >
@@ -421,7 +421,7 @@ export default function NuevaVentaPage() {
                 margin: 0,
                 padding: "0.4rem 1rem",
                 background:
-                  tipoBusqueda === "vehiculo" ? "var(--primary-color)" : "#ccc",
+                  tipoBusqueda === "vehiculo" ? "var(--primary-blue)" : "#ccc",
               }}
               onClick={() => setTipoBusqueda("vehiculo")}
             >
@@ -703,7 +703,7 @@ export default function NuevaVentaPage() {
                                 outline: "none",
                                 userSelect: "none",
                                 fontWeight: "bold",
-                                color: "var(--primary-color)",
+                                color: "var(--primary-blue)",
                               }}
                             >
                               + en otras sucursales
@@ -753,7 +753,7 @@ export default function NuevaVentaPage() {
                           marginTop: 0,
                           backgroundColor: p.is_reacondicionado
                             ? "#d97706"
-                            : "var(--primary-color)",
+                            : "var(--primary-blue)",
                         }}
                         onClick={() => agregarAlCarrito(p)}
                         disabled={p.stock_local === 0}
