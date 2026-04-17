@@ -1,3 +1,5 @@
+/* src/app/(dashboard)/DashboardLayout.module.css */
+
 .layoutWrapper {
   display: flex;
   min-height: 100vh;
@@ -5,8 +7,18 @@
 
 .mainContent {
   flex: 1;
-  /* El ancho del sidebar es 250px, así que empujamos el contenido */
-  margin-left: 250px;
+  margin-left: 250px; /* ancho del sidebar en desktop */
   padding: 2rem;
   background-color: var(--light-blue);
+  min-width: 0; /* evita desbordamiento de contenido en flex */
+}
+
+/* ── Mobile ──────────────────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .mainContent {
+    margin-left: 0; /* el sidebar ya no ocupa espacio — es un drawer */
+    padding: 1rem;
+    padding-top: 3.5rem; /* espacio para el botón hamburguesa fijo arriba */
+  }
 }
