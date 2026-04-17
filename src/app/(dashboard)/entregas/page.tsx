@@ -1,11 +1,30 @@
-// src/app/(dashboard)/entregas/page.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { EntregaService } from "@/services/entrega.service";
-import { PedidoDomicilio } from "@/types/entrega.types";
+import { ComprobanteEntrega, PedidoDomicilio } from "@/types/entrega.types";
 import styles from "./Entregas.module.css";
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function fmtFecha(iso: string): string {
+  return new Date(iso).toLocaleString("es-GT", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function labelMetodo(m: string): string {
+  return m === "efectivo"
+    ? "Efectivo"
+    : m === "tarjeta"
+      ? "Tarjeta"
+      : "Transferencia";
+}
+
+// ─── Componente ───────────────────────────────────────────────────────────────
 export default function EntregasPage() {
   const [pedidos, setPedidos] = useState<PedidoDomicilio[]>([]);
   const [cargando, setCargando] = useState(true);
@@ -14,13 +33,20 @@ export default function EntregasPage() {
   const [pedidoSeleccionado, setPedidoSeleccionado] =
     useState<PedidoDomicilio | null>(null);
 
-  // Modal Éxito (Cobro)
+  // Modal Cobro (Contra Entrega)
   const [modalExito, setModalExito] = useState(false);
   const [montoCobrado, setMontoCobrado] = useState<string>("");
+  const [procesando, setProcesando] = useState(false);
 
   // Modal Fallo
   const [modalFallo, setModalFallo] = useState(false);
   const [motivoFallo, setMotivoFallo] = useState("");
+
+  // Modal Comprobante (NUEVO)
+  const [modalComprobante, setModalComprobante] =
+    useState<ComprobanteEntrega | null>(null);
+  const [cargandoComprobante, setCargandoComprobante] = useState(false);
+  const comprobanteRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     cargarPedidos();
@@ -38,14 +64,13 @@ export default function EntregasPage() {
     }
   };
 
-  // --- Lógica de Entrega Exitosa ---
+  // ─── Lógica de Entrega Exitosa ─────────────────────────────────────────────
   const iniciarEntrega = (pedido: PedidoDomicilio) => {
     if (pedido.pago_contra_entrega) {
       setPedidoSeleccionado(pedido);
-      setMontoCobrado(pedido.total.toString()); // Sugerir el monto exacto
+      setMontoCobrado(pedido.total.toString());
       setModalExito(true);
     } else {
-      // Si ya está pagado, no pide monto, confirmamos directamente
       if (confirm(`¿Confirmar entrega del Pedido #${pedido.id_pedido}?`)) {
         procesarExito(pedido.id_pedido);
       }
@@ -54,16 +79,37 @@ export default function EntregasPage() {
 
   const procesarExito = async (id: number, monto?: number) => {
     try {
-      await EntregaService.marcarExito(id, { monto_cobrado: monto });
-      alert("¡Entrega registrada exitosamente!");
+      setProcesando(true);
+      const resultado = await EntregaService.marcarExito(id, {
+        monto_cobrado: monto,
+      });
+
       setModalExito(false);
       cargarPedidos();
+
+      // Si había cobro contra entrega, cargar y mostrar el comprobante
+      if (resultado.id_pago !== null) {
+        setCargandoComprobante(true);
+        setModalComprobante(null); // abre el modal en estado "cargando"
+        try {
+          const comprobante = await EntregaService.obtenerComprobante(
+            resultado.id_pago,
+          );
+          setModalComprobante(comprobante);
+        } catch (err: any) {
+          alert("Entrega registrada, pero no se pudo cargar el comprobante.");
+        } finally {
+          setCargandoComprobante(false);
+        }
+      }
     } catch (error: any) {
       alert("Error: " + error.message);
+    } finally {
+      setProcesando(false);
     }
   };
 
-  // --- Lógica de Entrega Fallida ---
+  // ─── Lógica de Entrega Fallida ─────────────────────────────────────────────
   const iniciarFallo = (pedido: PedidoDomicilio) => {
     setPedidoSeleccionado(pedido);
     setMotivoFallo("");
@@ -87,6 +133,47 @@ export default function EntregasPage() {
     }
   };
 
+  // ─── Imprimir comprobante ──────────────────────────────────────────────────
+  const imprimirComprobante = () => {
+    if (!comprobanteRef.current || !modalComprobante) return;
+    const contenido = comprobanteRef.current.innerHTML;
+    const ventana = window.open("", "_blank", "width=800,height=600");
+    if (!ventana) return;
+    ventana.document.write(`
+      <html>
+        <head>
+          <title>Comprobante de Pago #${modalComprobante.id_pago}</title>
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: Arial, sans-serif; font-size: 12px; padding: 32px; color: #111; }
+            h2 { font-size: 16px; font-weight: bold; margin-bottom: 4px; }
+            p { font-size: 11px; color: #555; margin: 2px 0; }
+            .numero { font-size: 12px; font-weight: bold; margin: 16px 0 20px; }
+            .seccion { margin-bottom: 20px; }
+            .seccion h3 { font-size: 10px; font-weight: bold; text-transform: uppercase;
+              color: #6b7280; border-bottom: 1px solid #e5e7eb; padding-bottom: 4px; margin-bottom: 8px; }
+            .fila { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 11px; }
+            table { width: 100%; border-collapse: collapse; font-size: 11px; }
+            th { text-align: left; font-size: 10px; font-weight: bold; text-transform: uppercase;
+              color: #6b7280; border-bottom: 1px solid #e5e7eb; padding: 4px 0; }
+            td { padding: 6px 0; border-bottom: 1px solid #f3f4f6; }
+            .total-row { display: flex; justify-content: space-between; margin-top: 4px; font-size: 12px; }
+            .gran-total { font-weight: bold; font-size: 14px; border-top: 2px solid #111; padding-top: 6px; margin-top: 4px; }
+            .footer { margin-top: 32px; text-align: center; font-size: 10px; color: #9ca3af; }
+            .badge { display: inline-block; background: #dcfce7; color: #166534;
+              padding: 2px 8px; border-radius: 12px; font-weight: bold; font-size: 10px; }
+          </style>
+        </head>
+        <body>${contenido}</body>
+      </html>
+    `);
+    ventana.document.close();
+    ventana.focus();
+    ventana.print();
+    ventana.close();
+  };
+
+  // ─── Render ────────────────────────────────────────────────────────────────
   if (cargando)
     return <div className={styles.container}>Cargando tu ruta...</div>;
 
@@ -158,7 +245,7 @@ export default function EntregasPage() {
         </div>
       )}
 
-      {/* Modal para Cobro (Contra Entrega) */}
+      {/* ── Modal Cobro (Contra Entrega) ─────────────────────────────────── */}
       {modalExito && pedidoSeleccionado && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalContent}>
@@ -178,16 +265,35 @@ export default function EntregasPage() {
               onChange={(e) => setMontoCobrado(e.target.value)}
             />
 
-            <div style={{ display: "flex", gap: "1rem" }}>
+            {Number(montoCobrado) > pedidoSeleccionado.total && (
+              <div
+                style={{
+                  marginTop: "0.5rem",
+                  padding: "0.5rem 0.75rem",
+                  background: "#f0fdf4",
+                  borderRadius: "0.375rem",
+                  fontSize: "0.9rem",
+                  color: "#166534",
+                  fontWeight: 600,
+                }}
+              >
+                Vuelto: Q
+                {(Number(montoCobrado) - pedidoSeleccionado.total).toFixed(2)}
+              </div>
+            )}
+
+            <div style={{ display: "flex", gap: "1rem", marginTop: "1.25rem" }}>
               <button
                 className={styles.btnDanger}
                 style={{ backgroundColor: "#9ca3af" }}
                 onClick={() => setModalExito(false)}
+                disabled={procesando}
               >
                 Cancelar
               </button>
               <button
                 className={styles.btnSuccess}
+                disabled={procesando}
                 onClick={() =>
                   procesarExito(
                     pedidoSeleccionado.id_pedido,
@@ -195,14 +301,14 @@ export default function EntregasPage() {
                   )
                 }
               >
-                Confirmar Cobro
+                {procesando ? "Registrando..." : "Confirmar Cobro"}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Modal para Entrega Fallida */}
+      {/* ── Modal Entrega Fallida ─────────────────────────────────────────── */}
       {modalFallo && pedidoSeleccionado && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalContent}>
@@ -232,6 +338,158 @@ export default function EntregasPage() {
                 Reportar
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal Comprobante (NUEVO) ─────────────────────────────────────── */}
+      {(cargandoComprobante || modalComprobante) && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalComprobanteContent}>
+            {/* Header */}
+            <div className={styles.modalComprobanteHeader}>
+              <div>
+                <h2>Comprobante de Cobro</h2>
+                {modalComprobante && (
+                  <p className={styles.modalComprobanteSubtitle}>
+                    Pago #{modalComprobante.id_pago} — Venta #
+                    {modalComprobante.id_venta}
+                  </p>
+                )}
+              </div>
+              <div className={styles.modalComprobanteBtns}>
+                {modalComprobante && (
+                  <button
+                    className={styles.btnImprimir}
+                    onClick={imprimirComprobante}
+                  >
+                    Imprimir
+                  </button>
+                )}
+                <button
+                  className={styles.btnCerrar}
+                  onClick={() => {
+                    setModalComprobante(null);
+                    setCargandoComprobante(false);
+                  }}
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+
+            {/* Cuerpo */}
+            {cargandoComprobante ? (
+              <div className={styles.comprobanteLoading}>
+                Generando comprobante...
+              </div>
+            ) : modalComprobante ? (
+              <div ref={comprobanteRef} className={styles.comprobanteBody}>
+                {/* Empresa */}
+                <div className="imp-empresa">
+                  <h2>Refaccionaria Franco</h2>
+                </div>
+
+                <div className="imp-numero">
+                  Comprobante No.{" "}
+                  {String(modalComprobante.id_pago).padStart(8, "0")}
+                </div>
+
+                {/* Datos del cobro */}
+                <div className="imp-seccion">
+                  <h3>Datos del cobro</h3>
+                  <div className="imp-fila">
+                    <span>Fecha</span>
+                    <span>{fmtFecha(modalComprobante.fecha_pago)}</span>
+                  </div>
+                  <div className="imp-fila">
+                    <span>Cliente</span>
+                    <span>{modalComprobante.cliente}</span>
+                  </div>
+                  <div className="imp-fila">
+                    <span>NIT</span>
+                    <span>{modalComprobante.nit ?? "CF"}</span>
+                  </div>
+                  {modalComprobante.direccion_cliente && (
+                    <div className="imp-fila">
+                      <span>Dirección</span>
+                      <span>{modalComprobante.direccion_cliente}</span>
+                    </div>
+                  )}
+                  <div className="imp-fila">
+                    <span>Cobrado por</span>
+                    <span>{modalComprobante.cajero}</span>
+                  </div>
+                  <div className="imp-fila">
+                    <span>Forma de pago</span>
+                    <span>{labelMetodo(modalComprobante.metodo_pago)}</span>
+                  </div>
+                  {modalComprobante.referencia && (
+                    <div className="imp-fila">
+                      <span>Referencia</span>
+                      <span>{modalComprobante.referencia}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Productos */}
+                <div className="imp-seccion">
+                  <h3>Productos</h3>
+                  <table className="imp-tabla">
+                    <thead>
+                      <tr>
+                        <th>Descripción</th>
+                        <th style={{ textAlign: "center" }}>Cant.</th>
+                        <th style={{ textAlign: "right" }}>Subtotal</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {modalComprobante.detalles.map((d, i) => (
+                        <tr key={i}>
+                          <td>
+                            <div style={{ fontWeight: 500 }}>{d.producto}</div>
+                            <div
+                              style={{ fontSize: "0.7rem", color: "#6b7280" }}
+                            >
+                              {d.sku}
+                            </div>
+                          </td>
+                          <td style={{ textAlign: "center" }}>{d.cantidad}</td>
+                          <td style={{ textAlign: "right" }}>
+                            Q{d.subtotal_linea.toFixed(2)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Totales */}
+                <div className="imp-seccion">
+                  <h3>Resumen</h3>
+                  <div className="imp-fila">
+                    <span>Subtotal</span>
+                    <span>Q{modalComprobante.subtotal.toFixed(2)}</span>
+                  </div>
+                  {modalComprobante.descuento_monto > 0 && (
+                    <div className="imp-fila">
+                      <span>Descuento</span>
+                      <span>
+                        -Q{modalComprobante.descuento_monto.toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+                  <div className="imp-fila imp-gran-total">
+                    <span>TOTAL</span>
+                    <span>Q{modalComprobante.total.toFixed(2)}</span>
+                  </div>
+                </div>
+
+                <div className="imp-footer">
+                  Gracias por su compra — Refaccionaria Franco
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
       )}
