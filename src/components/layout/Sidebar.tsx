@@ -6,11 +6,10 @@ import { useEffect, useState } from "react";
 import styles from "./Sidebar.module.css";
 import { AuthService } from "@/services/auth.service";
 
-// Definimos la estructura de un ítem del menú
 interface MenuItem {
   title: string;
   path: string;
-  rolesAllowed: string[]; // Qué roles pueden ver este link
+  rolesAllowed: string[];
 }
 
 interface MenuSection {
@@ -18,7 +17,13 @@ interface MenuSection {
   items: MenuItem[];
 }
 
-// Configuración centralizada de permisos
+// ── Tipo del usuario en sesión ─────────────────────────────────────────────────
+interface UsuarioSesion {
+  username: string;
+  rol: string;
+  nombre_sucursal: string;
+}
+
 const MENU_CONFIG: MenuSection[] = [
   {
     section: "Panel Principal",
@@ -38,13 +43,11 @@ const MENU_CONFIG: MenuSection[] = [
   {
     section: "Ventas",
     items: [
-      // Nueva venta es para el que vende y para el supervisor/admin
       {
         title: "Nueva Venta",
         path: "/ventas/nueva",
         rolesAllowed: ["ADMINISTRADOR", "SUPERVISOR_SUCURSAL", "VENDEDOR"],
       },
-      // Historial es solo para monitoreo
       {
         title: "Historial de Ventas",
         path: "/ventas/historial",
@@ -59,7 +62,11 @@ const MENU_CONFIG: MenuSection[] = [
         path: "/ventas/aprobaciones",
         rolesAllowed: ["ADMINISTRADOR", "SUPERVISOR_SUCURSAL"],
       },
-      // Nuevo Módulo de Garantías
+    ],
+  },
+  {
+    section: "Garantías",
+    items: [
       {
         title: "Reclamar Garantía",
         path: "/garantias/nueva",
@@ -111,19 +118,16 @@ const MENU_CONFIG: MenuSection[] = [
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const [usuario, setUsuario] = useState<{
-    nombre: string;
-    rol: string;
-  } | null>(null);
+  const [usuario, setUsuario] = useState<UsuarioSesion | null>(null);
 
   useEffect(() => {
-    // Al montar, leemos el usuario del localStorage
     const userString = localStorage.getItem("usuario");
     if (userString) {
       const userData = JSON.parse(userString);
       setUsuario({
-        nombre: userData.username, // Asumiendo que el JWT trae esto
-        rol: userData.rol,
+        username: userData.username ?? "—",
+        rol: userData.rol ?? "—",
+        nombre_sucursal: userData.nombre_sucursal ?? "—",
       });
     }
   }, []);
@@ -133,25 +137,40 @@ export default function Sidebar() {
     router.push("/login");
   };
 
-  if (!usuario) return null; // No renderizar hasta saber quién es
+  if (!usuario) return null;
 
   return (
     <aside className={styles.sidebar}>
       <div className={styles.brand}>REFACCIONARIA FRANCO</div>
 
+      {/* ── Bloque de usuario ─────────────────────────────────────────────── */}
       <div className={styles.userInfo}>
-        <span className={styles.userName}>{usuario.nombre}</span>
-        <span className={styles.userRole}>{usuario.rol}</span>
+        {/* Nombre de usuario con ícono */}
+        <div className={styles.userRow}>
+          <span className={styles.userIcon}></span>
+          <span className={styles.userName}>{usuario.username}</span>
+        </div>
+
+        {/* Rol */}
+        <div className={styles.userRow}>
+          <span className={styles.userIcon}></span>
+          <span className={styles.userRole}>
+            {usuario.rol.replace(/_/g, " ")}
+          </span>
+        </div>
+
+        {/* Sucursal */}
+        <div className={styles.userRow}>
+          <span className={styles.userIcon}></span>
+          <span className={styles.userSucursal}>{usuario.nombre_sucursal}</span>
+        </div>
       </div>
 
       <nav className={styles.nav}>
         {MENU_CONFIG.map((group, index) => {
-          // Filtramos los items de esta sección según el rol del usuario
           const allowedItems = group.items.filter((item) =>
             item.rolesAllowed.includes(usuario.rol),
           );
-
-          // Si el usuario no tiene acceso a ningún item de esta sección, no la mostramos
           if (allowedItems.length === 0) return null;
 
           return (
