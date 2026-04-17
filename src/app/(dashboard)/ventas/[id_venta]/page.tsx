@@ -2,16 +2,21 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
 import styles from "./VentaDetalle.module.css";
 import { VentaService } from "@/services/venta.service";
 
 export default function DetalleVentaPage() {
   const params = useParams();
   const router = useRouter();
-  const id_venta = Number(params.id_venta);
 
-  // El servicio devuelve { venta: any, detalles: any[] }
+  // ── Lectura segura del parámetro ────────────────────────────────────────────
+  // useParams() puede devolver string | string[] | undefined en el primer render.
+  // Convertimos a número solo cuando tengamos un string válido y no vacío.
+  const rawId = Array.isArray(params?.id_venta)
+    ? params.id_venta[0]
+    : params?.id_venta;
+  const id_venta = rawId && rawId !== "" ? Number(rawId) : null;
+
   const [data, setData] = useState<{ venta: any; detalles: any[] } | null>(
     null,
   );
@@ -19,14 +24,17 @@ export default function DetalleVentaPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (id_venta) {
-      cargarDetalleVenta();
-    }
+    // Solo ejecutar cuando id_venta sea un número entero válido
+    if (!id_venta || !Number.isInteger(id_venta) || id_venta <= 0) return;
+    cargarDetalleVenta();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id_venta]);
 
   const cargarDetalleVenta = async () => {
     try {
-      const respuesta = await VentaService.obtenerVentaPorId(id_venta);
+      setLoading(true);
+      setError("");
+      const respuesta = await VentaService.obtenerVentaPorId(id_venta!);
       setData(respuesta);
     } catch (err: any) {
       setError(err.message);
@@ -35,18 +43,28 @@ export default function DetalleVentaPage() {
     }
   };
 
+  // ── Estados de carga / error ────────────────────────────────────────────────
+  if (!id_venta || id_venta <= 0)
+    return (
+      <div className={styles.container}>
+        <p>ID de venta inválido.</p>
+      </div>
+    );
+
   if (loading)
     return (
       <div className={styles.container}>
         <p>Cargando detalles de la venta...</p>
       </div>
     );
+
   if (error)
     return (
       <div className={styles.container}>
         <div className={styles.error}>{error}</div>
       </div>
     );
+
   if (!data || !data.venta)
     return (
       <div className={styles.container}>
@@ -66,7 +84,7 @@ export default function DetalleVentaPage() {
       </div>
 
       <div className={styles.gridContainer}>
-        {/* Tarjeta de Información General */}
+        {/* Información General */}
         <div className={styles.card}>
           <h3>Información General</h3>
           <p>
@@ -76,7 +94,7 @@ export default function DetalleVentaPage() {
           <p>
             <strong>Estado:</strong>{" "}
             <span className={styles.badge}>
-              {venta.estado?.replace("_", " ").toUpperCase()}
+              {venta.estado?.replace(/_/g, " ").toUpperCase()}
             </span>
           </p>
           <p>
@@ -84,17 +102,16 @@ export default function DetalleVentaPage() {
           </p>
           <p>
             <strong>Vendedor (ID):</strong>{" "}
-            {venta.id_vendedor || "No registrado"}
+            {venta.vendedor || venta.id_vendedor || "No registrado"}
           </p>
         </div>
 
-        {/* Tarjeta del Cliente */}
+        {/* Datos del Cliente */}
         <div className={styles.card}>
           <h3>Datos del Cliente</h3>
           <p>
-            <strong>Nombre:</strong> {venta.cliente || "Cliente Final"}
+            <strong>Nombre:</strong> {venta.cliente || "Consumidor Final"}
           </p>
-          {/* Aquí puedes agregar NIT o Dirección si el backend los devuelve en el objeto venta */}
         </div>
       </div>
 
@@ -105,20 +122,24 @@ export default function DetalleVentaPage() {
           <table className={styles.table}>
             <thead>
               <tr>
-                <th>ID Prod.</th>
                 <th>Producto</th>
+                <th>SKU</th>
                 <th>Cantidad</th>
                 <th>Precio Unit.</th>
-                <th>Subtotal Linea</th>
+                <th>Subtotal Línea</th>
               </tr>
             </thead>
             <tbody>
               {detalles && detalles.length > 0 ? (
                 detalles.map((d: any, index: number) => (
                   <tr key={index}>
-                    <td>{d.id_producto}</td>
-                    <td>{d.nombre_producto || `Producto #${d.id_producto}`}</td>
-                    <td>{Number(d.cantidad).toFixed(2)}</td>
+                    <td>
+                      {d.producto ||
+                        d.nombre_producto ||
+                        `Producto #${d.id_producto}`}
+                    </td>
+                    <td>{d.sku || "—"}</td>
+                    <td>{Number(d.cantidad).toFixed(0)}</td>
                     <td>Q {Number(d.precio_unitario).toFixed(2)}</td>
                     <td>
                       <strong>Q {Number(d.subtotal_linea).toFixed(2)}</strong>
@@ -142,12 +163,20 @@ export default function DetalleVentaPage() {
         <div className={styles.totalsCard}>
           <div className={styles.totalRow}>
             <span>Subtotal:</span>
-            <span>Q {Number(venta.subtotal || venta.total).toFixed(2)}</span>
+            <span>Q {Number(venta.subtotal ?? venta.total).toFixed(2)}</span>
           </div>
-          <div className={styles.totalRow}>
-            <span>Descuento:</span>
-            <span>Q {Number(venta.descuento_monto || 0).toFixed(2)}</span>
-          </div>
+          {Number(venta.descuento_monto) > 0 && (
+            <div className={styles.totalRow}>
+              <span>Descuento:</span>
+              <span>- Q {Number(venta.descuento_monto).toFixed(2)}</span>
+            </div>
+          )}
+          {Number(venta.monto_iva) > 0 && (
+            <div className={styles.totalRow}>
+              <span>IVA:</span>
+              <span>Q {Number(venta.monto_iva).toFixed(2)}</span>
+            </div>
+          )}
           <div className={`${styles.totalRow} ${styles.granTotal}`}>
             <span>Total:</span>
             <span>Q {Number(venta.total).toFixed(2)}</span>
