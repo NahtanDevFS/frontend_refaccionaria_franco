@@ -22,7 +22,7 @@ export const AuthService = {
 
   guardarSesion(token: string, usuario: any) {
     // Guardamos el token en una cookie para que el Middleware de Next.js lo pueda leer
-    document.cookie = `token=${token}; path=/; max-age=86400; samesite=strict`;
+    document.cookie = `token=${token}; path=/; max-age=1800; samesite=strict`;
     // Guardamos los datos del usuario en localStorage para usarlos en la UI (nombre, rol, sucursal, etc.)
     localStorage.setItem("usuario", JSON.stringify(usuario));
   },
