@@ -5,16 +5,36 @@ import styles from "../historial/Ventas.module.css";
 
 export default function AprobacionesPage() {
   const [pendientes, setPendientes] = useState<any[]>([]);
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const API_URL =
     process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
 
   const cargarPendientes = async () => {
-    const token = document.cookie.match(new RegExp("(^| )token=([^;]+)"))?.[2];
-    const res = await fetch(`${API_URL}/ventas/autorizaciones/pendientes`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const data = await res.json();
-    if (Array.isArray(data)) setPendientes(data);
+    try {
+      setCargando(true);
+      setError(null);
+
+      const token = document.cookie.match(
+        new RegExp("(^| )token=([^;]+)"),
+      )?.[2];
+
+      const res = await fetch(`${API_URL}/ventas/autorizaciones/pendientes`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || "Error al cargar autorizaciones");
+      }
+
+      setPendientes(Array.isArray(data.data) ? data.data : []);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setCargando(false);
+    }
   };
 
   useEffect(() => {
