@@ -1,4 +1,3 @@
-// src/app/(dashboard)/caja/page.tsx
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -7,16 +6,26 @@ import {
   OrdenPendienteCaja,
   ResumenCaja,
   HistorialCobro,
+  ArqueoHistorial,
+  ResumenArqueos,
+  CajeroOpcion,
 } from "@/types/caja.types";
 import styles from "./Caja.module.css";
 
+type Tab = "cobros" | "arqueo" | "historial" | "arqueos";
+
+function hoy() {
+  return new Date().toISOString().split("T")[0];
+}
+function hace30() {
+  return new Date(Date.now() - 29 * 86400000).toISOString().split("T")[0];
+}
+
 export default function CajaPage() {
-  const [tabActual, setTabActual] = useState<"cobros" | "arqueo" | "historial">(
-    "cobros",
-  );
+  const [tabActual, setTabActual] = useState<Tab>("cobros");
   const [cargando, setCargando] = useState(false);
 
-  // Tab 1: Cobros
+  // ── Tab 1: Cobros ──────────────────────────────────────────────────────────
   const [pendientes, setPendientes] = useState<OrdenPendienteCaja[]>([]);
   const [modalCobro, setModalCobro] = useState(false);
   const [ordenSeleccionada, setOrdenSeleccionada] =
@@ -27,36 +36,61 @@ export default function CajaPage() {
   const [monto, setMonto] = useState("");
   const [referencia, setReferencia] = useState("");
 
-  // Tab 2: Arqueo
+  // ── Tab 2: Arqueo ──────────────────────────────────────────────────────────
   const [resumen, setResumen] = useState<ResumenCaja[]>([]);
   const [efectivoContado, setEfectivoContado] = useState("");
   const [obsArqueo, setObservacionesArqueo] = useState("");
 
-  // Tab 3: Historial
+  // ── Tab 3: Historial de cobros ─────────────────────────────────────────────
   const [historial, setHistorial] = useState<HistorialCobro[]>([]);
   const [fechaDesde, setFechaDesde] = useState(hoy());
   const [fechaHasta, setFechaHasta] = useState(hoy());
   const [modalFactura, setModalFactura] = useState<HistorialCobro | null>(null);
   const facturaRef = useRef<HTMLDivElement>(null);
 
-  function hoy() {
-    return new Date().toISOString().split("T")[0];
-  }
+  // ── Tab 4: Historial de arqueos ────────────────────────────────────────────
+  const [arqueos, setArqueos] = useState<ArqueoHistorial[]>([]);
+  const [resumenArqueos, setResumenArqueos] = useState<ResumenArqueos | null>(
+    null,
+  );
+  const [arqueoDesde, setArqueoDesde] = useState(hace30());
+  const [arqueoHasta, setArqueoHasta] = useState(hoy());
+  const [cajeros, setCajeros] = useState<CajeroOpcion[]>([]);
+  const [cajerosLoaded, setCajerosLoaded] = useState(false);
+  const [filtroCajero, setFiltroCajero] = useState<string>("");
+  // Para saber si el usuario es supervisor/admin (puede ver filtro cajero)
+  const [esSupervisor, setEsSupervisor] = useState(false);
+
+  useEffect(() => {
+    const u = localStorage.getItem("usuario");
+    if (u) {
+      const parsed = JSON.parse(u);
+      const rol = parsed.rol ?? "";
+      setEsSupervisor(
+        ["ADMINISTRADOR", "GERENTE_REGIONAL", "SUPERVISOR_SUCURSAL"].includes(
+          rol,
+        ),
+      );
+    }
+  }, []);
 
   useEffect(() => {
     if (tabActual === "cobros") cargarPendientes();
     if (tabActual === "arqueo") cargarResumen();
     if (tabActual === "historial") cargarHistorial();
+    if (tabActual === "arqueos") {
+      cargarHistorialArqueos();
+      if (!cajerosLoaded && esSupervisor) cargarCajeros();
+    }
   }, [tabActual]);
 
-  // Lógica Tab 1
+  // ── Lógica Tab 1 ───────────────────────────────────────────────────────────
   const cargarPendientes = async () => {
     try {
       setCargando(true);
-      const data = await CajaService.obtenerPendientes();
-      setPendientes(data);
-    } catch (error: any) {
-      alert("Error: " + error.message);
+      setPendientes(await CajaService.obtenerPendientes());
+    } catch (e: any) {
+      alert(e.message);
     } finally {
       setCargando(false);
     }
@@ -75,10 +109,7 @@ export default function CajaPage() {
     if (Number(monto) < ordenSeleccionada.total)
       return alert("El monto ingresado es menor al total de la orden.");
     if (metodoPago !== "efectivo" && !referencia)
-      return alert(
-        "Debe ingresar un número de autorización o referencia para tarjeta/transferencia.",
-      );
-
+      return alert("Ingrese el número de autorización o referencia.");
     try {
       await CajaService.registrarPago({
         id_venta: ordenSeleccionada.id_venta,
@@ -89,19 +120,18 @@ export default function CajaPage() {
       alert("Pago registrado exitosamente.");
       setModalCobro(false);
       cargarPendientes();
-    } catch (error: any) {
-      alert("Error: " + error.message);
+    } catch (e: any) {
+      alert("Error: " + e.message);
     }
   };
 
-  // Lógica Tab 2
+  // ── Lógica Tab 2 ───────────────────────────────────────────────────────────
   const cargarResumen = async () => {
     try {
       setCargando(true);
-      const data = await CajaService.obtenerResumen();
-      setResumen(data);
-    } catch (error: any) {
-      alert("Error: " + error.message);
+      setResumen(await CajaService.obtenerResumen());
+    } catch (e: any) {
+      alert(e.message);
     } finally {
       setCargando(false);
     }
@@ -109,39 +139,32 @@ export default function CajaPage() {
 
   const procesarArqueo = async () => {
     if (!efectivoContado || Number(efectivoContado) < 0)
-      return alert("Debe ingresar un monto válido de efectivo físico.");
-
-    if (
-      confirm(
-        "¿Está seguro que desea cerrar la caja con este efectivo contado?",
-      )
-    ) {
-      try {
-        await CajaService.registrarArqueo({
-          efectivo_contado: Number(efectivoContado),
-          observaciones: obsArqueo || undefined,
-        });
-        alert("Arqueo de caja registrado correctamente.");
-        setEfectivoContado("");
-        setObservacionesArqueo("");
-        cargarResumen();
-      } catch (error: any) {
-        alert("Error: " + error.message);
-      }
+      return alert("Ingrese un monto válido de efectivo físico.");
+    if (!confirm("¿Cerrar la caja con este efectivo contado?")) return;
+    try {
+      await CajaService.registrarArqueo({
+        efectivo_contado: Number(efectivoContado),
+        observaciones: obsArqueo || undefined,
+      });
+      alert("Arqueo registrado correctamente.");
+      setEfectivoContado("");
+      setObservacionesArqueo("");
+      cargarResumen();
+    } catch (e: any) {
+      alert("Error: " + e.message);
     }
   };
 
   const efectivoSistema =
     resumen.find((r) => r.metodo_pago === "efectivo")?.total || 0;
 
-  // Lógica Tab 3
+  // ── Lógica Tab 3 ───────────────────────────────────────────────────────────
   const cargarHistorial = async () => {
     try {
       setCargando(true);
-      const data = await CajaService.obtenerHistorial(fechaDesde, fechaHasta);
-      setHistorial(data);
-    } catch (error: any) {
-      alert("Error: " + error.message);
+      setHistorial(await CajaService.obtenerHistorial(fechaDesde, fechaHasta));
+    } catch (e: any) {
+      alert(e.message);
     } finally {
       setCargando(false);
     }
@@ -149,48 +172,69 @@ export default function CajaPage() {
 
   const imprimirFactura = () => {
     if (!facturaRef.current) return;
-    const contenido = facturaRef.current.innerHTML;
     const ventana = window.open("", "_blank", "width=800,height=600");
     if (!ventana) return;
     ventana.document.write(`
-      <html>
-        <head>
-          <title>Comprobante de Pago</title>
-          <style>
-            * { margin: 0; padding: 0; box-sizing: border-box; }
-            body { font-family: Arial, sans-serif; font-size: 12px; padding: 32px; color: #111; }
-            h2 { font-size: 16px; }
-            .imp-empresa { margin-bottom: 20px; padding-bottom: 16px; border-bottom: 2px solid #111; }
-            .imp-empresa h2 { font-size: 17px; font-weight: bold; margin-bottom: 6px; }
-            .imp-empresa p { color: #555; margin: 2px 0; }
-            .imp-numero { font-size: 13px; font-weight: bold; margin: 16px 0 20px; }
-            .imp-seccion { margin-bottom: 20px; }
-            .imp-seccion h3 { font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em; color: #888; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid #e5e7eb; }
-            .imp-fila { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #f3f4f6; font-size: 12px; }
-            .imp-fila span:first-child { color: #555; }
-            table { width: 100%; border-collapse: collapse; }
-            table th { text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: #888; padding: 4px 0; border-bottom: 1px solid #e5e7eb; }
-            table th:last-child, table td:last-child { text-align: right; }
-            table th:nth-child(2), table td:nth-child(2) { text-align: center; }
-            table th:nth-child(3), table td:nth-child(3) { text-align: right; }
-            table td { padding: 6px 0; font-size: 12px; border-bottom: 1px solid #f3f4f6; }
-            .imp-totales { margin-top: 12px; }
-            .imp-fila-total { display: flex; justify-content: space-between; padding: 4px 0; font-size: 12px; }
-            .imp-fila-total span:first-child { color: #555; }
-            .imp-total-final { display: flex; justify-content: space-between; font-size: 15px; font-weight: bold; padding: 10px 0 6px; border-top: 2px solid #111; margin-top: 8px; }
-            .imp-footer { margin-top: 24px; color: #999; font-size: 10px; border-top: 1px solid #e5e7eb; padding-top: 12px; }
-          </style>
-        </head>
-        <body>${contenido}</body>
-      </html>
+      <html><head><title>Comprobante</title>
+      <style>
+        * { margin:0;padding:0;box-sizing:border-box }
+        body { font-family:Arial,sans-serif;font-size:12px;padding:32px;color:#111 }
+        .imp-empresa { margin-bottom:20px;padding-bottom:16px;border-bottom:2px solid #111 }
+        .imp-empresa h2 { font-size:17px;font-weight:bold;margin-bottom:6px }
+        .imp-numero { font-size:13px;font-weight:bold;margin:16px 0 20px }
+        .imp-seccion { margin-bottom:20px }
+        .imp-seccion h3 { font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:.05em;color:#888;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #e5e7eb }
+        .imp-fila { display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f3f4f6;font-size:12px }
+        .imp-fila span:first-child { color:#555 }
+        table { width:100%;border-collapse:collapse }
+        table th { text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#888;padding:4px 0;border-bottom:1px solid #e5e7eb }
+        table th:last-child,table td:last-child { text-align:right }
+        table td { padding:6px 0;font-size:12px;border-bottom:1px solid #f3f4f6 }
+        .imp-totales { margin-top:12px }
+        .imp-fila-total { display:flex;justify-content:space-between;padding:4px 0;font-size:12px }
+        .imp-fila-total span:first-child { color:#555 }
+        .imp-total-final { display:flex;justify-content:space-between;font-size:15px;font-weight:bold;padding:10px 0 6px;border-top:2px solid #111;margin-top:8px }
+        .imp-footer { margin-top:24px;color:#999;font-size:10px;border-top:1px solid #e5e7eb;padding-top:12px }
+      </style></head>
+      <body>${facturaRef.current.innerHTML}</body></html>
     `);
     ventana.document.close();
     ventana.focus();
     setTimeout(() => ventana.print(), 300);
   };
 
+  // ── Lógica Tab 4: Historial de arqueos ────────────────────────────────────
+  const cargarHistorialArqueos = async () => {
+    try {
+      setCargando(true);
+      const resp = await CajaService.obtenerHistorialArqueos(
+        arqueoDesde,
+        arqueoHasta,
+        filtroCajero ? Number(filtroCajero) : undefined,
+      );
+      setArqueos(resp.arqueos);
+      setResumenArqueos(resp.resumen);
+    } catch (e: any) {
+      alert(e.message);
+    } finally {
+      setCargando(false);
+    }
+  };
+
+  const cargarCajeros = async () => {
+    try {
+      const data = await CajaService.obtenerCajeros();
+      setCajeros(Array.isArray(data) ? data : []);
+      setCajerosLoaded(true);
+    } catch {
+      setCajerosLoaded(true);
+    }
+  };
+
+  // ── Helpers de formato ─────────────────────────────────────────────────────
   const fmtQ = (n: number) => `Q ${n.toFixed(2)}`;
   const fmtFecha = (iso: string) => new Date(iso).toLocaleString("es-GT");
+  const fmtDate = (iso: string) => new Date(iso).toLocaleDateString("es-GT");
   const labelMetodo = (m: string) =>
     m === "efectivo"
       ? "Efectivo"
@@ -199,41 +243,36 @@ export default function CajaPage() {
         : "Transferencia";
 
   const calcularIva = (cobro: HistorialCobro) => {
-    const baseImponible = cobro.total / 1.12;
-    const iva = cobro.total - baseImponible;
-    return { baseImponible, iva };
+    const base = cobro.total / 1.12;
+    return { baseImponible: base, iva: cobro.total - base };
   };
 
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className={styles.container}>
       <h1 className={styles.title}>Caja y Cobros</h1>
 
+      {/* TABS */}
       <div className={styles.tabs}>
-        <button
-          className={`${styles.tabBtn} ${tabActual === "cobros" ? styles.tabActive : ""}`}
-          onClick={() => setTabActual("cobros")}
-        >
-          Pendientes de Cobro
-        </button>
-        <button
-          className={`${styles.tabBtn} ${tabActual === "arqueo" ? styles.tabActive : ""}`}
-          onClick={() => setTabActual("arqueo")}
-        >
-          Arqueo (Cierre de Caja)
-        </button>
-        <button
-          className={`${styles.tabBtn} ${tabActual === "historial" ? styles.tabActive : ""}`}
-          onClick={() => setTabActual("historial")}
-        >
-          Historial de Cobros
-        </button>
+        {(["cobros", "arqueo", "historial", "arqueos"] as Tab[]).map((t) => (
+          <button
+            key={t}
+            className={`${styles.tabBtn} ${tabActual === t ? styles.tabActive : ""}`}
+            onClick={() => setTabActual(t)}
+          >
+            {t === "cobros" && "Pendientes de Cobro"}
+            {t === "arqueo" && "Arqueo (Cierre de Caja)"}
+            {t === "historial" && "Historial de Cobros"}
+            {t === "arqueos" && "Historial de Arqueos"}
+          </button>
+        ))}
       </div>
 
       {cargando ? (
-        <p>Cargando información...</p>
+        <p style={{ padding: "2rem", color: "#6b7280" }}>Cargando...</p>
       ) : (
         <>
-          {/* VISTA 1: COBROS PENDIENTES */}
+          {/* ═══ TAB 1: COBROS PENDIENTES ══════════════════════════════════ */}
           {tabActual === "cobros" && (
             <div className={styles.card}>
               {pendientes.length === 0 ? (
@@ -294,7 +333,7 @@ export default function CajaPage() {
             </div>
           )}
 
-          {/* VISTA 2: ARQUEO */}
+          {/* ═══ TAB 2: ARQUEO ════════════════════════════════════════════ */}
           {tabActual === "arqueo" && (
             <div className={styles.arqueoGrid}>
               <div className={styles.card}>
@@ -309,55 +348,71 @@ export default function CajaPage() {
                 </h2>
                 <ul className={styles.resumenList}>
                   {resumen.length === 0 ? (
-                    <li>No hay cobros registrados hoy.</li>
-                  ) : null}
-                  {resumen.map((r, i) => (
-                    <li key={i}>
-                      <span style={{ textTransform: "capitalize" }}>
-                        {labelMetodo(r.metodo_pago)}
-                      </span>
-                      <strong>Q {r.total.toFixed(2)}</strong>
+                    <li style={{ color: "#6b7280", justifyContent: "center" }}>
+                      Sin cobros registrados hoy
                     </li>
-                  ))}
+                  ) : (
+                    resumen.map((r) => (
+                      <li key={r.metodo_pago}>
+                        <span>{labelMetodo(r.metodo_pago)}</span>
+                        <strong>{fmtQ(r.total)}</strong>
+                      </li>
+                    ))
+                  )}
                 </ul>
-                <div
+              </div>
+              <div className={styles.card}>
+                <h2
                   style={{
-                    marginTop: "2rem",
-                    padding: "1rem",
-                    backgroundColor: "#f0fdf4",
-                    borderRadius: "0.5rem",
-                    border: "1px solid #bbf7d0",
+                    marginBottom: "1rem",
+                    borderBottom: "1px solid #eee",
+                    paddingBottom: "0.5rem",
                   }}
                 >
-                  <p style={{ color: "#166534", margin: 0 }}>
-                    El sistema espera encontrar en su gaveta: <br />
-                    <strong style={{ fontSize: "1.5rem" }}>
-                      Q {efectivoSistema.toFixed(2)} en Efectivo
-                    </strong>
-                  </p>
-                </div>
-              </div>
-
-              <div className={styles.card}>
-                <h2 style={{ marginBottom: "1.5rem" }}>Cierre Físico</h2>
+                  Registrar Cierre de Caja
+                </h2>
                 <div className={styles.inputGroup}>
-                  <label style={{ fontWeight: "bold" }}>
-                    Efectivo físico contado (Q):
+                  <label>
+                    Efectivo según sistema:{" "}
+                    <strong>{fmtQ(efectivoSistema)}</strong>
                   </label>
+                </div>
+                <div className={styles.inputGroup}>
+                  <label>Efectivo físico contado (Q):</label>
                   <input
                     type="number"
                     className={styles.input}
-                    style={{ fontSize: "1.5rem", padding: "1rem" }}
                     placeholder="0.00"
                     value={efectivoContado}
                     onChange={(e) => setEfectivoContado(e.target.value)}
                   />
                 </div>
-                <div
-                  className={styles.inputGroup}
-                  style={{ marginTop: "1rem" }}
-                >
-                  <label>Observaciones (si hay sobrante o faltante):</label>
+                {efectivoContado && (
+                  <div
+                    style={{
+                      padding: "0.75rem",
+                      borderRadius: "6px",
+                      marginBottom: "1rem",
+                      background:
+                        Number(efectivoContado) === efectivoSistema
+                          ? "#d1fae5"
+                          : "#fee2e2",
+                      color:
+                        Number(efectivoContado) === efectivoSistema
+                          ? "#065f46"
+                          : "#991b1b",
+                      fontWeight: 600,
+                    }}
+                  >
+                    Diferencia:{" "}
+                    {fmtQ(Number(efectivoContado) - efectivoSistema)}
+                    {Number(efectivoContado) === efectivoSistema
+                      ? " ✓ Cuadra"
+                      : " ✗ Con diferencia"}
+                  </div>
+                )}
+                <div className={styles.inputGroup}>
+                  <label>Observaciones (opcional):</label>
                   <textarea
                     className={styles.input}
                     rows={3}
@@ -376,7 +431,7 @@ export default function CajaPage() {
             </div>
           )}
 
-          {/* VISTA 3: HISTORIAL DE COBROS */}
+          {/* ═══ TAB 3: HISTORIAL DE COBROS ═══════════════════════════════ */}
           {tabActual === "historial" && (
             <div className={styles.card}>
               <div className={styles.historialFiltros}>
@@ -432,9 +487,8 @@ export default function CajaPage() {
                   <table className={styles.table}>
                     <thead>
                       <tr>
-                        <th>ID Pago</th>
-                        <th>Venta</th>
-                        <th>Fecha y Hora</th>
+                        <th>#Pago</th>
+                        <th>Fecha</th>
                         <th>Cliente</th>
                         <th>NIT</th>
                         <th>Método</th>
@@ -446,14 +500,16 @@ export default function CajaPage() {
                     <tbody>
                       {historial.map((h) => (
                         <tr key={h.id_pago}>
-                          <td style={{ fontWeight: "bold" }}>#{h.id_pago}</td>
-                          <td>#{h.id_venta}</td>
-                          <td style={{ whiteSpace: "nowrap" }}>
-                            {fmtFecha(h.fecha_pago)}
-                          </td>
+                          <td>#{h.id_pago}</td>
+                          <td>{fmtFecha(h.fecha_pago)}</td>
                           <td>{h.cliente}</td>
                           <td>
-                            <span className={styles.nitBadge}>
+                            <span
+                              style={{
+                                fontFamily: "monospace",
+                                fontSize: "0.8rem",
+                              }}
+                            >
                               {h.nit ?? "CF"}
                             </span>
                           </td>
@@ -480,10 +536,203 @@ export default function CajaPage() {
               )}
             </div>
           )}
+
+          {/* ═══ TAB 4: HISTORIAL DE ARQUEOS ══════════════════════════════ */}
+          {tabActual === "arqueos" && (
+            <div className={styles.card}>
+              {/* Filtros */}
+              <div className={styles.historialFiltros}>
+                <div className={styles.filtroGroup}>
+                  <label>Desde:</label>
+                  <input
+                    type="date"
+                    className={styles.inputFecha}
+                    value={arqueoDesde}
+                    onChange={(e) => setArqueoDesde(e.target.value)}
+                  />
+                </div>
+                <div className={styles.filtroGroup}>
+                  <label>Hasta:</label>
+                  <input
+                    type="date"
+                    className={styles.inputFecha}
+                    value={arqueoHasta}
+                    onChange={(e) => setArqueoHasta(e.target.value)}
+                  />
+                </div>
+                {esSupervisor && cajeros.length > 0 && (
+                  <div className={styles.filtroGroup}>
+                    <label>Cajero:</label>
+                    <select
+                      className={styles.inputFecha}
+                      value={filtroCajero}
+                      onChange={(e) => setFiltroCajero(e.target.value)}
+                    >
+                      <option value="">Todos</option>
+                      {cajeros.map((c) => (
+                        <option key={c.id_empleado} value={c.id_empleado}>
+                          {c.nombre}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                <button
+                  className={styles.btnBuscar}
+                  onClick={cargarHistorialArqueos}
+                >
+                  Buscar
+                </button>
+              </div>
+
+              {/* Tarjetas de resumen */}
+              {resumenArqueos && resumenArqueos.totalArqueos > 0 && (
+                <div className={styles.arqueoResumenGrid}>
+                  <div className={styles.arqueoResumenCard}>
+                    <span className={styles.arqueoResumenLabel}>
+                      Total arqueos
+                    </span>
+                    <span className={styles.arqueoResumenValor}>
+                      {resumenArqueos.totalArqueos}
+                    </span>
+                  </div>
+                  <div
+                    className={`${styles.arqueoResumenCard} ${styles.arqueoResumenVerde}`}
+                  >
+                    <span className={styles.arqueoResumenLabel}>Cuadraron</span>
+                    <span className={styles.arqueoResumenValor}>
+                      {resumenArqueos.cuadrados}
+                    </span>
+                  </div>
+                  <div
+                    className={`${styles.arqueoResumenCard} ${resumenArqueos.conDiferencia > 0 ? styles.arqueoResumenRojo : ""}`}
+                  >
+                    <span className={styles.arqueoResumenLabel}>
+                      Con diferencia
+                    </span>
+                    <span className={styles.arqueoResumenValor}>
+                      {resumenArqueos.conDiferencia}
+                    </span>
+                  </div>
+                  <div
+                    className={`${styles.arqueoResumenCard} ${resumenArqueos.sumaDiferencias !== 0 ? styles.arqueoResumenAmarillo : ""}`}
+                  >
+                    <span className={styles.arqueoResumenLabel}>
+                      Suma diferencias
+                    </span>
+                    <span className={styles.arqueoResumenValor}>
+                      {resumenArqueos.sumaDiferencias >= 0 ? "+" : ""}
+                      {fmtQ(resumenArqueos.sumaDiferencias)}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Tabla */}
+              {arqueos.length === 0 ? (
+                <p
+                  style={{
+                    textAlign: "center",
+                    color: "gray",
+                    padding: "2rem",
+                  }}
+                >
+                  No se encontraron arqueos en el período seleccionado.
+                </p>
+              ) : (
+                <div style={{ overflowX: "auto" }}>
+                  <table className={styles.table}>
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>Fecha</th>
+                        <th>Cajero</th>
+                        <th>Efectivo sistema</th>
+                        <th>Efectivo contado</th>
+                        <th>Diferencia</th>
+                        <th>Estado</th>
+                        <th>Supervisor</th>
+                        <th>Observaciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {arqueos.map((a) => (
+                        <tr key={a.id_arqueo}>
+                          <td style={{ fontWeight: "bold", color: "#6b7280" }}>
+                            #{a.id_arqueo}
+                          </td>
+                          <td>
+                            <div>{fmtDate(a.fecha_cierre)}</div>
+                            <div
+                              style={{ fontSize: "0.75rem", color: "#9ca3af" }}
+                            >
+                              {new Date(a.created_at).toLocaleTimeString(
+                                "es-GT",
+                                {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                },
+                              )}
+                            </div>
+                          </td>
+                          <td>{a.cajero}</td>
+                          <td>{fmtQ(a.efectivo_segun_sistema)}</td>
+                          <td>{fmtQ(a.efectivo_contado)}</td>
+                          <td>
+                            <span
+                              style={{
+                                fontWeight: 700,
+                                color:
+                                  a.diferencia === 0
+                                    ? "#059669"
+                                    : a.diferencia > 0
+                                      ? "#d97706"
+                                      : "#dc2626",
+                              }}
+                            >
+                              {a.diferencia >= 0 ? "+" : ""}
+                              {fmtQ(a.diferencia)}
+                            </span>
+                          </td>
+                          <td>
+                            {a.estado === "cuadra" ? (
+                              <span className={styles.badgeArqueoCuadra}>
+                                ✓ Cuadra
+                              </span>
+                            ) : (
+                              <span className={styles.badgeArqueoDif}>
+                                ⚠ Diferencia
+                              </span>
+                            )}
+                          </td>
+                          <td style={{ fontSize: "0.82rem", color: "#6b7280" }}>
+                            {a.supervisor_verifica ?? "—"}
+                          </td>
+                          <td
+                            style={{
+                              fontSize: "0.8rem",
+                              color: "#6b7280",
+                              maxWidth: "180px",
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                            }}
+                            title={a.observaciones ?? ""}
+                          >
+                            {a.observaciones ?? "—"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
         </>
       )}
 
-      {/* MODAL COBRO */}
+      {/* ── MODAL COBRO ─────────────────────────────────────────────────────── */}
       {modalCobro && ordenSeleccionada && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalContent}>
@@ -491,10 +740,8 @@ export default function CajaPage() {
               Cobrar Orden #{ordenSeleccionada.id_venta}
             </h2>
             <p style={{ fontSize: "1.25rem", marginBottom: "1rem" }}>
-              Total a pagar:{" "}
-              <strong>Q {ordenSeleccionada.total.toFixed(2)}</strong>
+              Total: <strong>Q {ordenSeleccionada.total.toFixed(2)}</strong>
             </p>
-
             <label style={{ fontWeight: "bold" }}>Método de Pago:</label>
             <div className={styles.paymentMethods}>
               {(["efectivo", "tarjeta", "transferencia"] as const).map((m) => (
@@ -511,7 +758,6 @@ export default function CajaPage() {
                 </button>
               ))}
             </div>
-
             <div className={styles.inputGroup}>
               <label>Monto Recibido (Q):</label>
               <input
@@ -521,7 +767,6 @@ export default function CajaPage() {
                 onChange={(e) => setMonto(e.target.value)}
               />
             </div>
-
             {metodoPago !== "efectivo" && (
               <div className={styles.inputGroup}>
                 <label>No. de Autorización / Referencia:</label>
@@ -534,17 +779,15 @@ export default function CajaPage() {
                 />
               </div>
             )}
-
             {metodoPago === "efectivo" &&
               Number(monto) > ordenSeleccionada.total && (
                 <div className={styles.vueltoBox}>
-                  Vuelto a entregar:{" "}
+                  Vuelto:{" "}
                   <strong>
                     Q {(Number(monto) - ordenSeleccionada.total).toFixed(2)}
                   </strong>
                 </div>
               )}
-
             <div className={styles.modalActions}>
               <button
                 className={styles.btnCancelar}
@@ -560,7 +803,7 @@ export default function CajaPage() {
         </div>
       )}
 
-      {/* MODAL COMPROBANTE */}
+      {/* ── MODAL COMPROBANTE ───────────────────────────────────────────────── */}
       {modalFactura && (
         <div
           className={styles.modalOverlay}
@@ -592,16 +835,13 @@ export default function CajaPage() {
                 </button>
               </div>
             </div>
-
             <div ref={facturaRef} className={styles.facturaBody}>
               <div className="imp-empresa">
                 <h2>Refaccionaria Franco</h2>
               </div>
-
               <div className="imp-numero">
                 Comprobante No. {String(modalFactura.id_pago).padStart(8, "0")}
               </div>
-
               <div className="imp-seccion">
                 <h3>Datos del cobro</h3>
                 <div className="imp-fila">
@@ -630,35 +870,22 @@ export default function CajaPage() {
                   <span>Forma de pago</span>
                   <span>{labelMetodo(modalFactura.metodo_pago)}</span>
                 </div>
-                {modalFactura.referencia && (
-                  <div className="imp-fila">
-                    <span>No. Autorización</span>
-                    <span>{modalFactura.referencia}</span>
-                  </div>
-                )}
               </div>
-
               <div className="imp-seccion">
                 <h3>Detalle</h3>
                 <table>
                   <thead>
                     <tr>
-                      <th>Descripción</th>
+                      <th>Producto</th>
                       <th>Cant.</th>
-                      <th>Precio</th>
+                      <th>P.U.</th>
                       <th>Subtotal</th>
                     </tr>
                   </thead>
                   <tbody>
                     {modalFactura.detalles.map((d, i) => (
                       <tr key={i}>
-                        <td>
-                          {d.producto}
-                          <br />
-                          <small style={{ color: "#9ca3af" }}>
-                            SKU: {d.sku}
-                          </small>
-                        </td>
+                        <td>{d.producto}</td>
                         <td style={{ textAlign: "center" }}>{d.cantidad}</td>
                         <td style={{ textAlign: "right" }}>
                           {fmtQ(d.precio_unitario)}
@@ -671,39 +898,35 @@ export default function CajaPage() {
                   </tbody>
                 </table>
               </div>
-
-              {(() => {
-                const { baseImponible, iva } = calcularIva(modalFactura);
-                return (
-                  <div className="imp-totales">
-                    {modalFactura.descuento_monto > 0 && (
+              <div className="imp-totales">
+                {(() => {
+                  const { baseImponible, iva } = calcularIva(modalFactura);
+                  return (
+                    <>
                       <div className="imp-fila-total">
-                        <span>Descuento</span>
-                        <span>- {fmtQ(modalFactura.descuento_monto)}</span>
+                        <span>Base imponible</span>
+                        <span>{fmtQ(baseImponible)}</span>
                       </div>
-                    )}
-                    <div className="imp-fila-total">
-                      <span>Base imponible (sin IVA)</span>
-                      <span>{fmtQ(baseImponible)}</span>
-                    </div>
-                    <div className="imp-fila-total">
-                      <span>IVA (12%)</span>
-                      <span>{fmtQ(iva)}</span>
-                    </div>
-                    <div className="imp-total-final">
-                      <span>Total</span>
-                      <span>{fmtQ(modalFactura.total)}</span>
-                    </div>
-                  </div>
-                );
-              })()}
-
+                      <div className="imp-fila-total">
+                        <span>IVA (12%)</span>
+                        <span>{fmtQ(iva)}</span>
+                      </div>
+                      {modalFactura.descuento_monto > 0 && (
+                        <div className="imp-fila-total">
+                          <span>Descuento</span>
+                          <span>- {fmtQ(modalFactura.descuento_monto)}</span>
+                        </div>
+                      )}
+                      <div className="imp-total-final">
+                        <span>TOTAL</span>
+                        <span>{fmtQ(modalFactura.total)}</span>
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
               <div className="imp-footer">
-                <p>
-                  Conforme al Decreto 27-92 (Ley del IVA), Guatemala. IVA
-                  incluido al 12%.
-                </p>
-                <p>Documento interno — comprobante de pago.</p>
+                <p>Este documento es un comprobante interno.</p>
               </div>
             </div>
           </div>

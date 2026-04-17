@@ -5,6 +5,8 @@ import {
   RegistrarPagoDTO,
   RegistrarArqueoDTO,
   HistorialCobro,
+  RespuestaHistorialArqueos,
+  CajeroOpcion,
 } from "../types/caja.types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
@@ -12,15 +14,13 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
 function obtenerToken(): string {
   if (typeof document === "undefined") return "";
   const match = document.cookie.match(new RegExp("(^| )token=([^;]+)"));
-  if (match) return match[2];
-  return "";
+  return match ? match[2] : "";
 }
 
 export const CajaService = {
   async obtenerPendientes(): Promise<OrdenPendienteCaja[]> {
-    const token = obtenerToken();
     const res = await fetch(`${API_URL}/caja/pendientes`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${obtenerToken()}` },
     });
     const data = await res.json();
     if (!res.ok || !data.success)
@@ -29,12 +29,11 @@ export const CajaService = {
   },
 
   async registrarPago(payload: RegistrarPagoDTO): Promise<void> {
-    const token = obtenerToken();
     const res = await fetch(`${API_URL}/caja/cobrar`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${obtenerToken()}`,
       },
       body: JSON.stringify(payload),
     });
@@ -44,9 +43,8 @@ export const CajaService = {
   },
 
   async obtenerResumen(): Promise<ResumenCaja[]> {
-    const token = obtenerToken();
     const res = await fetch(`${API_URL}/caja/resumen`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${obtenerToken()}` },
     });
     const data = await res.json();
     if (!res.ok || !data.success)
@@ -57,12 +55,11 @@ export const CajaService = {
   async registrarArqueo(
     payload: RegistrarArqueoDTO,
   ): Promise<{ id_arqueo: number }> {
-    const token = obtenerToken();
     const res = await fetch(`${API_URL}/caja/arqueo`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${obtenerToken()}`,
       },
       body: JSON.stringify(payload),
     });
@@ -72,22 +69,49 @@ export const CajaService = {
     return data.data;
   },
 
-  // ─── NUEVO ────────────────────────────────────────────────────────────────
   async obtenerHistorial(
     fechaDesde?: string,
     fechaHasta?: string,
   ): Promise<HistorialCobro[]> {
-    const token = obtenerToken();
     const params = new URLSearchParams();
     if (fechaDesde) params.append("desde", fechaDesde);
     if (fechaHasta) params.append("hasta", fechaHasta);
-
     const res = await fetch(`${API_URL}/caja/historial?${params.toString()}`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${obtenerToken()}` },
     });
     const data = await res.json();
     if (!res.ok || !data.success)
       throw new Error(data.message || "Error al obtener historial de cobros");
+    return data.data;
+  },
+
+  // ─── NUEVO: historial de arqueos (cierres de caja) ────────────────────────
+  async obtenerHistorialArqueos(
+    fechaDesde?: string,
+    fechaHasta?: string,
+    id_cajero?: number,
+  ): Promise<RespuestaHistorialArqueos> {
+    const params = new URLSearchParams();
+    if (fechaDesde) params.append("desde", fechaDesde);
+    if (fechaHasta) params.append("hasta", fechaHasta);
+    if (id_cajero) params.append("id_cajero", String(id_cajero));
+    const res = await fetch(`${API_URL}/caja/arqueos?${params.toString()}`, {
+      headers: { Authorization: `Bearer ${obtenerToken()}` },
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success)
+      throw new Error(data.message || "Error al obtener historial de arqueos");
+    return data.data;
+  },
+
+  // ─── NUEVO: cajeros de la sucursal para el selector del supervisor ────────
+  async obtenerCajeros(): Promise<CajeroOpcion[]> {
+    const res = await fetch(`${API_URL}/caja/arqueos/cajeros`, {
+      headers: { Authorization: `Bearer ${obtenerToken()}` },
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success)
+      throw new Error(data.message || "Error al obtener cajeros");
     return data.data;
   },
 };

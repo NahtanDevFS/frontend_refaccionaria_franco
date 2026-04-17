@@ -26,7 +26,7 @@ export interface RegistrarArqueoDTO {
   observaciones?: string;
 }
 
-// ─── NUEVO: Historial de Cobros ───────────────────────────────────────────────
+// ─── Historial de cobros (pagos individuales) ─────────────────────────────────
 
 export interface DetalleFactura {
   id_producto: number;
@@ -53,4 +53,37 @@ export interface HistorialCobro {
   descuento_monto: number;
   total: number;
   detalles: DetalleFactura[];
+}
+
+// ─── Historial de arqueos (cierres de caja) ───────────────────────────────────
+
+export interface ArqueoHistorial {
+  id_arqueo: number;
+  fecha_cierre: string;
+  created_at: string;
+  efectivo_contado: number;
+  efectivo_segun_sistema: number;
+  diferencia: number;
+  estado: "cuadra" | "con_diferencia";
+  observaciones: string | null;
+  cajero: string;
+  id_cajero: number;
+  supervisor_verifica: string | null;
+}
+
+export interface ResumenArqueos {
+  totalArqueos: number;
+  cuadrados: number;
+  conDiferencia: number;
+  sumaDiferencias: number;
+}
+
+export interface RespuestaHistorialArqueos {
+  resumen: ResumenArqueos;
+  arqueos: ArqueoHistorial[];
+}
+
+export interface CajeroOpcion {
+  id_empleado: number;
+  nombre: string;
 }

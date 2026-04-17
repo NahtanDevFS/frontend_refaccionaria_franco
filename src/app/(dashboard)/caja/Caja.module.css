@@ -549,3 +549,75 @@
 .facturaBody :global(.imp-footer p) {
   margin: 2px 0;
 }
+
+.arqueoResumenGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .arqueoResumenGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.arqueoResumenCard {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.arqueoResumenVerde {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+.arqueoResumenRojo {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+.arqueoResumenAmarillo {
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+
+.arqueoResumenLabel {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6b7280;
+  font-weight: 600;
+}
+
+.arqueoResumenValor {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+/* ── Badges de estado de arqueo ──────────────────────────────────── */
+
+.badgeArqueoCuadra {
+  background-color: #d1fae5;
+  color: #065f46;
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.badgeArqueoDif {
+  background-color: #fee2e2;
+  color: #991b1b;
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
