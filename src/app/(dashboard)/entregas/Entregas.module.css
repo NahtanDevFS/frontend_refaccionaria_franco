@@ -1,4 +1,5 @@
 /* src/app/(dashboard)/entregas/Entregas.module.css */
+
 .container {
   padding: 1rem;
   background-color: #f3f4f6;
@@ -9,9 +10,50 @@
   font-size: 1.5rem;
   font-weight: bold;
   color: #111827;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
   text-align: center;
 }
+
+/* ── Tabs ───────────────────────────────────────────────────────────────────── */
+
+.tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid #e5e7eb;
+  padding-bottom: 0;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.tabBtn {
+  flex: 1;
+  background: none;
+  border: none;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0.6rem 1rem;
+  border-radius: 0.375rem 0.375rem 0 0;
+  transition:
+    color 0.2s,
+    background 0.2s;
+}
+
+.tabBtn:hover {
+  color: #374151;
+  background-color: #f9fafb;
+}
+
+.tabActive {
+  color: #3b82f6;
+  border-bottom: 3px solid #3b82f6;
+  margin-bottom: -2px;
+}
+
+/* ── Grid y Cards de ruta ────────────────────────────────────────────────────── */
 
 .grid {
   display: grid;
@@ -29,6 +71,11 @@
   border: 1px solid #e5e7eb;
 }
 
+/* Variante para entregas fallidas en historial */
+.cardFallido {
+  border-left: 4px solid #ef4444;
+}
+
 .cardHeader {
   display: flex;
   justify-content: space-between;
@@ -39,7 +86,7 @@
 }
 
 .orderId {
-  font-size: 1.125rem;
+  font-size: 1.05rem;
   font-weight: 800;
   color: #1f2937;
 }
@@ -62,9 +109,18 @@
   font-weight: 800;
 }
 
+.badgeFallido {
+  background-color: #fee2e2;
+  color: #991b1b;
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
 .infoRow {
-  margin-bottom: 0.5rem;
-  font-size: 0.95rem;
+  margin-bottom: 0.4rem;
+  font-size: 0.9rem;
   color: #4b5563;
 }
 
@@ -73,7 +129,7 @@
 }
 
 .productList {
-  margin-top: 1rem;
+  margin-top: 0.75rem;
   background: #f9fafb;
   padding: 0.75rem;
   border-radius: 0.5rem;
@@ -86,6 +142,7 @@
   border-bottom: 1px solid #e5e7eb;
   padding: 0.25rem 0;
 }
+
 .productItem:last-child {
   border-bottom: none;
 }
@@ -106,6 +163,16 @@
   font-weight: bold;
   font-size: 1rem;
   cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btnSuccess:hover:not(:disabled) {
+  background-color: #059669;
+}
+
+.btnSuccess:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .btnDanger {
@@ -118,9 +185,179 @@
   font-weight: bold;
   font-size: 1rem;
   cursor: pointer;
+  transition: background 0.2s;
 }
 
-/* Modales */
+.btnDanger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── Historial ──────────────────────────────────────────────────────────────── */
+
+.historialContainer {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.historialFiltros {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-end;
+  background: white;
+  border-radius: 0.75rem;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e5e7eb;
+}
+
+.filtroGroup {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 0.3rem;
+}
+
+.filtroLabel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.filtroInput {
+  padding: 0.55rem 0.6rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  font-size: 0.9rem;
+  font-family: inherit;
+  color: #111827;
+  background: white;
+}
+
+.filtroInput:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
+.btnBuscar {
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  padding: 0.6rem 1.1rem;
+  border-radius: 0.375rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s;
+  white-space: nowrap;
+  align-self: flex-end;
+}
+
+.btnBuscar:hover:not(:disabled) {
+  background-color: #2563eb;
+}
+
+.btnBuscar:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── Cards de resumen estadístico ────────────────────────────────────────────── */
+
+.resumenGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.resumenCard {
+  border-radius: 0.75rem;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.resumenEntregados {
+  background-color: #d1fae5;
+  border: 1px solid #a7f3d0;
+}
+
+.resumenFallidos {
+  background-color: #fee2e2;
+  border: 1px solid #fecaca;
+}
+
+.resumenCobrado {
+  background-color: #dbeafe;
+  border: 1px solid #bfdbfe;
+}
+
+.resumenNumero {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #111827;
+  line-height: 1;
+}
+
+.resumenLabel {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #374151;
+}
+
+/* ── Elementos extra en tarjetas del historial ───────────────────────────────── */
+
+.montoCobrado {
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  color: #047857;
+  background: #d1fae5;
+  padding: 0.3rem 0.6rem;
+  border-radius: 0.375rem;
+  display: inline-block;
+}
+
+.motivoFallido {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: #991b1b;
+  background: #fee2e2;
+  padding: 0.4rem 0.6rem;
+  border-radius: 0.375rem;
+}
+
+.btnComprobante {
+  margin-top: 1rem;
+  width: 100%;
+  background: white;
+  color: #3b82f6;
+  border: 1.5px solid #3b82f6;
+  padding: 0.65rem;
+  border-radius: 0.5rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    color 0.2s;
+}
+
+.btnComprobante:hover {
+  background-color: #eff6ff;
+}
+
+/* ── Modales ────────────────────────────────────────────────────────────────── */
+
 .modalOverlay {
   position: fixed;
   top: 0;
@@ -143,6 +380,12 @@
   max-width: 400px;
 }
 
+.modalContent h2 {
+  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
+  color: #111827;
+}
+
 .inputLarge {
   width: 100%;
   padding: 0.75rem;
@@ -150,7 +393,17 @@
   border: 2px solid #d1d5db;
   border-radius: 0.5rem;
   margin-top: 0.5rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.vueltoBox {
+  padding: 0.5rem 0.75rem;
+  background: #f0fdf4;
+  border-radius: 0.375rem;
+  font-size: 0.9rem;
+  color: #166534;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
 }
 
 .textarea {
@@ -162,14 +415,10 @@
   margin-top: 0.5rem;
   margin-bottom: 1rem;
   font-family: inherit;
+  resize: vertical;
 }
 
-.emptyState {
-  text-align: center;
-  padding: 3rem 1rem;
-  color: #6b7280;
-  font-size: 1.125rem;
-}
+/* ── Modal Comprobante ──────────────────────────────────────────────────────── */
 
 .modalComprobanteContent {
   background: white;
@@ -243,8 +492,6 @@
   background-color: #e5e7eb;
 }
 
-/* ── Estado de carga del comprobante ────────────────────────────────────────── */
-
 .comprobanteLoading {
   padding: 3rem 2rem;
   text-align: center;
@@ -252,15 +499,13 @@
   font-size: 0.9rem;
 }
 
-/* ── Cuerpo del comprobante (reutiliza las mismas clases globales que caja) ─── */
-
 .comprobanteBody {
   overflow-y: auto;
   padding: 1.25rem 1.5rem;
   font-family: Arial, sans-serif;
   font-size: 13px;
   color: #111;
-  -webkit-overflow-scrolling: touch; /* scroll suave en iOS */
+  -webkit-overflow-scrolling: touch;
 }
 
 .comprobanteBody :global(.imp-empresa) {
@@ -323,13 +568,13 @@
   margin-top: 4px;
 }
 
-.comprobanteBody :global(.imp-tabla) {
+.comprobanteBody :global(table) {
   width: 100%;
   border-collapse: collapse;
   font-size: 12px;
 }
 
-.comprobanteBody :global(.imp-tabla th) {
+.comprobanteBody :global(th) {
   text-align: left;
   font-size: 10px;
   font-weight: bold;
@@ -339,7 +584,7 @@
   padding: 4px 0;
 }
 
-.comprobanteBody :global(.imp-tabla td) {
+.comprobanteBody :global(td) {
   padding: 6px 0;
   border-bottom: 1px solid #f3f4f6;
   vertical-align: top;
@@ -354,16 +599,35 @@
   border-top: 1px dashed #e5e7eb;
 }
 
-/* ── Ajustes mobile para el modal comprobante ───────────────────────────────── */
+/* ── Estado vacío ────────────────────────────────────────────────────────────── */
+
+.emptyState {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #6b7280;
+  font-size: 1rem;
+}
+
+/* ── Mobile ──────────────────────────────────────────────────────────────────── */
 
 @media (max-width: 480px) {
+  .historialFiltros {
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .btnBuscar {
+    width: 100%;
+    padding: 0.7rem;
+  }
+
+  .resumenNumero {
+    font-size: 1.2rem;
+  }
+
   .modalComprobanteContent {
     max-height: 95vh;
     border-radius: 0.5rem;
-  }
-
-  .modalComprobanteHeader {
-    padding: 0.85rem 1rem;
   }
 
   .comprobanteBody {

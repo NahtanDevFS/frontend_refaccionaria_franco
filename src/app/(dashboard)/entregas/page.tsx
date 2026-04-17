@@ -2,7 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { EntregaService } from "@/services/entrega.service";
-import { ComprobanteEntrega, PedidoDomicilio } from "@/types/entrega.types";
+import {
+  ComprobanteEntrega,
+  EntregaHistorial,
+  PedidoDomicilio,
+  ResumenHistorial,
+} from "@/types/entrega.types";
 import styles from "./Entregas.module.css";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -16,6 +21,14 @@ function fmtFecha(iso: string): string {
   });
 }
 
+function fmtFechaSolo(iso: string): string {
+  return new Date(iso).toLocaleDateString("es-GT", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+}
+
 function labelMetodo(m: string): string {
   return m === "efectivo"
     ? "Efectivo"
@@ -24,47 +37,71 @@ function labelMetodo(m: string): string {
       : "Transferencia";
 }
 
+// Calcula fecha por defecto: hace N días en formato YYYY-MM-DD
+function fechaHaceNDias(n: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return d.toISOString().split("T")[0];
+}
+
+function hoy(): string {
+  return new Date().toISOString().split("T")[0];
+}
+
 // ─── Componente ───────────────────────────────────────────────────────────────
 export default function EntregasPage() {
-  const [pedidos, setPedidos] = useState<PedidoDomicilio[]>([]);
-  const [cargando, setCargando] = useState(true);
+  // ── Tab activo ──────────────────────────────────────────────────────────────
+  const [tabActual, setTabActual] = useState<"ruta" | "historial">("ruta");
 
-  // Estados de Modales
+  // ── Tab Ruta ────────────────────────────────────────────────────────────────
+  const [pedidos, setPedidos] = useState<PedidoDomicilio[]>([]);
+  const [cargandoRuta, setCargandoRuta] = useState(true);
   const [pedidoSeleccionado, setPedidoSeleccionado] =
     useState<PedidoDomicilio | null>(null);
 
-  // Modal Cobro (Contra Entrega)
   const [modalExito, setModalExito] = useState(false);
   const [montoCobrado, setMontoCobrado] = useState<string>("");
   const [procesando, setProcesando] = useState(false);
 
-  // Modal Fallo
   const [modalFallo, setModalFallo] = useState(false);
   const [motivoFallo, setMotivoFallo] = useState("");
 
-  // Modal Comprobante (NUEVO)
+  // ── Tab Historial ───────────────────────────────────────────────────────────
+  const [desde, setDesde] = useState(fechaHaceNDias(6));
+  const [hasta, setHasta] = useState(hoy());
+  const [historial, setHistorial] = useState<EntregaHistorial[]>([]);
+  const [resumen, setResumen] = useState<ResumenHistorial | null>(null);
+  const [cargandoHistorial, setCargandoHistorial] = useState(false);
+
+  // ── Modal Comprobante (compartido entre tabs) ────────────────────────────────
   const [modalComprobante, setModalComprobante] =
     useState<ComprobanteEntrega | null>(null);
   const [cargandoComprobante, setCargandoComprobante] = useState(false);
   const comprobanteRef = useRef<HTMLDivElement>(null);
 
+  // ── Carga inicial ────────────────────────────────────────────────────────────
   useEffect(() => {
     cargarPedidos();
   }, []);
 
+  useEffect(() => {
+    if (tabActual === "historial") cargarHistorial();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tabActual]);
+
+  // ─── Lógica Ruta ──────────────────────────────────────────────────────────
   const cargarPedidos = async () => {
     try {
-      setCargando(true);
+      setCargandoRuta(true);
       const data = await EntregaService.obtenerMisPedidos();
       setPedidos(data);
     } catch (error: any) {
       alert("Error: " + error.message);
     } finally {
-      setCargando(false);
+      setCargandoRuta(false);
     }
   };
 
-  // ─── Lógica de Entrega Exitosa ─────────────────────────────────────────────
   const iniciarEntrega = (pedido: PedidoDomicilio) => {
     if (pedido.pago_contra_entrega) {
       setPedidoSeleccionado(pedido);
@@ -83,20 +120,18 @@ export default function EntregasPage() {
       const resultado = await EntregaService.marcarExito(id, {
         monto_cobrado: monto,
       });
-
       setModalExito(false);
       cargarPedidos();
 
-      // Si había cobro contra entrega, cargar y mostrar el comprobante
       if (resultado.id_pago !== null) {
         setCargandoComprobante(true);
-        setModalComprobante(null); // abre el modal en estado "cargando"
+        setModalComprobante(null);
         try {
           const comprobante = await EntregaService.obtenerComprobante(
             resultado.id_pago,
           );
           setModalComprobante(comprobante);
-        } catch (err: any) {
+        } catch {
           alert("Entrega registrada, pero no se pudo cargar el comprobante.");
         } finally {
           setCargandoComprobante(false);
@@ -109,7 +144,6 @@ export default function EntregasPage() {
     }
   };
 
-  // ─── Lógica de Entrega Fallida ─────────────────────────────────────────────
   const iniciarFallo = (pedido: PedidoDomicilio) => {
     setPedidoSeleccionado(pedido);
     setMotivoFallo("");
@@ -120,7 +154,6 @@ export default function EntregasPage() {
     if (!pedidoSeleccionado) return;
     if (motivoFallo.trim().length < 5)
       return alert("Por favor escriba un motivo claro (min. 5 caracteres).");
-
     try {
       await EntregaService.marcarFallida(pedidoSeleccionado.id_pedido, {
         motivo_fallido: motivoFallo,
@@ -133,7 +166,39 @@ export default function EntregasPage() {
     }
   };
 
-  // ─── Imprimir comprobante ──────────────────────────────────────────────────
+  // ─── Lógica Historial ─────────────────────────────────────────────────────
+  const cargarHistorial = async () => {
+    try {
+      setCargandoHistorial(true);
+      const data = await EntregaService.obtenerMiHistorial(desde, hasta);
+      setHistorial(data.entregas);
+      setResumen(data.resumen);
+    } catch (error: any) {
+      alert("Error: " + error.message);
+    } finally {
+      setCargandoHistorial(false);
+    }
+  };
+
+  // ─── Comprobante (compartido) ─────────────────────────────────────────────
+  const abrirComprobante = async (id_pago: number) => {
+    setCargandoComprobante(true);
+    setModalComprobante(null);
+    try {
+      const comprobante = await EntregaService.obtenerComprobante(id_pago);
+      setModalComprobante(comprobante);
+    } catch (error: any) {
+      alert("Error al cargar comprobante: " + error.message);
+    } finally {
+      setCargandoComprobante(false);
+    }
+  };
+
+  const cerrarComprobante = () => {
+    setModalComprobante(null);
+    setCargandoComprobante(false);
+  };
+
   const imprimirComprobante = () => {
     if (!comprobanteRef.current || !modalComprobante) return;
     const contenido = comprobanteRef.current.innerHTML;
@@ -142,26 +207,25 @@ export default function EntregasPage() {
     ventana.document.write(`
       <html>
         <head>
-          <title>Comprobante de Pago #${modalComprobante.id_pago}</title>
+          <title>Comprobante #${modalComprobante.id_pago}</title>
           <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
             body { font-family: Arial, sans-serif; font-size: 12px; padding: 32px; color: #111; }
             h2 { font-size: 16px; font-weight: bold; margin-bottom: 4px; }
-            p { font-size: 11px; color: #555; margin: 2px 0; }
-            .numero { font-size: 12px; font-weight: bold; margin: 16px 0 20px; }
-            .seccion { margin-bottom: 20px; }
-            .seccion h3 { font-size: 10px; font-weight: bold; text-transform: uppercase;
+            p  { font-size: 11px; color: #555; margin: 2px 0; }
+            .imp-numero { font-size: 12px; font-weight: bold; margin: 16px 0 20px; }
+            .imp-seccion { margin-bottom: 20px; }
+            .imp-seccion h3 { font-size: 10px; font-weight: bold; text-transform: uppercase;
               color: #6b7280; border-bottom: 1px solid #e5e7eb; padding-bottom: 4px; margin-bottom: 8px; }
-            .fila { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 11px; }
+            .imp-fila { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 11px; }
+            .imp-gran-total { font-weight: bold; font-size: 14px; border-top: 2px solid #111;
+              padding-top: 6px; margin-top: 4px; }
             table { width: 100%; border-collapse: collapse; font-size: 11px; }
             th { text-align: left; font-size: 10px; font-weight: bold; text-transform: uppercase;
               color: #6b7280; border-bottom: 1px solid #e5e7eb; padding: 4px 0; }
-            td { padding: 6px 0; border-bottom: 1px solid #f3f4f6; }
-            .total-row { display: flex; justify-content: space-between; margin-top: 4px; font-size: 12px; }
-            .gran-total { font-weight: bold; font-size: 14px; border-top: 2px solid #111; padding-top: 6px; margin-top: 4px; }
-            .footer { margin-top: 32px; text-align: center; font-size: 10px; color: #9ca3af; }
-            .badge { display: inline-block; background: #dcfce7; color: #166534;
-              padding: 2px 8px; border-radius: 12px; font-weight: bold; font-size: 10px; }
+            td { padding: 6px 0; border-bottom: 1px solid #f3f4f6; vertical-align: top; }
+            .imp-footer { margin-top: 32px; text-align: center; font-size: 10px;
+              color: #9ca3af; border-top: 1px dashed #e5e7eb; padding-top: 12px; }
           </style>
         </head>
         <body>${contenido}</body>
@@ -174,78 +238,255 @@ export default function EntregasPage() {
   };
 
   // ─── Render ────────────────────────────────────────────────────────────────
-  if (cargando)
-    return <div className={styles.container}>Cargando tu ruta...</div>;
-
   return (
     <div className={styles.container}>
-      <h1 className={styles.title}>Mi Ruta de Entregas</h1>
+      <h1 className={styles.title}>Entregas a Domicilio</h1>
 
-      {pedidos.length === 0 ? (
-        <div className={styles.emptyState}>
-          ¡Excelente trabajo! No tienes entregas pendientes en este momento.
-        </div>
-      ) : (
-        <div className={styles.grid}>
-          {pedidos.map((pedido) => (
-            <div key={pedido.id_pedido} className={styles.card}>
-              <div className={styles.cardHeader}>
-                <span className={styles.orderId}>
-                  Pedido #{pedido.id_pedido}
-                </span>
-                {pedido.pago_contra_entrega ? (
-                  <span className={styles.badgeCobrar}>
-                    COBRAR Q{pedido.total.toFixed(2)}
-                  </span>
-                ) : (
-                  <span className={styles.badgePagado}>YA PAGADO</span>
-                )}
-              </div>
+      {/* ── Tabs ─────────────────────────────────────────────────────────── */}
+      <div className={styles.tabs}>
+        <button
+          className={`${styles.tabBtn} ${tabActual === "ruta" ? styles.tabActive : ""}`}
+          onClick={() => setTabActual("ruta")}
+        >
+          Mi Ruta
+        </button>
+        <button
+          className={`${styles.tabBtn} ${tabActual === "historial" ? styles.tabActive : ""}`}
+          onClick={() => setTabActual("historial")}
+        >
+          Mi Historial
+        </button>
+      </div>
 
-              <div className={styles.infoRow}>
-                <strong>Recibe:</strong>{" "}
-                {pedido.nombre_contacto || "No especificado"}
-              </div>
-              <div className={styles.infoRow}>
-                <strong>Teléfono:</strong>{" "}
-                <a href={`tel:${pedido.telefono_contacto}`}>
-                  {pedido.telefono_contacto}
-                </a>
-              </div>
-              <div className={styles.infoRow}>
-                <strong>Dirección:</strong> {pedido.direccion_entrega}
-              </div>
-
-              <div className={styles.productList}>
-                <strong>Entregar:</strong>
-                {pedido.productos?.map((p, index) => (
-                  <div key={index} className={styles.productItem}>
-                    <span>{p.producto}</span>
-                    <strong>x{p.cantidad}</strong>
-                  </div>
-                ))}
-              </div>
-
-              <div className={styles.actionButtons}>
-                <button
-                  className={styles.btnSuccess}
-                  onClick={() => iniciarEntrega(pedido)}
-                >
-                  Entregado
-                </button>
-                <button
-                  className={styles.btnDanger}
-                  onClick={() => iniciarFallo(pedido)}
-                >
-                  Fallida
-                </button>
-              </div>
+      {/* ══════════════════════════════════════════════════════════════════════
+          TAB 1: MI RUTA
+         ══════════════════════════════════════════════════════════════════════ */}
+      {tabActual === "ruta" && (
+        <>
+          {cargandoRuta ? (
+            <div className={styles.emptyState}>Cargando tu ruta...</div>
+          ) : pedidos.length === 0 ? (
+            <div className={styles.emptyState}>
+              ¡Excelente trabajo! No tienes entregas pendientes en este momento.
             </div>
-          ))}
+          ) : (
+            <div className={styles.grid}>
+              {pedidos.map((pedido) => (
+                <div key={pedido.id_pedido} className={styles.card}>
+                  <div className={styles.cardHeader}>
+                    <span className={styles.orderId}>
+                      Pedido #{pedido.id_pedido}
+                    </span>
+                    {pedido.pago_contra_entrega ? (
+                      <span className={styles.badgeCobrar}>
+                        COBRAR Q{pedido.total.toFixed(2)}
+                      </span>
+                    ) : (
+                      <span className={styles.badgePagado}>YA PAGADO</span>
+                    )}
+                  </div>
+
+                  <div className={styles.infoRow}>
+                    <strong>Recibe:</strong>{" "}
+                    {pedido.nombre_contacto || "No especificado"}
+                  </div>
+                  <div className={styles.infoRow}>
+                    <strong>Teléfono:</strong>{" "}
+                    <a href={`tel:${pedido.telefono_contacto}`}>
+                      {pedido.telefono_contacto}
+                    </a>
+                  </div>
+                  <div className={styles.infoRow}>
+                    <strong>Dirección:</strong> {pedido.direccion_entrega}
+                  </div>
+
+                  <div className={styles.productList}>
+                    <strong>Entregar:</strong>
+                    {pedido.productos?.map((p, i) => (
+                      <div key={i} className={styles.productItem}>
+                        <span>{p.producto}</span>
+                        <strong>x{p.cantidad}</strong>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className={styles.actionButtons}>
+                    <button
+                      className={styles.btnSuccess}
+                      onClick={() => iniciarEntrega(pedido)}
+                    >
+                      Entregado
+                    </button>
+                    <button
+                      className={styles.btnDanger}
+                      onClick={() => iniciarFallo(pedido)}
+                    >
+                      Fallida
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          TAB 2: MI HISTORIAL
+         ══════════════════════════════════════════════════════════════════════ */}
+      {tabActual === "historial" && (
+        <div className={styles.historialContainer}>
+          {/* Filtro de fechas */}
+          <div className={styles.historialFiltros}>
+            <div className={styles.filtroGroup}>
+              <label className={styles.filtroLabel}>Desde</label>
+              <input
+                type="date"
+                className={styles.filtroInput}
+                value={desde}
+                max={hasta}
+                onChange={(e) => setDesde(e.target.value)}
+              />
+            </div>
+            <div className={styles.filtroGroup}>
+              <label className={styles.filtroLabel}>Hasta</label>
+              <input
+                type="date"
+                className={styles.filtroInput}
+                value={hasta}
+                min={desde}
+                max={hoy()}
+                onChange={(e) => setHasta(e.target.value)}
+              />
+            </div>
+            <button
+              className={styles.btnBuscar}
+              onClick={cargarHistorial}
+              disabled={cargandoHistorial}
+            >
+              {cargandoHistorial ? "Buscando..." : "Buscar"}
+            </button>
+          </div>
+
+          {cargandoHistorial ? (
+            <div className={styles.emptyState}>Cargando historial...</div>
+          ) : (
+            <>
+              {/* Resumen estadístico */}
+              {resumen && (
+                <div className={styles.resumenGrid}>
+                  <div
+                    className={`${styles.resumenCard} ${styles.resumenEntregados}`}
+                  >
+                    <span className={styles.resumenNumero}>
+                      {resumen.totalEntregados}
+                    </span>
+                    <span className={styles.resumenLabel}>Entregados</span>
+                  </div>
+                  <div
+                    className={`${styles.resumenCard} ${styles.resumenFallidos}`}
+                  >
+                    <span className={styles.resumenNumero}>
+                      {resumen.totalFallidos}
+                    </span>
+                    <span className={styles.resumenLabel}>Fallidos</span>
+                  </div>
+                  <div
+                    className={`${styles.resumenCard} ${styles.resumenCobrado}`}
+                  >
+                    <span className={styles.resumenNumero}>
+                      Q{resumen.totalCobrado.toFixed(2)}
+                    </span>
+                    <span className={styles.resumenLabel}>Cobrado CE</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Lista de entregas */}
+              {historial.length === 0 ? (
+                <div className={styles.emptyState}>
+                  No hay entregas registradas en este período.
+                </div>
+              ) : (
+                <div className={styles.grid}>
+                  {historial.map((entrega) => (
+                    <div
+                      key={entrega.id_pedido}
+                      className={`${styles.card} ${
+                        entrega.estado_pedido === "fallido"
+                          ? styles.cardFallido
+                          : ""
+                      }`}
+                    >
+                      {/* Cabecera */}
+                      <div className={styles.cardHeader}>
+                        <span className={styles.orderId}>
+                          Pedido #{entrega.id_pedido}
+                        </span>
+                        {entrega.estado_pedido === "entregado" ? (
+                          <span className={styles.badgePagado}>ENTREGADO</span>
+                        ) : (
+                          <span className={styles.badgeFallido}>FALLIDO</span>
+                        )}
+                      </div>
+
+                      {/* Info */}
+                      <div className={styles.infoRow}>
+                        <strong>Fecha:</strong>{" "}
+                        {entrega.fecha_entrega
+                          ? fmtFechaSolo(entrega.fecha_entrega)
+                          : "—"}
+                      </div>
+                      <div className={styles.infoRow}>
+                        <strong>Contacto:</strong>{" "}
+                        {entrega.nombre_contacto || "No especificado"}
+                      </div>
+                      <div className={styles.infoRow}>
+                        <strong>Dirección:</strong> {entrega.direccion_entrega}
+                      </div>
+
+                      {/* Monto cobrado si fue CE */}
+                      {entrega.pago_contra_entrega &&
+                        entrega.estado_pedido === "entregado" && (
+                          <div className={styles.montoCobrado}>
+                            Cobrado:{" "}
+                            <strong>
+                              Q{entrega.monto_cobrado?.toFixed(2)}
+                            </strong>
+                          </div>
+                        )}
+
+                      {/* Motivo si fue fallida */}
+                      {entrega.estado_pedido === "fallido" &&
+                        entrega.motivo_fallido && (
+                          <div className={styles.motivoFallido}>
+                            <strong>Motivo:</strong> {entrega.motivo_fallido}
+                          </div>
+                        )}
+
+                      {/* Botón comprobante solo si hay id_pago */}
+                      {entrega.id_pago !== null && (
+                        <button
+                          className={styles.btnComprobante}
+                          onClick={() => abrirComprobante(entrega.id_pago!)}
+                        >
+                          Ver Comprobante
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
         </div>
       )}
 
-      {/* ── Modal Cobro (Contra Entrega) ─────────────────────────────────── */}
+      {/* ══════════════════════════════════════════════════════════════════════
+          MODALES (compartidos entre tabs)
+         ══════════════════════════════════════════════════════════════════════ */}
+
+      {/* ── Modal Cobro ──────────────────────────────────────────────────── */}
       {modalExito && pedidoSeleccionado && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalContent}>
@@ -266,17 +507,7 @@ export default function EntregasPage() {
             />
 
             {Number(montoCobrado) > pedidoSeleccionado.total && (
-              <div
-                style={{
-                  marginTop: "0.5rem",
-                  padding: "0.5rem 0.75rem",
-                  background: "#f0fdf4",
-                  borderRadius: "0.375rem",
-                  fontSize: "0.9rem",
-                  color: "#166534",
-                  fontWeight: 600,
-                }}
-              >
+              <div className={styles.vueltoBox}>
                 Vuelto: Q
                 {(Number(montoCobrado) - pedidoSeleccionado.total).toFixed(2)}
               </div>
@@ -308,7 +539,7 @@ export default function EntregasPage() {
         </div>
       )}
 
-      {/* ── Modal Entrega Fallida ─────────────────────────────────────────── */}
+      {/* ── Modal Fallida ─────────────────────────────────────────────────── */}
       {modalFallo && pedidoSeleccionado && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalContent}>
@@ -317,7 +548,6 @@ export default function EntregasPage() {
               Indique por qué no se pudo entregar el Pedido #
               {pedidoSeleccionado.id_pedido}
             </p>
-
             <textarea
               className={styles.textarea}
               rows={4}
@@ -325,7 +555,6 @@ export default function EntregasPage() {
               value={motivoFallo}
               onChange={(e) => setMotivoFallo(e.target.value)}
             />
-
             <div style={{ display: "flex", gap: "1rem" }}>
               <button
                 className={styles.btnDanger}
@@ -342,11 +571,10 @@ export default function EntregasPage() {
         </div>
       )}
 
-      {/* ── Modal Comprobante (NUEVO) ─────────────────────────────────────── */}
+      {/* ── Modal Comprobante ─────────────────────────────────────────────── */}
       {(cargandoComprobante || modalComprobante) && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalComprobanteContent}>
-            {/* Header */}
             <div className={styles.modalComprobanteHeader}>
               <div>
                 <h2>Comprobante de Cobro</h2>
@@ -368,24 +596,19 @@ export default function EntregasPage() {
                 )}
                 <button
                   className={styles.btnCerrar}
-                  onClick={() => {
-                    setModalComprobante(null);
-                    setCargandoComprobante(false);
-                  }}
+                  onClick={cerrarComprobante}
                 >
                   Cerrar
                 </button>
               </div>
             </div>
 
-            {/* Cuerpo */}
             {cargandoComprobante ? (
               <div className={styles.comprobanteLoading}>
                 Generando comprobante...
               </div>
             ) : modalComprobante ? (
               <div ref={comprobanteRef} className={styles.comprobanteBody}>
-                {/* Empresa */}
                 <div className="imp-empresa">
                   <h2>Refaccionaria Franco</h2>
                 </div>
@@ -395,7 +618,6 @@ export default function EntregasPage() {
                   {String(modalComprobante.id_pago).padStart(8, "0")}
                 </div>
 
-                {/* Datos del cobro */}
                 <div className="imp-seccion">
                   <h3>Datos del cobro</h3>
                   <div className="imp-fila">
@@ -432,10 +654,9 @@ export default function EntregasPage() {
                   )}
                 </div>
 
-                {/* Productos */}
                 <div className="imp-seccion">
                   <h3>Productos</h3>
-                  <table className="imp-tabla">
+                  <table>
                     <thead>
                       <tr>
                         <th>Descripción</th>
@@ -464,7 +685,6 @@ export default function EntregasPage() {
                   </table>
                 </div>
 
-                {/* Totales */}
                 <div className="imp-seccion">
                   <h3>Resumen</h3>
                   <div className="imp-fila">

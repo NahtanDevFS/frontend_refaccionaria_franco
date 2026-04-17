@@ -25,13 +25,12 @@ export interface MarcarEntregaFallidaDTO {
   motivo_fallido: string;
 }
 
-// Resultado que devuelve el backend al confirmar una entrega exitosa
 export interface ResultadoEntregaExitosa {
   id_pedido: number;
-  id_pago: number | null; // null si no era contra entrega
+  id_pago: number | null;
 }
 
-// ─── Comprobante de cobro (estructura idéntica a HistorialCobro del cajero) ──
+// ─── Comprobante ──────────────────────────────────────────────────────────────
 
 export interface DetalleComprobante {
   id_producto: number;
@@ -58,4 +57,32 @@ export interface ComprobanteEntrega {
   descuento_monto: number;
   total: number;
   detalles: DetalleComprobante[];
+}
+
+// ─── Historial ────────────────────────────────────────────────────────────────
+
+export interface EntregaHistorial {
+  id_pedido: number;
+  id_venta: number;
+  estado_pedido: "entregado" | "fallido";
+  direccion_entrega: string;
+  nombre_contacto: string;
+  telefono_contacto: string;
+  fecha_entrega: string;
+  motivo_fallido: string | null;
+  monto_cobrado: number | null;
+  total: number;
+  pago_contra_entrega: boolean;
+  id_pago: number | null; // presente solo si fue cobro CE
+}
+
+export interface ResumenHistorial {
+  totalEntregados: number;
+  totalFallidos: number;
+  totalCobrado: number;
+}
+
+export interface RespuestaHistorial {
+  resumen: ResumenHistorial;
+  entregas: EntregaHistorial[];
 }

@@ -5,6 +5,7 @@ import {
   MarcarEntregaFallidaDTO,
   ResultadoEntregaExitosa,
   ComprobanteEntrega,
+  RespuestaHistorial,
 } from "../types/entrega.types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
@@ -28,7 +29,6 @@ export const EntregaService = {
     return data.data;
   },
 
-  // Ahora retorna ResultadoEntregaExitosa con id_pago para abrir el comprobante
   async marcarExito(
     id_pedido: number,
     payload: MarcarEntregaExitosaDTO,
@@ -66,7 +66,6 @@ export const EntregaService = {
       throw new Error(data.message || "Error al marcar como fallida");
   },
 
-  // NUEVO: obtiene el comprobante de un cobro por id_pago
   async obtenerComprobante(id_pago: number): Promise<ComprobanteEntrega> {
     const token = obtenerToken();
     const res = await fetch(`${API_URL}/entregas/comprobante/${id_pago}`, {
@@ -76,5 +75,21 @@ export const EntregaService = {
     if (!res.ok || !data.success)
       throw new Error(data.message || "Error al obtener comprobante");
     return data.data as ComprobanteEntrega;
+  },
+
+  // ─── NUEVO ────────────────────────────────────────────────────────────────
+  async obtenerMiHistorial(
+    desde: string,
+    hasta: string,
+  ): Promise<RespuestaHistorial> {
+    const token = obtenerToken();
+    const res = await fetch(
+      `${API_URL}/entregas/mi-historial?desde=${desde}&hasta=${hasta}`,
+      { headers: { Authorization: `Bearer ${token}` } },
+    );
+    const data = await res.json();
+    if (!res.ok || !data.success)
+      throw new Error(data.message || "Error al obtener historial");
+    return data.data as RespuestaHistorial;
   },
 };
