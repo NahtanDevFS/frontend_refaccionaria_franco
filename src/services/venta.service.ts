@@ -98,8 +98,9 @@ export const VentaService = {
     const response = await fetch(`${API_URL}/ventas/repartidores/activos`, {
       headers: { Authorization: `Bearer ${token}` },
     });
+    const data = await response.json();
     if (!response.ok) throw new Error("Error al obtener repartidores");
-    return response.json();
+    return data.data ?? [];
   },
 
   async obtenerVentaPorId(

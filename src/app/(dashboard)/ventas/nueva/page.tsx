@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import styles from "./NuevaVenta.module.css";
 import { InventarioService } from "@/services/inventario.service";
 import { ClienteService } from "@/services/cliente.service";
 import { VentaService } from "@/services/venta.service";
 import { UbicacionService } from "@/services/ubicacion.service";
 
+// ─── Tipos ────────────────────────────────────────────────────────────────────
 interface ProductoInventario {
   id_producto: number;
   id_producto_reacondicionado?: number;
@@ -26,19 +27,31 @@ interface ItemCarrito extends ProductoInventario {
   es_reacondicionado?: boolean;
 }
 
+interface ClienteDB {
+  id_cliente?: number;
+  nombre_razon_social: string;
+  nit: string;
+  telefono: string | null;
+  direccion: string | null;
+  tipo_cliente: string;
+  email: string | null;
+  id_municipio: number | null;
+  notas_internas: string | null;
+}
+
+// ─── Componente ───────────────────────────────────────────────────────────────
 export default function NuevaVentaPage() {
-  // === SESIÓN ===
+  // ── Sesión ──────────────────────────────────────────────────────────────────
   const [usuarioSesion, setUsuarioSesion] = useState<{
     id_empleado: number;
     id_sucursal: number;
   } | null>(null);
 
-  // === ESTADOS DE BÚSQUEDA ===
+  // ── Búsqueda de productos ────────────────────────────────────────────────────
   const [tipoBusqueda, setTipoBusqueda] = useState<"texto" | "vehiculo">(
     "texto",
   );
   const [terminoBusqueda, setTerminoBusqueda] = useState("");
-
   const [categorias, setCategorias] = useState<
     { id_categoria: number; nombre: string }[]
   >([]);
@@ -47,8 +60,6 @@ export default function NuevaVentaPage() {
   >([]);
   const [filtroCategoria, setFiltroCategoria] = useState("");
   const [filtroMarca, setFiltroMarca] = useState("");
-
-  // Vehículos
   const [marcasVehiculo, setMarcasVehiculo] = useState<
     { id_marca_vehiculo: number; nombre: string }[]
   >([]);
@@ -60,17 +71,32 @@ export default function NuevaVentaPage() {
     id_modelo: "",
     anio: "",
   });
-
   const [resultadosProducto, setResultadosProducto] = useState<
     ProductoInventario[]
   >([]);
   const [carrito, setCarrito] = useState<ItemCarrito[]>([]);
 
-  // === ESTADOS DEL CLIENTE ===
-  const [nitBusqueda, setNitBusqueda] = useState("CF");
-  const [clienteExiste, setClienteExiste] = useState(false);
-  const [datosCliente, setDatosCliente] = useState({
-    nombre: "Consumidor Final",
+  // ── Estado del cliente (nuevo diseño) ────────────────────────────────────────
+  // "cf"        → Consumidor Final, listo para vender
+  // "buscando"  → mostrando el buscador libre
+  // "seleccionado" → cliente encontrado y confirmado
+  // "nuevo"     → modal de registro abierto
+  type ModoCliente = "cf" | "buscando" | "seleccionado" | "nuevo";
+  const [modoCliente, setModoCliente] = useState<ModoCliente>("cf");
+  const [clienteSeleccionado, setClienteSeleccionado] =
+    useState<ClienteDB | null>(null);
+
+  // Buscador con autocomplete
+  const [termBusqCliente, setTermBusqCliente] = useState("");
+  const [sugerencias, setSugerencias] = useState<ClienteDB[]>([]);
+  const [buscandoCliente, setBuscandoCliente] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Formulario cliente nuevo (modal)
+  const [nuevoCliente, setNuevoCliente] = useState({
+    nit: "",
+    nombre: "",
     tipo: "particular",
     telefono: "",
     email: "",
@@ -79,8 +105,9 @@ export default function NuevaVentaPage() {
     id_municipio: "",
     notas_internas: "",
   });
+  const [guardandoCliente, setGuardandoCliente] = useState(false);
 
-  // === ESTADOS DE LOGÍSTICA Y NEGOCIO ===
+  // ── Logística ────────────────────────────────────────────────────────────────
   const [esDomicilio, setEsDomicilio] = useState(false);
   const [idRepartidor, setIdRepartidor] = useState("");
   const [pagoContraEntrega, setPagoContraEntrega] = useState(false);
@@ -91,15 +118,21 @@ export default function NuevaVentaPage() {
     { id_empleado: number; nombre: string; apellido: string }[]
   >([]);
 
-  // === ESTADOS DE UBICACIÓN ===
+  // ── Ubicación ────────────────────────────────────────────────────────────────
   const [departamentos, setDepartamentos] = useState<
     { id_departamento: number; nombre: string }[]
   >([]);
   const [municipios, setMunicipios] = useState<
     { id_municipio: number; nombre: string }[]
   >([]);
+  const [deptoModal, setDeptoModal] = useState<
+    { id_departamento: number; nombre: string }[]
+  >([]);
+  const [munModal, setMunModal] = useState<
+    { id_municipio: number; nombre: string }[]
+  >([]);
 
-  // === EFECTOS ===
+  // ── Efectos iniciales ────────────────────────────────────────────────────────
   useEffect(() => {
     const userString = localStorage.getItem("usuario");
     if (userString) {
@@ -108,7 +141,6 @@ export default function NuevaVentaPage() {
         id_empleado: u.id_empleado,
         id_sucursal: u.id_sucursal || 1,
       });
-
       InventarioService.obtenerCategorias()
         .then(setCategorias)
         .catch(console.error);
@@ -118,23 +150,26 @@ export default function NuevaVentaPage() {
       cargarRepartidores();
       UbicacionService.obtenerDepartamentos()
         .then((data) => {
-          if (Array.isArray(data)) setDepartamentos(data);
+          if (Array.isArray(data)) {
+            setDepartamentos(data);
+            setDeptoModal(data);
+          }
         })
         .catch(console.error);
     }
   }, []);
 
   useEffect(() => {
-    if (datosCliente.id_departamento) {
-      UbicacionService.obtenerMunicipios(parseInt(datosCliente.id_departamento))
+    if (nuevoCliente.id_departamento) {
+      UbicacionService.obtenerMunicipios(parseInt(nuevoCliente.id_departamento))
         .then((data) => {
-          if (Array.isArray(data)) setMunicipios(data);
+          if (Array.isArray(data)) setMunModal(data);
         })
         .catch(console.error);
     } else {
-      setMunicipios([]);
+      setMunModal([]);
     }
-  }, [datosCliente.id_departamento]);
+  }, [nuevoCliente.id_departamento]);
 
   useEffect(() => {
     if (tipoBusqueda === "vehiculo" && marcasVehiculo.length === 0) {
@@ -157,16 +192,31 @@ export default function NuevaVentaPage() {
     setBusquedaVehiculo((prev) => ({ ...prev, id_modelo: "", anio: "" }));
   }, [busquedaVehiculo.id_marca]);
 
+  // Cerrar dropdown al hacer click fuera
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node)
+      ) {
+        setSugerencias([]);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // ── Carga de repartidores ────────────────────────────────────────────────────
   const cargarRepartidores = async () => {
     try {
       const data = await VentaService.obtenerRepartidores();
-      setListaRepartidores(data);
-    } catch (error) {
-      console.error("No se pudieron cargar los repartidores", error);
+      setListaRepartidores(Array.isArray(data) ? data : []);
+    } catch {
+      console.error("No se pudieron cargar repartidores");
     }
   };
 
-  // === MÉTODOS DE BÚSQUEDA Y CARRITO ===
+  // ── Búsqueda de productos ────────────────────────────────────────────────────
   const buscarProductoTexto = async () => {
     if (!usuarioSesion) return;
     if (!terminoBusqueda && !filtroCategoria && !filtroMarca) {
@@ -184,7 +234,7 @@ export default function NuevaVentaPage() {
       );
       setResultadosProducto(data);
     } catch (error: any) {
-      alert(error.message || "Error al buscar productos en el inventario.");
+      alert(error.message || "Error al buscar productos.");
     }
   };
 
@@ -199,7 +249,7 @@ export default function NuevaVentaPage() {
         filtroMarca,
       );
       setResultadosProducto(data);
-    } catch (error) {
+    } catch {
       alert("Error al buscar repuestos para este vehículo.");
     }
   };
@@ -209,14 +259,10 @@ export default function NuevaVentaPage() {
       alert("Sin stock en esta sucursal. Solicita traslado.");
       return;
     }
-
-    // UID Diferenciado para evitar colisiones entre el mismo producto nuevo vs reacondicionado
     const uid = prod.is_reacondicionado
       ? `R_${prod.id_producto_reacondicionado}`
       : `P_${prod.id_producto}`;
-
     const itemExistente = carrito.find((i) => i.uid === uid);
-
     if (itemExistente) {
       if (itemExistente.cantidad >= prod.stock_local) {
         alert(
@@ -226,16 +272,17 @@ export default function NuevaVentaPage() {
         );
         return;
       }
-      const nuevoCarrito = carrito.map((i) =>
-        i.uid === uid
-          ? {
-              ...i,
-              cantidad: i.cantidad + 1,
-              subtotal: (i.cantidad + 1) * i.precio_venta,
-            }
-          : i,
+      setCarrito(
+        carrito.map((i) =>
+          i.uid === uid
+            ? {
+                ...i,
+                cantidad: i.cantidad + 1,
+                subtotal: (i.cantidad + 1) * i.precio_venta,
+              }
+            : i,
+        ),
       );
-      setCarrito(nuevoCarrito);
     } else {
       setCarrito([
         ...carrito,
@@ -254,90 +301,142 @@ export default function NuevaVentaPage() {
   };
 
   const modificarCantidad = (uid: string, delta: number) => {
-    const nuevoCarrito = carrito.map((item) => {
-      if (item.uid === uid) {
-        const nuevaCant = item.cantidad + delta;
-        if (nuevaCant < 1 || nuevaCant > item.stock_local) return item;
-        return {
-          ...item,
-          cantidad: nuevaCant,
-          subtotal: nuevaCant * item.precio_venta,
-        };
-      }
-      return item;
-    });
-    setCarrito(nuevoCarrito);
+    setCarrito(
+      carrito.map((item) => {
+        if (item.uid === uid) {
+          const nuevaCant = item.cantidad + delta;
+          if (nuevaCant < 1 || nuevaCant > item.stock_local) return item;
+          return {
+            ...item,
+            cantidad: nuevaCant,
+            subtotal: nuevaCant * item.precio_venta,
+          };
+        }
+        return item;
+      }),
+    );
   };
 
-  // === CLIENTE ===
-  const buscarClienteNit = async () => {
-    if (nitBusqueda === "CF" || nitBusqueda.trim() === "") {
-      setNitBusqueda("CF");
-      setClienteExiste(true);
-      setDatosCliente((prev) => ({ ...prev, nombre: "Consumidor Final" }));
+  // ── Lógica de cliente (nuevo diseño) ─────────────────────────────────────────
+
+  // Autocomplete con debounce
+  const handleTermBusqCliente = useCallback((valor: string) => {
+    setTermBusqCliente(valor);
+    setSugerencias([]);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (valor.trim().length < 2) return;
+    debounceRef.current = setTimeout(async () => {
+      setBuscandoCliente(true);
+      try {
+        const resultados = await ClienteService.buscarClientes(valor);
+        setSugerencias(resultados);
+      } catch {
+        setSugerencias([]);
+      } finally {
+        setBuscandoCliente(false);
+      }
+    }, 400);
+  }, []);
+
+  const seleccionarCliente = (cliente: ClienteDB) => {
+    setClienteSeleccionado(cliente);
+    setModoCliente("seleccionado");
+    setSugerencias([]);
+    setTermBusqCliente("");
+  };
+
+  const cambiarAConsumidorFinal = () => {
+    setModoCliente("cf");
+    setClienteSeleccionado(null);
+    setTermBusqCliente("");
+    setSugerencias([]);
+  };
+
+  const iniciarBusquedaCliente = () => {
+    setModoCliente("buscando");
+    setClienteSeleccionado(null);
+    setTermBusqCliente("");
+    setSugerencias([]);
+  };
+
+  const abrirModalNuevoCliente = () => {
+    // Si había texto buscado, prellenar el NIT o nombre
+    const esNit = /^\d+$/.test(termBusqCliente.trim());
+    setNuevoCliente({
+      nit: esNit ? termBusqCliente.trim() : "",
+      nombre: esNit ? "" : termBusqCliente.trim(),
+      tipo: "particular",
+      telefono: "",
+      email: "",
+      direccion: "",
+      id_departamento: "",
+      id_municipio: "",
+      notas_internas: "",
+    });
+    setModoCliente("nuevo");
+    setSugerencias([]);
+  };
+
+  const guardarNuevoCliente = async () => {
+    if (!nuevoCliente.nombre.trim()) {
+      alert("El nombre es obligatorio.");
       return;
     }
+    setGuardandoCliente(true);
     try {
-      const clienteDB = await ClienteService.buscarPorNit(nitBusqueda);
-      if (clienteDB) {
-        setClienteExiste(true);
-        setDatosCliente({
-          nombre: clienteDB.nombre_razon_social,
-          tipo: clienteDB.tipo_cliente,
-          telefono: clienteDB.telefono || "",
-          email: clienteDB.email || "",
-          direccion: clienteDB.direccion || "",
-          id_departamento: "",
-          id_municipio: clienteDB.id_municipio?.toString() || "",
-          notas_internas: clienteDB.notas_internas || "",
-        });
-      } else {
-        setClienteExiste(false);
-        setDatosCliente((prev) => ({
-          ...prev,
-          nombre: "",
-          telefono: "",
-          direccion: "",
-        }));
-        alert(
-          "Cliente no encontrado. Por favor, rellena los datos para crearlo.",
-        );
-      }
-    } catch (error) {
-      alert("Error validando el NIT.");
+      // El backend crea el cliente dentro de crearOrdenVenta si viene cliente_nuevo
+      // Aquí solo lo guardamos en el estado local como "seleccionado"
+      const clienteLocal: ClienteDB = {
+        nombre_razon_social: nuevoCliente.nombre.trim(),
+        nit: nuevoCliente.nit.trim() || "CF",
+        tipo_cliente: nuevoCliente.tipo,
+        telefono: nuevoCliente.telefono || null,
+        email: nuevoCliente.email || null,
+        direccion: nuevoCliente.direccion || null,
+        id_municipio: nuevoCliente.id_municipio
+          ? parseInt(nuevoCliente.id_municipio)
+          : null,
+        notas_internas: nuevoCliente.notas_internas || null,
+      };
+      setClienteSeleccionado(clienteLocal);
+      setModoCliente("seleccionado");
+    } finally {
+      setGuardandoCliente(false);
     }
   };
 
-  // === CÁLCULO DE TOTALES E IVA ===
+  // ── Totales ──────────────────────────────────────────────────────────────────
   const subtotalCarrito = carrito.reduce((sum, item) => sum + item.subtotal, 0);
   const descuentoMonto = subtotalCarrito * (descuentoPorcentaje / 100);
   const totalVentaConIva = subtotalCarrito - descuentoMonto;
-  const precioBaseSinIva = totalVentaConIva / 1.12;
-  const montoIvaCalculado = totalVentaConIva - precioBaseSinIva;
 
-  // === PROCESAR ORDEN ===
+  // ── Procesar orden ───────────────────────────────────────────────────────────
   const procesarOrden = async () => {
     if (!usuarioSesion) {
       alert("No se detectó una sesión activa.");
       return;
     }
 
+    // Determinar NIT y cliente_nuevo según modo
+    const esCF = modoCliente === "cf";
+    const nitFinal = esCF ? "CF" : clienteSeleccionado?.nit || "CF";
+    const esClienteNuevo =
+      modoCliente === "seleccionado" && !clienteSeleccionado?.id_cliente;
+
     const payload = {
       id_sucursal: usuarioSesion.id_sucursal,
       id_vendedor: usuarioSesion.id_empleado,
-      nit: nitBusqueda,
+      nit: nitFinal,
       cliente_nuevo:
-        !clienteExiste && nitBusqueda !== "CF"
+        esClienteNuevo && clienteSeleccionado
           ? {
-              nombre_razon_social: datosCliente.nombre,
-              tipo_cliente: datosCliente.tipo,
-              telefono: datosCliente.telefono,
-              email: datosCliente.email,
-              direccion: datosCliente.direccion,
-              id_municipio: datosCliente.id_municipio
-                ? parseInt(datosCliente.id_municipio)
-                : undefined,
-              notas_internas: datosCliente.notas_internas,
+              nombre_razon_social: clienteSeleccionado.nombre_razon_social,
+              tipo_cliente: clienteSeleccionado.tipo_cliente,
+              telefono: clienteSeleccionado.telefono,
+              email: clienteSeleccionado.email,
+              direccion: clienteSeleccionado.direccion,
+              id_municipio: clienteSeleccionado.id_municipio ?? undefined,
+              notas_internas: clienteSeleccionado.notas_internas,
             }
           : null,
       canal: esDomicilio ? "domicilio" : "mostrador",
@@ -345,7 +444,9 @@ export default function NuevaVentaPage() {
       descuento_porcentaje: descuentoPorcentaje,
       id_repartidor:
         esDomicilio && idRepartidor ? parseInt(idRepartidor) : null,
-      direccion_entrega: esDomicilio ? datosCliente.direccion : null,
+      direccion_entrega: esDomicilio
+        ? clienteSeleccionado?.direccion || null
+        : null,
       nombre_contacto: esDomicilio ? nombreContacto : null,
       telefono_contacto: esDomicilio ? telefonoContacto : null,
       detalles: carrito.map((c) => ({
@@ -364,32 +465,29 @@ export default function NuevaVentaPage() {
       else mensajeEstado = "Pendiente de Pago";
 
       await VentaService.crearOrdenVenta(payload);
-      alert(`Orden enviada exitosamente. Estado: ${mensajeEstado}`);
+      alert(`Orden enviada exitosamente.\nEstado: ${mensajeEstado}`);
 
+      // Reset
       setCarrito([]);
-      setNitBusqueda("CF");
-      setClienteExiste(true);
-      setDatosCliente({
-        nombre: "Consumidor Final",
-        tipo: "particular",
-        telefono: "",
-        email: "",
-        direccion: "",
-        id_departamento: "",
-        id_municipio: "",
-        notas_internas: "",
-      });
+      setModoCliente("cf");
+      setClienteSeleccionado(null);
       setEsDomicilio(false);
       setPagoContraEntrega(false);
       setDescuentoPorcentaje(0);
       setIdRepartidor("");
+      setNombreContacto("");
+      setTelefonoContacto("");
     } catch (error: any) {
       alert(`Error al procesar: ${error.message}`);
     }
   };
 
+  // ── Render ────────────────────────────────────────────────────────────────────
   return (
     <div className={styles.container}>
+      {/* ═══════════════════════════════════════════════════════════════════════
+          PANEL IZQUIERDO — Catálogo (sin cambios)
+         ═══════════════════════════════════════════════════════════════════════ */}
       <div className={styles.panel}>
         <div
           style={{
@@ -430,7 +528,7 @@ export default function NuevaVentaPage() {
           </div>
         </div>
 
-        {/* Buscadores */}
+        {/* Buscador texto */}
         {tipoBusqueda === "texto" && (
           <div
             className={styles.formGrid}
@@ -447,7 +545,7 @@ export default function NuevaVentaPage() {
               <input
                 type="text"
                 className={styles.input}
-                placeholder="Ej. Pastillas, FRIC-001..."
+                placeholder="Ej. FRIC-001 o Pastillas de Freno..."
                 value={terminoBusqueda}
                 onChange={(e) => setTerminoBusqueda(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && buscarProductoTexto()}
@@ -460,7 +558,7 @@ export default function NuevaVentaPage() {
                 value={filtroCategoria}
                 onChange={(e) => setFiltroCategoria(e.target.value)}
               >
-                <option value="">Todas las categorías</option>
+                <option value="">Todas</option>
                 {categorias.map((c) => (
                   <option key={c.id_categoria} value={c.id_categoria}>
                     {c.nombre}
@@ -469,13 +567,13 @@ export default function NuevaVentaPage() {
               </select>
             </div>
             <div className={styles.formGroup}>
-              <label className={styles.label}>Marca del Repuesto</label>
+              <label className={styles.label}>Marca Repuesto</label>
               <select
                 className={styles.select}
                 value={filtroMarca}
                 onChange={(e) => setFiltroMarca(e.target.value)}
               >
-                <option value="">Todas las marcas</option>
+                <option value="">Todas</option>
                 {marcasRepuesto.map((m) => (
                   <option key={m.id_marca} value={m.id_marca}>
                     {m.nombre}
@@ -483,21 +581,19 @@ export default function NuevaVentaPage() {
                 ))}
               </select>
             </div>
-            <div
-              className={styles.formGroup}
-              style={{ gridColumn: "span 2", justifyContent: "flex-end" }}
-            >
+            <div className={styles.formGroup} style={{ gridColumn: "span 2" }}>
               <button
                 className={styles.btnAction}
-                style={{ margin: 0 }}
+                style={{ marginTop: 0 }}
                 onClick={buscarProductoTexto}
               >
-                Aplicar Filtros y Buscar
+                Buscar
               </button>
             </div>
           </div>
         )}
 
+        {/* Buscador vehículo */}
         {tipoBusqueda === "vehiculo" && (
           <div
             className={styles.formGrid}
@@ -555,7 +651,7 @@ export default function NuevaVentaPage() {
               <input
                 type="number"
                 className={styles.input}
-                placeholder="Ej. 2018"
+                placeholder="Ej. 2019"
                 value={busquedaVehiculo.anio}
                 onChange={(e) =>
                   setBusquedaVehiculo({
@@ -566,13 +662,13 @@ export default function NuevaVentaPage() {
               />
             </div>
             <div className={styles.formGroup}>
-              <label className={styles.label}>Categoría (Repuesto)</label>
+              <label className={styles.label}>Categoría</label>
               <select
                 className={styles.select}
                 value={filtroCategoria}
                 onChange={(e) => setFiltroCategoria(e.target.value)}
               >
-                <option value="">Todas las categorías</option>
+                <option value="">Todas</option>
                 {categorias.map((c) => (
                   <option key={c.id_categoria} value={c.id_categoria}>
                     {c.nombre}
@@ -580,30 +676,12 @@ export default function NuevaVentaPage() {
                 ))}
               </select>
             </div>
-            <div className={styles.formGroup}>
-              <label className={styles.label}>Marca (Repuesto)</label>
-              <select
-                className={styles.select}
-                value={filtroMarca}
-                onChange={(e) => setFiltroMarca(e.target.value)}
-              >
-                <option value="">Todas las marcas</option>
-                {marcasRepuesto.map((m) => (
-                  <option key={m.id_marca} value={m.id_marca}>
-                    {m.nombre}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div
-              className={styles.formGroup}
-              style={{ justifyContent: "flex-end" }}
-            >
+            <div className={styles.formGroup} style={{ gridColumn: "span 2" }}>
               <button
                 className={styles.btnAction}
-                style={{ margin: 0 }}
-                disabled={!busquedaVehiculo.id_modelo}
+                style={{ marginTop: 0 }}
                 onClick={buscarPorVehiculo}
+                disabled={!busquedaVehiculo.id_modelo}
               >
                 Buscar Repuestos
               </button>
@@ -611,110 +689,53 @@ export default function NuevaVentaPage() {
           </div>
         )}
 
-        {/* Resultados de búsqueda (Contextual) */}
+        {/* Tabla resultados */}
         {resultadosProducto.length > 0 && (
-          <div
-            style={{
-              maxHeight: "350px",
-              overflowY: "auto",
-              marginTop: "1rem",
-              border: "1px solid var(--border-color)",
-              borderRadius: "6px",
-            }}
-          >
-            <table className={styles.table} style={{ margin: 0 }}>
-              <thead
-                style={{
-                  position: "sticky",
-                  top: 0,
-                  background: "white",
-                  zIndex: 1,
-                }}
-              >
+          <div style={{ overflowX: "auto", marginBottom: "1.5rem" }}>
+            <table className={styles.table}>
+              <thead>
                 <tr>
-                  <th>Info</th>
-                  <th>Precio c/IVA</th>
-                  <th>Stock</th>
-                  <th>Acción</th>
+                  <th>Producto</th>
+                  <th>Precio</th>
+                  <th>Stock Local</th>
+                  <th>Agregar</th>
                 </tr>
               </thead>
               <tbody>
-                {resultadosProducto.map((p, idx) => (
+                {resultadosProducto.map((p) => (
                   <tr
-                    key={`${p.id_producto}_${idx}`}
-                    style={
-                      p.is_reacondicionado ? { backgroundColor: "#fffbeb" } : {}
+                    key={
+                      p.is_reacondicionado
+                        ? `R_${p.id_producto_reacondicionado}`
+                        : `P_${p.id_producto}`
                     }
                   >
                     <td>
                       {p.is_reacondicionado && (
-                        <span className={styles.badgeReacTable}>
-                          OFERTA: REACONDICIONADO
-                        </span>
+                        <span className={styles.badgeReacTable}>REAC</span>
                       )}
-                      <strong
-                        style={p.is_reacondicionado ? { color: "#d97706" } : {}}
-                      >
-                        {p.sku}
-                      </strong>
-                      <br />
                       {p.nombre}
-                      <br />
-                      {p.marca_repuesto && (
-                        <span
-                          style={{
-                            fontSize: "0.8rem",
-                            color: p.is_reacondicionado ? "#b45309" : "gray",
-                          }}
-                        >
-                          {p.marca_repuesto}
-                        </span>
-                      )}
-                    </td>
-                    <td
-                      style={
-                        p.is_reacondicionado
-                          ? { fontWeight: "bold", color: "#d97706" }
-                          : {}
-                      }
-                    >
-                      Q {p.precio_venta.toFixed(2)}
-                    </td>
-                    <td>
-                      <div style={{ marginBottom: "6px" }}>
-                        <span
-                          className={`${styles.badgeStock} ${p.stock_local === 0 ? styles.badgeStockOut : ""}`}
-                        >
-                          {p.stock_local} und
-                        </span>
-                      </div>
-                      {!p.is_reacondicionado &&
-                        p.stock_otras_sucursales &&
+                      {p.stock_otras_sucursales &&
                         p.stock_otras_sucursales.length > 0 && (
-                          <details
-                            style={{
-                              fontSize: "0.8rem",
-                              color: "var(--text-main)",
-                              cursor: "pointer",
-                            }}
-                          >
+                          <details style={{ marginTop: "4px" }}>
                             <summary
                               style={{
-                                outline: "none",
-                                userSelect: "none",
-                                fontWeight: "bold",
-                                color: "var(--primary-blue)",
+                                fontSize: "0.75rem",
+                                color: "#6b7280",
+                                cursor: "pointer",
                               }}
                             >
-                              + en otras sucursales
+                              Stock otras sucursales (
+                              {p.stock_otras_sucursales.reduce(
+                                (a, b) => a + b.cantidad,
+                                0,
+                              )}{" "}
+                              und)
                             </summary>
                             <div
                               style={{
-                                marginTop: "6px",
-                                padding: "6px",
-                                background: "#f8fafc",
-                                border: "1px solid #e2e8f0",
-                                borderRadius: "4px",
+                                paddingLeft: "0.5rem",
+                                marginTop: "4px",
                               }}
                             >
                               {p.stock_otras_sucursales.map((otra, i) => (
@@ -723,27 +744,27 @@ export default function NuevaVentaPage() {
                                   style={{
                                     display: "flex",
                                     justifyContent: "space-between",
+                                    fontSize: "0.75rem",
                                     borderBottom:
-                                      i !== p.stock_otras_sucursales!.length - 1
+                                      i < p.stock_otras_sucursales!.length - 1
                                         ? "1px solid #e2e8f0"
                                         : "none",
                                     padding: "2px 0",
                                   }}
                                 >
                                   <span>{otra.sucursal}</span>
-                                  <span
-                                    style={{
-                                      fontWeight: "bold",
-                                      marginLeft: "12px",
-                                    }}
-                                  >
+                                  <strong style={{ marginLeft: "12px" }}>
                                     {otra.cantidad} und
-                                  </span>
+                                  </strong>
                                 </div>
                               ))}
                             </div>
                           </details>
                         )}
+                    </td>
+                    <td>Q {p.precio_venta.toFixed(2)}</td>
+                    <td style={{ color: p.stock_local > 0 ? "green" : "red" }}>
+                      {p.stock_local}
                     </td>
                     <td>
                       <button
@@ -768,10 +789,10 @@ export default function NuevaVentaPage() {
           </div>
         )}
 
+        {/* Carrito */}
         <h2 className={styles.sectionTitle} style={{ marginTop: "2rem" }}>
           Detalle de la Orden
         </h2>
-
         <table className={styles.table}>
           <thead>
             <tr>
@@ -829,72 +850,49 @@ export default function NuevaVentaPage() {
           </tbody>
         </table>
 
-        {/* SECCIÓN DE DESCUENTOS Y TOTALES */}
-        <div
-          style={{
-            marginTop: "1.5rem",
-            display: "flex",
-            gap: "1rem",
-            alignItems: "center",
-            justifyContent: "flex-end",
-          }}
-        >
-          <label className={styles.label}>Descuento (%):</label>
-          <input
-            type="number"
-            min="0"
-            max="100"
-            className={styles.input}
-            style={{ width: "80px" }}
-            value={descuentoPorcentaje}
-            onChange={(e) => setDescuentoPorcentaje(Number(e.target.value))}
-          />
-        </div>
-
+        {/* Descuento y totales */}
         <div className={styles.totalBox}>
           <div
             style={{
-              fontSize: "0.9rem",
-              color: "gray",
               display: "flex",
-              justifyContent: "space-between",
-              marginBottom: "0.2rem",
+              alignItems: "center",
+              justifyContent: "flex-end",
+              gap: "1rem",
+              marginBottom: "0.75rem",
             }}
           >
-            <span>Precio Base (Neto):</span>
-            <span>Q {precioBaseSinIva.toFixed(2)}</span>
-          </div>
-          <div
-            style={{
-              fontSize: "0.9rem",
-              color: "gray",
-              display: "flex",
-              justifyContent: "space-between",
-              borderBottom: "1px solid #e2e8f0",
-              paddingBottom: "0.5rem",
-              marginBottom: "0.5rem",
-            }}
-          >
-            <span>IVA (12%):</span>
-            <span>Q {montoIvaCalculado.toFixed(2)}</span>
-          </div>
-          <div
-            style={{
-              fontSize: "1.1rem",
-              color: "var(--text-main)",
-              display: "flex",
-              justifyContent: "space-between",
-              marginBottom: "0.25rem",
-            }}
-          >
-            <span>Subtotal (IVA Incluido):</span>
-            <span>Q {subtotalCarrito.toFixed(2)}</span>
+            <label
+              style={{
+                fontSize: "0.9rem",
+                fontWeight: 600,
+                color: "var(--primary-blue)",
+              }}
+            >
+              Descuento %
+            </label>
+            <input
+              type="number"
+              min={0}
+              max={100}
+              step={0.5}
+              value={descuentoPorcentaje}
+              onChange={(e) =>
+                setDescuentoPorcentaje(
+                  Math.min(100, Math.max(0, Number(e.target.value))),
+                )
+              }
+              style={{
+                width: "70px",
+                padding: "0.35rem 0.5rem",
+                border: "1px solid var(--border-color)",
+                borderRadius: "4px",
+                textAlign: "center",
+              }}
+            />
           </div>
           {descuentoPorcentaje > 0 && (
             <div
               style={{
-                fontSize: "1.1rem",
-                color: "var(--error-color)",
                 display: "flex",
                 justifyContent: "space-between",
                 marginBottom: "0.5rem",
@@ -919,250 +917,466 @@ export default function NuevaVentaPage() {
         </div>
       </div>
 
-      {/* PANEL DERECHO: CLIENTE Y LOGÍSTICA (Sin cambios funcionales) */}
+      {/* ═══════════════════════════════════════════════════════════════════════
+          PANEL DERECHO — Cliente y Logística (REDISEÑADO)
+         ═══════════════════════════════════════════════════════════════════════ */}
       <div className={styles.panel}>
-        <h2 className={styles.sectionTitle}>Datos del Cliente</h2>
+        <h2 className={styles.sectionTitle}>Cliente</h2>
 
-        <div className={styles.searchRow}>
-          <input
-            type="text"
-            className={styles.input}
-            placeholder="NIT del Cliente (CF por defecto)"
-            maxLength={9}
-            value={nitBusqueda}
-            onChange={(e) => setNitBusqueda(e.target.value)}
-          />
-          <button
-            className={styles.btnAction}
-            style={{ marginTop: 0, width: "auto" }}
-            onClick={buscarClienteNit}
-          >
-            Validar
-          </button>
-        </div>
-
-        <div className={styles.formGroup}>
-          <label className={styles.label}>Nombre / Razón Social</label>
-          <input
-            type="text"
-            className={styles.input}
-            value={datosCliente.nombre}
-            onChange={(e) =>
-              setDatosCliente({ ...datosCliente, nombre: e.target.value })
-            }
-            disabled={clienteExiste && nitBusqueda !== "CF"}
-          />
-        </div>
-
-        {!clienteExiste && nitBusqueda !== "CF" && (
-          <div className={styles.formGrid}>
-            <div className={styles.formGroup}>
-              <label className={styles.label}>Tipo de Cliente</label>
-              <select
-                className={styles.select}
-                value={datosCliente.tipo}
-                onChange={(e) =>
-                  setDatosCliente({ ...datosCliente, tipo: e.target.value })
-                }
-              >
-                <option value="particular">Particular</option>
-                <option value="taller">Taller</option>
-                <option value="refaccionaria">Refaccionaria</option>
-              </select>
-            </div>
-            <div className={styles.formGroup}>
-              <label className={styles.label}>Teléfono</label>
-              <input
-                type="text"
-                className={styles.input}
-                value={datosCliente.telefono}
-                maxLength={9}
-                onChange={(e) =>
-                  setDatosCliente({ ...datosCliente, telefono: e.target.value })
-                }
-              />
-            </div>
-            <div className={styles.formGroup}>
-              <label className={styles.label}>Correo Electrónico</label>
-              <input
-                type="email"
-                className={styles.input}
-                value={datosCliente.email}
-                onChange={(e) =>
-                  setDatosCliente({ ...datosCliente, email: e.target.value })
-                }
-              />
-            </div>
-
-            <div className={styles.formGroup}>
-              <label className={styles.label}>Departamento</label>
-              <select
-                className={styles.select}
-                value={datosCliente.id_departamento}
-                onChange={(e) =>
-                  setDatosCliente({
-                    ...datosCliente,
-                    id_departamento: e.target.value,
-                    id_municipio: "",
-                  })
-                }
-              >
-                <option value="">Seleccione...</option>
-                {departamentos.map((d) => (
-                  <option key={d.id_departamento} value={d.id_departamento}>
-                    {d.nombre}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className={styles.formGroup}>
-              <label className={styles.label}>Municipio</label>
-              <select
-                className={styles.select}
-                value={datosCliente.id_municipio}
-                onChange={(e) =>
-                  setDatosCliente({
-                    ...datosCliente,
-                    id_municipio: e.target.value,
-                  })
-                }
-                disabled={!datosCliente.id_departamento}
-              >
-                <option value="">Seleccione...</option>
-                {municipios.map((m) => (
-                  <option key={m.id_municipio} value={m.id_municipio}>
-                    {m.nombre}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className={styles.formGroup} style={{ gridColumn: "span 2" }}>
-              <label className={styles.label}>Notas Internas del Cliente</label>
-              <textarea
-                className={styles.input}
-                rows={2}
-                value={datosCliente.notas_internas}
-                onChange={(e) =>
-                  setDatosCliente({
-                    ...datosCliente,
-                    notas_internas: e.target.value,
-                  })
-                }
-                placeholder="Ej. Entregar en puerta azul..."
-              />
-            </div>
+        {/* ── Selector CF / Cliente registrado ─────────────────────────── */}
+        {(modoCliente === "cf" || modoCliente === "buscando") && (
+          <div className={styles.tipoClienteSelector}>
+            <button
+              className={`${styles.tipoClienteBtn} ${modoCliente === "cf" ? styles.tipoClienteBtnActivo : ""}`}
+              onClick={cambiarAConsumidorFinal}
+            >
+              Consumidor Final
+              <br />
+              <span style={{ fontSize: "0.72rem", fontWeight: 400 }}>
+                Sin NIT (CF)
+              </span>
+            </button>
+            <button
+              className={`${styles.tipoClienteBtn} ${modoCliente === "buscando" ? styles.tipoClienteBtnActivo : ""}`}
+              onClick={iniciarBusquedaCliente}
+            >
+              Cliente registrado
+              <br />
+              <span style={{ fontSize: "0.72rem", fontWeight: 400 }}>
+                Buscar por NIT, nombre o tel.
+              </span>
+            </button>
           </div>
         )}
 
-        <h2 className={styles.sectionTitle} style={{ marginTop: "2rem" }}>
-          Logística
-        </h2>
+        {/* ── Buscador con autocomplete ─────────────────────────────────── */}
+        {modoCliente === "buscando" && (
+          <div ref={dropdownRef} className={styles.buscadorWrapper}>
+            <input
+              autoFocus
+              type="text"
+              className={styles.buscadorInput}
+              placeholder="Nombre, NIT o teléfono..."
+              value={termBusqCliente}
+              onChange={(e) => handleTermBusqCliente(e.target.value)}
+            />
+            <p className={styles.buscadorHint}>
+              {buscandoCliente
+                ? "Buscando..."
+                : "Escribe al menos 2 caracteres"}
+            </p>
 
-        <div className={styles.formGroup}>
-          <label className={styles.label}>Tipo de Entrega</label>
-          <select
-            className={styles.select}
-            value={esDomicilio ? "domicilio" : "mostrador"}
-            onChange={(e) => setEsDomicilio(e.target.value === "domicilio")}
-          >
-            <option value="mostrador">Entrega en Mostrador</option>
-            <option value="domicilio">Envío a Domicilio</option>
-          </select>
-        </div>
-
-        {esDomicilio && (
-          <>
-            <div className={styles.formGroup}>
-              <label className={styles.label}>Nombre de quien recibe</label>
-              <input
-                type="text"
-                className={styles.input}
-                value={nombreContacto}
-                onChange={(e) => setNombreContacto(e.target.value)}
-                placeholder="Ej. Juan Pérez o Taller Los Motores"
-              />
-            </div>
-            <div className={styles.formGroup}>
-              <label className={styles.label}>Teléfono de contacto</label>
-              <input
-                type="text"
-                className={styles.input}
-                value={telefonoContacto}
-                maxLength={9}
-                onChange={(e) => setTelefonoContacto(e.target.value)}
-                placeholder="Teléfono para el repartidor"
-              />
-            </div>
-            <div className={styles.formGroup}>
-              <label className={styles.label}>Dirección de Entrega</label>
-              <input
-                type="text"
-                className={styles.input}
-                value={datosCliente.direccion}
-                onChange={(e) =>
-                  setDatosCliente({
-                    ...datosCliente,
-                    direccion: e.target.value,
-                  })
-                }
-                placeholder="Dirección exacta, referencias..."
-              />
-            </div>
-            <div className={styles.formGroup}>
-              <label className={styles.label}>Asignar Repartidor</label>
-              <select
-                className={styles.select}
-                value={idRepartidor}
-                onChange={(e) => setIdRepartidor(e.target.value)}
-              >
-                <option value="">Seleccione un repartidor...</option>
-                {listaRepartidores.map((rep) => (
-                  <option key={rep.id_empleado} value={rep.id_empleado}>
-                    {rep.nombre} {rep.apellido}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div
-              className={styles.formGroup}
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: "0.5rem",
-                marginTop: "1rem",
-              }}
-            >
-              <input
-                type="checkbox"
-                id="contraEntrega"
-                checked={pagoContraEntrega}
-                onChange={(e) => setPagoContraEntrega(e.target.checked)}
-                style={{ width: "18px", height: "18px", margin: 0 }}
-              />
-              <label
-                htmlFor="contraEntrega"
-                className={styles.label}
-                style={{ marginBottom: 0, cursor: "pointer" }}
-              >
-                El cliente pagará al recibir el pedido (Contra Entrega)
-              </label>
-            </div>
-          </>
+            {/* Dropdown de sugerencias */}
+            {(sugerencias.length > 0 ||
+              (termBusqCliente.length >= 2 && !buscandoCliente)) && (
+              <div className={styles.autocompleteDropdown}>
+                {sugerencias.length === 0 ? (
+                  <div className={styles.autocompleteSinResultados}>
+                    No encontrado —{" "}
+                    <button
+                      onClick={abrirModalNuevoCliente}
+                      style={{
+                        color: "var(--primary-blue)",
+                        fontWeight: 700,
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        textDecoration: "underline",
+                      }}
+                    >
+                      Registrar cliente nuevo
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    {sugerencias.map((c) => (
+                      <div
+                        key={c.id_cliente}
+                        className={styles.autocompleteItem}
+                        onClick={() => seleccionarCliente(c)}
+                      >
+                        <div className={styles.autocompleteNombre}>
+                          {c.nombre_razon_social}
+                        </div>
+                        <div className={styles.autocompleteNit}>
+                          NIT: {c.nit}
+                          {c.telefono && ` • Tel: ${c.telefono}`}
+                        </div>
+                      </div>
+                    ))}
+                    <div
+                      className={styles.autocompleteItem}
+                      onClick={abrirModalNuevoCliente}
+                      style={{
+                        borderTop: "1px solid #e5e7eb",
+                        color: "var(--primary-blue)",
+                        fontWeight: 600,
+                        fontSize: "0.82rem",
+                      }}
+                    >
+                      + Registrar cliente nuevo
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
         )}
 
+        {/* ── Tarjeta de cliente seleccionado ──────────────────────────── */}
+        {modoCliente === "cf" && (
+          <div className={styles.clienteCard}>
+            <div className={styles.clienteCardInfo}>
+              <div className={styles.clienteCardNombre}>Consumidor Final</div>
+              <div className={styles.clienteCardDetalle}>
+                <span>
+                  <span className={styles.nitBadge}>CF</span>
+                </span>
+                <span>Sin datos de cliente</span>
+              </div>
+            </div>
+            <button
+              className={styles.btnCambiarCliente}
+              onClick={iniciarBusquedaCliente}
+            >
+              Cambiar
+            </button>
+          </div>
+        )}
+
+        {modoCliente === "seleccionado" && clienteSeleccionado && (
+          <div className={styles.clienteCard}>
+            <div className={styles.clienteCardInfo}>
+              <div className={styles.clienteCardNombre}>
+                {clienteSeleccionado.nombre_razon_social}
+              </div>
+              <div className={styles.clienteCardDetalle}>
+                <span>
+                  <span className={styles.nitBadge}>
+                    {clienteSeleccionado.nit}
+                  </span>
+                </span>
+                {clienteSeleccionado.telefono && (
+                  <span>{clienteSeleccionado.telefono}</span>
+                )}
+                {clienteSeleccionado.direccion && (
+                  <span>{clienteSeleccionado.direccion}</span>
+                )}
+                {!clienteSeleccionado.id_cliente && (
+                  <span
+                    style={{
+                      color: "#d97706",
+                      fontWeight: 600,
+                      fontSize: "0.72rem",
+                    }}
+                  >
+                    Nuevo — se guardará al confirmar
+                  </span>
+                )}
+              </div>
+            </div>
+            <button
+              className={styles.btnCambiarCliente}
+              onClick={iniciarBusquedaCliente}
+            >
+              Cambiar
+            </button>
+          </div>
+        )}
+
+        {/* ── Sección de Entrega ────────────────────────────────────────── */}
+        <div className={styles.seccionEntrega}>
+          <h3 className={styles.seccionEntregaTitulo}>Entrega</h3>
+
+          <div className={styles.formGroup}>
+            <label className={styles.label}>Tipo de Entrega</label>
+            <select
+              className={styles.select}
+              value={esDomicilio ? "domicilio" : "mostrador"}
+              onChange={(e) => setEsDomicilio(e.target.value === "domicilio")}
+            >
+              <option value="mostrador">Entrega en Mostrador</option>
+              <option value="domicilio">Envío a Domicilio</option>
+            </select>
+          </div>
+
+          {esDomicilio && (
+            <>
+              <div className={styles.formGroup}>
+                <label className={styles.label}>Nombre de quien recibe</label>
+                <input
+                  type="text"
+                  className={styles.input}
+                  value={nombreContacto}
+                  onChange={(e) => setNombreContacto(e.target.value)}
+                  placeholder="Ej. Juan Pérez o Taller Los Motores"
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.label}>Teléfono de contacto</label>
+                <input
+                  type="text"
+                  className={styles.input}
+                  value={telefonoContacto}
+                  maxLength={9}
+                  onChange={(e) => setTelefonoContacto(e.target.value)}
+                  placeholder="Teléfono para el repartidor"
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.label}>Dirección de Entrega</label>
+                <input
+                  type="text"
+                  className={styles.input}
+                  value={clienteSeleccionado?.direccion || ""}
+                  onChange={(e) =>
+                    setClienteSeleccionado((prev) =>
+                      prev
+                        ? { ...prev, direccion: e.target.value }
+                        : {
+                            nombre_razon_social: "Consumidor Final",
+                            nit: "CF",
+                            tipo_cliente: "particular",
+                            telefono: null,
+                            email: null,
+                            direccion: e.target.value,
+                            id_municipio: null,
+                            notas_internas: null,
+                          },
+                    )
+                  }
+                  placeholder="Dirección exacta, referencias..."
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.label}>Asignar Repartidor</label>
+                <select
+                  className={styles.select}
+                  value={idRepartidor}
+                  onChange={(e) => setIdRepartidor(e.target.value)}
+                >
+                  <option value="">Seleccione un repartidor...</option>
+                  {listaRepartidores.map((rep) => (
+                    <option key={rep.id_empleado} value={rep.id_empleado}>
+                      {rep.nombre} {rep.apellido}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div
+                className={styles.formGroup}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  marginTop: "0.5rem",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  id="contraEntrega"
+                  checked={pagoContraEntrega}
+                  onChange={(e) => setPagoContraEntrega(e.target.checked)}
+                  style={{ width: "18px", height: "18px", margin: 0 }}
+                />
+                <label
+                  htmlFor="contraEntrega"
+                  className={styles.label}
+                  style={{ marginBottom: 0, cursor: "pointer" }}
+                >
+                  El cliente pagará al recibir (Contra Entrega)
+                </label>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* ── Botón confirmar ───────────────────────────────────────────── */}
         <button
           className={styles.btnAction}
           onClick={procesarOrden}
           disabled={
             carrito.length === 0 ||
-            (esDomicilio && (!datosCliente.direccion || !idRepartidor))
+            modoCliente === "buscando" ||
+            modoCliente === "nuevo" ||
+            (esDomicilio &&
+              (!clienteSeleccionado?.direccion ||
+                !idRepartidor ||
+                !nombreContacto ||
+                !telefonoContacto))
           }
         >
           Generar Orden de Venta
         </button>
       </div>
+
+      {/* ═══════════════════════════════════════════════════════════════════════
+          MODAL — Registrar cliente nuevo
+         ═══════════════════════════════════════════════════════════════════════ */}
+      {modoCliente === "nuevo" && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalNuevoCliente}>
+            <div className={styles.modalHeader}>
+              <h3>Registrar cliente nuevo</h3>
+              <button
+                className={styles.btnCerrarModal}
+                onClick={() => setModoCliente("buscando")}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className={styles.modalBody}>
+              <div className={styles.formGroup}>
+                <label className={styles.label}>
+                  NIT{" "}
+                  <span style={{ color: "#9ca3af", fontWeight: 400 }}>
+                    (dejar vacío si no tiene)
+                  </span>
+                </label>
+                <input
+                  type="text"
+                  className={styles.input}
+                  maxLength={9}
+                  value={nuevoCliente.nit}
+                  onChange={(e) =>
+                    setNuevoCliente({ ...nuevoCliente, nit: e.target.value })
+                  }
+                  placeholder="Ej. 12345678"
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.label}>Nombre / Razón Social *</label>
+                <input
+                  type="text"
+                  className={styles.input}
+                  value={nuevoCliente.nombre}
+                  onChange={(e) =>
+                    setNuevoCliente({ ...nuevoCliente, nombre: e.target.value })
+                  }
+                  placeholder="Ej. Taller López"
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.label}>Tipo de Cliente</label>
+                <select
+                  className={styles.select}
+                  value={nuevoCliente.tipo}
+                  onChange={(e) =>
+                    setNuevoCliente({ ...nuevoCliente, tipo: e.target.value })
+                  }
+                >
+                  <option value="particular">Particular</option>
+                  <option value="taller">Taller</option>
+                  <option value="refaccionaria">Refaccionaria</option>
+                </select>
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.label}>Teléfono</label>
+                <input
+                  type="text"
+                  className={styles.input}
+                  maxLength={9}
+                  value={nuevoCliente.telefono}
+                  onChange={(e) =>
+                    setNuevoCliente({
+                      ...nuevoCliente,
+                      telefono: e.target.value,
+                    })
+                  }
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.label}>Dirección</label>
+                <input
+                  type="text"
+                  className={styles.input}
+                  value={nuevoCliente.direccion}
+                  onChange={(e) =>
+                    setNuevoCliente({
+                      ...nuevoCliente,
+                      direccion: e.target.value,
+                    })
+                  }
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.label}>Departamento</label>
+                <select
+                  className={styles.select}
+                  value={nuevoCliente.id_departamento}
+                  onChange={(e) =>
+                    setNuevoCliente({
+                      ...nuevoCliente,
+                      id_departamento: e.target.value,
+                      id_municipio: "",
+                    })
+                  }
+                >
+                  <option value="">Seleccione...</option>
+                  {deptoModal.map((d) => (
+                    <option key={d.id_departamento} value={d.id_departamento}>
+                      {d.nombre}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.label}>Municipio</label>
+                <select
+                  className={styles.select}
+                  value={nuevoCliente.id_municipio}
+                  disabled={!nuevoCliente.id_departamento}
+                  onChange={(e) =>
+                    setNuevoCliente({
+                      ...nuevoCliente,
+                      id_municipio: e.target.value,
+                    })
+                  }
+                >
+                  <option value="">Seleccione...</option>
+                  {munModal.map((m) => (
+                    <option key={m.id_municipio} value={m.id_municipio}>
+                      {m.nombre}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.label}>Notas internas</label>
+                <textarea
+                  className={styles.input}
+                  rows={2}
+                  value={nuevoCliente.notas_internas}
+                  onChange={(e) =>
+                    setNuevoCliente({
+                      ...nuevoCliente,
+                      notas_internas: e.target.value,
+                    })
+                  }
+                  placeholder="Ej. Entregar en puerta azul..."
+                />
+              </div>
+            </div>
+
+            <div className={styles.modalFooter}>
+              <button
+                className={styles.btnModalCancelar}
+                onClick={() => setModoCliente("buscando")}
+              >
+                Cancelar
+              </button>
+              <button
+                className={styles.btnModalGuardar}
+                onClick={guardarNuevoCliente}
+                disabled={guardandoCliente || !nuevoCliente.nombre.trim()}
+              >
+                {guardandoCliente ? "Guardando..." : "Confirmar cliente"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
