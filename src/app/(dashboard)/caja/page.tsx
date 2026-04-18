@@ -1025,14 +1025,14 @@ export default function CajaPage() {
                             )}
                           </td>
                           <td>
-                            {a.supervisor_verifica ? (
+                            {a.supervisor_verifica?.trim() ? (
                               <span
                                 style={{
                                   fontSize: "0.82rem",
                                   color: "#374151",
                                 }}
                               >
-                                ✓ {a.supervisor_verifica}
+                                {a.supervisor_verifica}
                               </span>
                             ) : a.pendiente_verificacion && esSupervisor ? (
                               <button
