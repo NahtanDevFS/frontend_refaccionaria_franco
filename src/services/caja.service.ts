@@ -5,6 +5,8 @@ import {
   RegistrarPagoDTO,
   RegistrarArqueoDTO,
   HistorialCobro,
+  CobroRepartidorPendiente,
+  LiquidarRepartidorDTO,
   RespuestaHistorialArqueos,
   CajeroOpcion,
 } from "../types/caja.types";
@@ -48,7 +50,7 @@ export const CajaService = {
     });
     const data = await res.json();
     if (!res.ok || !data.success)
-      throw new Error(data.message || "Error al obtener resumen de caja");
+      throw new Error(data.message || "Error al obtener resumen");
     return data.data;
   },
 
@@ -81,11 +83,43 @@ export const CajaService = {
     });
     const data = await res.json();
     if (!res.ok || !data.success)
-      throw new Error(data.message || "Error al obtener historial de cobros");
+      throw new Error(data.message || "Error al obtener historial");
     return data.data;
   },
 
-  // ─── NUEVO: historial de arqueos (cierres de caja) ────────────────────────
+  // ─── Liquidación de repartidores ──────────────────────────────────────────
+  async obtenerCobrosRepartidoresPendientes(): Promise<
+    CobroRepartidorPendiente[]
+  > {
+    const res = await fetch(`${API_URL}/caja/repartidores/pendientes`, {
+      headers: { Authorization: `Bearer ${obtenerToken()}` },
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success)
+      throw new Error(
+        data.message || "Error al obtener cobros de repartidores",
+      );
+    return data.data;
+  },
+
+  async liquidarRepartidor(
+    payload: LiquidarRepartidorDTO,
+  ): Promise<{ pagos_liquidados: number; total_recibido: number }> {
+    const res = await fetch(`${API_URL}/caja/repartidores/liquidar`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${obtenerToken()}`,
+      },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success)
+      throw new Error(data.message || "Error al liquidar");
+    return data.data;
+  },
+
+  // ─── Historial de arqueos ─────────────────────────────────────────────────
   async obtenerHistorialArqueos(
     fechaDesde?: string,
     fechaHasta?: string,
@@ -104,7 +138,6 @@ export const CajaService = {
     return data.data;
   },
 
-  // ─── NUEVO: cajeros de la sucursal para el selector del supervisor ────────
   async obtenerCajeros(): Promise<CajeroOpcion[]> {
     const res = await fetch(`${API_URL}/caja/arqueos/cajeros`, {
       headers: { Authorization: `Bearer ${obtenerToken()}` },
@@ -112,6 +145,6 @@ export const CajaService = {
     const data = await res.json();
     if (!res.ok || !data.success)
       throw new Error(data.message || "Error al obtener cajeros");
-    return data.data;
+    return Array.isArray(data.data) ? data.data : [];
   },
 };

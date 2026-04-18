@@ -26,7 +26,7 @@ export interface RegistrarArqueoDTO {
   observaciones?: string;
 }
 
-// ─── Historial de cobros (pagos individuales) ─────────────────────────────────
+// ─── Historial de cobros ──────────────────────────────────────────────────────
 
 export interface DetalleFactura {
   id_producto: number;
@@ -48,14 +48,34 @@ export interface HistorialCobro {
   cliente: string;
   nit: string | null;
   direccion_cliente: string | null;
-  cajero: string;
+  cajero: string | null;
+  repartidor: string | null;
+  es_cobro_ruta: boolean; // ← true si fue cobrado por repartidor en ruta
   subtotal: number;
   descuento_monto: number;
   total: number;
   detalles: DetalleFactura[];
 }
 
-// ─── Historial de arqueos (cierres de caja) ───────────────────────────────────
+// ─── Liquidación de repartidores ──────────────────────────────────────────────
+
+export interface CobroRepartidorPendiente {
+  id_pago: number;
+  id_venta: number;
+  id_repartidor: number;
+  monto: number;
+  fecha_pago: string;
+  repartidor: string;
+  cliente: string;
+  direccion_entrega: string | null;
+}
+
+export interface LiquidarRepartidorDTO {
+  id_repartidor: number;
+  id_pagos: number[];
+}
+
+// ─── Historial de arqueos ─────────────────────────────────────────────────────
 
 export interface ArqueoHistorial {
   id_arqueo: number;
