@@ -147,4 +147,14 @@ export const CajaService = {
       throw new Error(data.message || "Error al obtener cajeros");
     return Array.isArray(data.data) ? data.data : [];
   },
+
+  async verificarArqueo(id_arqueo: number): Promise<void> {
+    const res = await fetch(`${API_URL}/caja/arqueos/${id_arqueo}/verificar`, {
+      method: "PATCH",
+      headers: { Authorization: `Bearer ${obtenerToken()}` },
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success)
+      throw new Error(data.message || "Error al verificar arqueo");
+  },
 };

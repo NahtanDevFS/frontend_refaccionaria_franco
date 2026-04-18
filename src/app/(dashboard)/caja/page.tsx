@@ -68,6 +68,7 @@ export default function CajaPage() {
   const [cajerosLoaded, setCajerosLoaded] = useState(false);
   const [filtroCajero, setFiltroCajero] = useState("");
   const [esSupervisor, setEsSupervisor] = useState(false);
+  const [verificando, setVerificando] = useState(false);
 
   useEffect(() => {
     const u = localStorage.getItem("usuario");
@@ -326,6 +327,20 @@ export default function CajaPage() {
       setCajerosLoaded(true);
     } catch {
       setCajerosLoaded(true);
+    }
+  };
+
+  const verificar = async (id_arqueo: number) => {
+    if (!confirm("¿Confirmar verificación de este arqueo?")) return;
+    try {
+      setVerificando(true);
+      await CajaService.verificarArqueo(id_arqueo);
+      alert("Arqueo verificado correctamente.");
+      cargarHistorialArqueos();
+    } catch (e: any) {
+      alert("Error: " + e.message);
+    } finally {
+      setVerificando(false);
     }
   };
 
@@ -925,6 +940,18 @@ export default function CajaPage() {
                   </div>
                 </div>
               )}
+              {resumenArqueos && resumenArqueos.sinVerificar > 0 && (
+                <div
+                  className={`${styles.arqueoResumenCard} ${styles.arqueoResumenAmarillo}`}
+                >
+                  <span className={styles.arqueoResumenLabel}>
+                    Sin verificar
+                  </span>
+                  <span className={styles.arqueoResumenValor}>
+                    {resumenArqueos.sinVerificar}
+                  </span>
+                </div>
+              )}
 
               {arqueos.length === 0 ? (
                 <p
@@ -948,7 +975,7 @@ export default function CajaPage() {
                         <th>Contado</th>
                         <th>Diferencia</th>
                         <th>Estado</th>
-                        <th>Supervisor</th>
+                        <th>Verificado por</th>
                         <th>Observaciones</th>
                       </tr>
                     </thead>
@@ -997,8 +1024,45 @@ export default function CajaPage() {
                               </span>
                             )}
                           </td>
-                          <td style={{ fontSize: "0.82rem", color: "#6b7280" }}>
-                            {a.supervisor_verifica ?? "—"}
+                          <td>
+                            {a.supervisor_verifica ? (
+                              <span
+                                style={{
+                                  fontSize: "0.82rem",
+                                  color: "#374151",
+                                }}
+                              >
+                                ✓ {a.supervisor_verifica}
+                              </span>
+                            ) : a.pendiente_verificacion && esSupervisor ? (
+                              <button
+                                onClick={() => verificar(a.id_arqueo)}
+                                disabled={verificando}
+                                style={{
+                                  background: "#d97706",
+                                  color: "white",
+                                  border: "none",
+                                  padding: "0.3rem 0.7rem",
+                                  borderRadius: 4,
+                                  fontSize: "0.78rem",
+                                  fontWeight: 600,
+                                  cursor: "pointer",
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                Verificar
+                              </button>
+                            ) : (
+                              // Cuadró, sin supervisor (normal)
+                              <span
+                                style={{
+                                  color: "#9ca3af",
+                                  fontSize: "0.82rem",
+                                }}
+                              >
+                                —
+                              </span>
+                            )}
                           </td>
                           <td
                             style={{

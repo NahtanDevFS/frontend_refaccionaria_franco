@@ -88,6 +88,7 @@ export interface ArqueoHistorial {
   observaciones: string | null;
   cajero: string;
   id_cajero: number;
+  pendiente_verificacion: boolean;
   supervisor_verifica: string | null;
 }
 
@@ -96,6 +97,7 @@ export interface ResumenArqueos {
   cuadrados: number;
   conDiferencia: number;
   sumaDiferencias: number;
+  sinVerificar: number;
 }
 
 export interface RespuestaHistorialArqueos {
