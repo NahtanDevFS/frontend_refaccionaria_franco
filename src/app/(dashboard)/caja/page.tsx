@@ -681,8 +681,8 @@ export default function CajaPage() {
                       Diferencia:{" "}
                       {fmtQ(Number(efectivoContado) - efectivoSistema)}
                       {Number(efectivoContado) === efectivoSistema
-                        ? " ✓ Cuadra"
-                        : " ✗ Con diferencia"}
+                        ? "Cuadrado"
+                        : "Con diferencia"}
                     </div>
                   )}
                   <div className={styles.inputGroup}>
@@ -987,13 +987,13 @@ export default function CajaPage() {
                             </span>
                           </td>
                           <td>
-                            {a.estado === "cuadra" ? (
+                            {a.estado === "cuadrado" ? (
                               <span className={styles.badgeArqueoCuadra}>
-                                ✓ Cuadra
+                                Cuadrado
                               </span>
                             ) : (
                               <span className={styles.badgeArqueoDif}>
-                                ⚠ Diferencia
+                                Diferencia
                               </span>
                             )}
                           </td>

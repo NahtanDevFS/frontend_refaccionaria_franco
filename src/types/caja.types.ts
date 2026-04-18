@@ -84,7 +84,7 @@ export interface ArqueoHistorial {
   efectivo_contado: number;
   efectivo_segun_sistema: number;
   diferencia: number;
-  estado: "cuadra" | "con_diferencia";
+  estado: "cuadrado" | "con_diferencia";
   observaciones: string | null;
   cajero: string;
   id_cajero: number;
