@@ -687,7 +687,9 @@ export default function InicioPage() {
                       <div className={styles.miniProgressContainer}>
                         <div
                           className={`${styles.miniProgressBar} ${
-                            h.cumplio ? styles.miniProgressBarFull : ""
+                            h.estado === "cumplió"
+                              ? styles.miniProgressBarFull
+                              : ""
                           }`}
                           style={{
                             width: `${Math.min(h.porcentaje_cumplimiento, 100)}%`,
@@ -697,15 +699,15 @@ export default function InicioPage() {
                     </td>
                     <td>{h.porcentaje_cumplimiento.toFixed(2)}%</td>
                     <td>
-                      <span
-                        className={
-                          h.cumplio
-                            ? styles.badgeCumplio
-                            : styles.badgeNoCumplio
-                        }
-                      >
-                        {h.cumplio ? "Cumplió" : "No cumplió"}
-                      </span>
+                      {h.estado === "en_curso" ? (
+                        <span className={styles.badgeEnCurso}>En curso</span>
+                      ) : h.estado === "cumplió" ? (
+                        <span className={styles.badgeCumplio}>Cumplió</span>
+                      ) : (
+                        <span className={styles.badgeNoCumplio}>
+                          No cumplió
+                        </span>
+                      )}
                     </td>
                   </tr>
                 ))}

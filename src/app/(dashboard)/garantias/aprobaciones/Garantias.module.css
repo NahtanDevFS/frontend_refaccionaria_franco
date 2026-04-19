@@ -35,12 +35,12 @@
 }
 
 .tab:hover {
-  color: var(--primary-color);
+  color: var(--primary-blue); /* ← corregido: era --primary-color */
 }
 
 .activeTab {
-  color: var(--primary-color);
-  border-bottom: 3px solid var(--primary-color);
+  color: var(--primary-blue); /* ← corregido: era --primary-color */
+  border-bottom: 3px solid var(--primary-blue); /* ← corregido */
 }
 
 /* Table */
@@ -57,8 +57,8 @@
 }
 
 .table th {
-  background-color: var(--background-light);
-  color: var(--text-muted);
+  background-color: var(--light-blue); /* ← corregido: era --background-light */
+  color: var(--primary-blue); /* ← corregido: era --text-muted */
   font-weight: 600;
 }
 
@@ -73,18 +73,22 @@
   color: #b45309;
 }
 
+/* ── BOTÓN ACCIÓN — era invisible por var(--primary-color) inexistente ── */
 .btnAction {
-  background-color: var(--primary-color);
+  background-color: var(
+    --secondary-blue
+  ); /* ← corregido: era --primary-color */
   color: white;
   padding: 0.5rem 1rem;
   border-radius: 6px;
   border: none;
   font-weight: bold;
   cursor: pointer;
+  transition: background-color 0.2s;
 }
 
 .btnAction:hover {
-  background-color: var(--primary-hover);
+  background-color: var(--primary-blue); /* ← corregido: era --primary-hover */
 }
 
 /* Modals */
@@ -120,6 +124,7 @@
   font-weight: bold;
   color: var(--text-main);
 }
+
 .select,
 .textarea,
 .input {
@@ -146,18 +151,29 @@
 }
 
 .btnApprove {
-  background-color: var(--success-color);
+  background-color: #16a34a; /* ← corregido: era --success-color (no existe) */
   color: white;
   border: none;
   padding: 0.5rem 1rem;
   border-radius: 6px;
   cursor: pointer;
+  transition: background-color 0.2s;
 }
+
+.btnApprove:hover {
+  background-color: #15803d;
+}
+
 .btnReject {
-  background-color: var(--error-color);
+  background-color: var(--error-color); /* ← esta sí existe en globals.css */
   color: white;
   border: none;
   padding: 0.5rem 1rem;
   border-radius: 6px;
   cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btnReject:hover {
+  background-color: #aa0000;
 }

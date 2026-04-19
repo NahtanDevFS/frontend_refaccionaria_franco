@@ -496,3 +496,12 @@
   margin-bottom: 1.5rem;
   flex-wrap: wrap;
 }
+
+.badgeEnCurso {
+  background-color: #dbeafe;
+  color: #1e40af;
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}

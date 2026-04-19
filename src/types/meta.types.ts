@@ -44,7 +44,7 @@ export interface HistorialMeta {
   monto_meta: number;
   monto_vendido: number;
   porcentaje_cumplimiento: number;
-  cumplio: boolean;
+  estado: "en_curso" | "cumplió" | "no_cumplió";
 }
 
 export interface SucursalOpcion {
