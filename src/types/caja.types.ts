@@ -1,4 +1,10 @@
 // src/types/caja.types.ts
+// ── PUNTO 5: uuid_factura ya no existe en pago. Si se necesita la
+//    factura FEL, se consulta desde la tabla factura via id_factura.
+//    El comprobante interno del historial no necesita uuid.
+//
+// ── PUNTO 7: direccion_entrega en CobroRepartidorPendiente ahora
+//    proviene de destinatario.direccion_texto — mismo nombre en la respuesta.
 
 export interface OrdenPendienteCaja {
   id_venta: number;
@@ -19,6 +25,7 @@ export interface RegistrarPagoDTO {
   metodo_pago: "efectivo" | "tarjeta" | "transferencia";
   monto: number;
   referencia?: string;
+  // uuid_factura eliminado (PUNTO 5) — si se necesita FEL usar endpoint de factura
 }
 
 export interface RegistrarArqueoDTO {
@@ -45,12 +52,13 @@ export interface HistorialCobro {
   metodo_pago: "efectivo" | "tarjeta" | "transferencia";
   monto: number;
   referencia: string | null;
+  // uuid_factura eliminado (PUNTO 5)
   cliente: string;
   nit: string | null;
   direccion_cliente: string | null;
   cajero: string | null;
   repartidor: string | null;
-  es_cobro_ruta: boolean; // ← true si fue cobrado por repartidor en ruta
+  es_cobro_ruta: boolean;
   subtotal: number;
   descuento_monto: number;
   total: number;
@@ -67,7 +75,7 @@ export interface CobroRepartidorPendiente {
   fecha_pago: string;
   repartidor: string;
   cliente: string;
-  direccion_entrega: string | null;
+  direccion_entrega: string | null; // viene de destinatario.direccion_texto
 }
 
 export interface LiquidarRepartidorDTO {

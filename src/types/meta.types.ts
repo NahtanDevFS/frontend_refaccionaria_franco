@@ -1,4 +1,7 @@
 // src/types/meta.types.ts
+// ── PUNTO 8: Los porcentajes de comisión siguen viajando como parámetros
+//    de entrada al crear una meta. El backend los traduce a id_esquema
+//    internamente. El frontend nunca maneja id_esquema directamente.
 
 export interface RendimientoEmpleado {
   id_empleado: number;
@@ -54,6 +57,7 @@ export interface AsignarMetaPayload {
   anio: number;
   mes: number;
   monto_meta: number;
+  // Siguen siendo opcionales — el backend los usa para resolver/crear el esquema
   comision_base_pct?: number;
   comision_excedente_pct?: number;
 }

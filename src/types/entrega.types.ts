@@ -1,4 +1,9 @@
 // src/types/entrega.types.ts
+// ── PUNTO 7: Los campos nombre_contacto, telefono_contacto y
+//    direccion_entrega siguen existiendo en estos tipos con los
+//    mismos nombres. El backend los sirve desde la tabla destinatario
+//    con aliases que coinciden exactamente, por lo que el frontend
+//    no necesita ningún cambio estructural.
 
 export interface ProductoPedido {
   producto: string;
@@ -8,10 +13,10 @@ export interface ProductoPedido {
 export interface PedidoDomicilio {
   id_pedido: number;
   id_venta: number;
-  direccion_entrega: string;
+  direccion_entrega: string; // viene de destinatario.direccion_texto
   estado_pedido: string;
-  nombre_contacto: string;
-  telefono_contacto: string;
+  nombre_contacto: string; // viene de destinatario.nombre
+  telefono_contacto: string; // viene de destinatario.telefono
   total: number;
   pago_contra_entrega: boolean;
   productos: ProductoPedido[];
@@ -65,15 +70,15 @@ export interface EntregaHistorial {
   id_pedido: number;
   id_venta: number;
   estado_pedido: "entregado" | "fallido";
-  direccion_entrega: string;
-  nombre_contacto: string;
-  telefono_contacto: string;
+  direccion_entrega: string; // viene de destinatario.direccion_texto
+  nombre_contacto: string; // viene de destinatario.nombre
+  telefono_contacto: string; // viene de destinatario.telefono
   fecha_entrega: string;
   motivo_fallido: string | null;
   monto_cobrado: number | null;
   total: number;
   pago_contra_entrega: boolean;
-  id_pago: number | null; // presente solo si fue cobro CE
+  id_pago: number | null;
 }
 
 export interface ResumenHistorial {
