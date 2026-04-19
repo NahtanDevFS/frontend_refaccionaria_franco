@@ -21,17 +21,18 @@ export default function CentroGarantiasPage() {
     id: number;
     resolucion: string;
   } | null>(null);
+
   const [modalRecibir, setModalRecibir] = useState<{
     visible: boolean;
     id: number;
     condicion: string;
     notas: string;
   } | null>(null);
+
+  // ── destino y resultado eliminados del state: se derivan del botón pulsado
   const [modalInspeccion, setModalInspeccion] = useState<{
     visible: boolean;
     id: number;
-    resultado: string;
-    destino: string;
     notas: string;
   } | null>(null);
 
@@ -71,7 +72,7 @@ export default function CentroGarantiasPage() {
     }
   };
 
-  // --- ACCIONES TAB 1 (Aprobar/Rechazar) ---
+  // ── TAB 1: Aprobar / Rechazar ────────────────────────────────────
   const handleResolver = async (aprobado: boolean) => {
     if (!modalAprobar) return;
     if (!modalAprobar.resolucion.trim())
@@ -84,8 +85,8 @@ export default function CentroGarantiasPage() {
       });
       alert(
         aprobado
-          ? "Garantía aprobada. Se ha descontado el stock de reemplazo."
-          : "Garantía rechazada.",
+          ? "Garantía autorizada. El cliente debe traer la pieza defectuosa para recibir el reemplazo."
+          : "Garantía rechazada. Se notificará al vendedor.",
       );
       setModalAprobar(null);
       cargarDatosTab();
@@ -94,7 +95,7 @@ export default function CentroGarantiasPage() {
     }
   };
 
-  // --- ACCIONES TAB 2 (Recepcion Física) ---
+  // ── TAB 2: Recibir pieza física ──────────────────────────────────
   const handleRecibir = async () => {
     if (!modalRecibir) return;
     try {
@@ -103,7 +104,9 @@ export default function CentroGarantiasPage() {
         condicion_recibido: modalRecibir.condicion,
         notas_inspeccion: modalRecibir.notas,
       });
-      alert("Pieza recibida en sucursal correctamente.");
+      alert(
+        "Pieza recibida. El stock ha sido descontado y el cliente puede recibir su reemplazo.",
+      );
       setModalRecibir(null);
       cargarDatosTab();
     } catch (error: any) {
@@ -111,14 +114,22 @@ export default function CentroGarantiasPage() {
     }
   };
 
-  // --- ACCIONES TAB 3 (Inspeccion y Reventa) ---
-  const handleInspeccionar = async () => {
+  // ── TAB 3: Inspección técnica ────────────────────────────────────
+  // El destino se deriva automáticamente del resultado — el usuario
+  // solo pulsa uno de los 3 botones de acción directa.
+  const DESTINO_POR_RESULTADO: Record<string, string> = {
+    descarte: "baja_inventario",
+    devolver_proveedor: "retorno_proveedor",
+    aprobado_reventa: "inventario_reacondicionado",
+  };
+
+  const handleInspeccionar = async (resultado: string) => {
     if (!modalInspeccion) return;
     try {
       await GarantiaService.inspeccionarRetorno({
         id_retorno: modalInspeccion.id,
-        resultado: modalInspeccion.resultado,
-        destino: modalInspeccion.destino,
+        resultado,
+        destino: DESTINO_POR_RESULTADO[resultado],
         observaciones: modalInspeccion.notas,
       });
       alert("Inspección finalizada.");
@@ -135,7 +146,7 @@ export default function CentroGarantiasPage() {
     <div className={styles.container}>
       <h1 className={styles.title}>Centro de Control de Garantías</h1>
 
-      {/* SISTEMA DE PESTAÑAS */}
+      {/* PESTAÑAS */}
       <div className={styles.tabsContainer}>
         <button
           className={`${styles.tab} ${activeTab === 0 ? styles.activeTab : ""}`}
@@ -164,7 +175,7 @@ export default function CentroGarantiasPage() {
         <p>Cargando datos...</p>
       ) : (
         <>
-          {/* TAB 1: SOLICITUDES NUEVAS */}
+          {/* ── TAB 1: SOLICITUDES NUEVAS ── */}
           {activeTab === 0 && (
             <table className={styles.table}>
               <thead>
@@ -215,7 +226,7 @@ export default function CentroGarantiasPage() {
             </table>
           )}
 
-          {/* TAB 2: RECEPCIÓN FÍSICA */}
+          {/* ── TAB 2: RECEPCIÓN FÍSICA ── */}
           {activeTab === 1 && (
             <table className={styles.table}>
               <thead>
@@ -268,7 +279,7 @@ export default function CentroGarantiasPage() {
             </table>
           )}
 
-          {/* TAB 3: INSPECCIÓN TÉCNICA */}
+          {/* ── TAB 3: INSPECCIÓN TÉCNICA ── */}
           {activeTab === 2 && (
             <table className={styles.table}>
               <thead>
@@ -310,8 +321,6 @@ export default function CentroGarantiasPage() {
                             setModalInspeccion({
                               visible: true,
                               id: r.id_retorno,
-                              resultado: "descarte",
-                              destino: "basura",
                               notas: "",
                             })
                           }
@@ -328,9 +337,9 @@ export default function CentroGarantiasPage() {
         </>
       )}
 
-      {/* ================= MODALES ================= */}
+      {/* ═══════════════ MODALES ═══════════════ */}
 
-      {/* Modal 1: Aprobar/Rechazar */}
+      {/* Modal 1: Aprobar / Rechazar */}
       {modalAprobar && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalContent}>
@@ -349,6 +358,16 @@ export default function CentroGarantiasPage() {
                 }
                 placeholder="Ej. Procede cambio por defecto de fábrica comprobado..."
               />
+              <p
+                style={{
+                  fontSize: "0.85rem",
+                  color: "#6b7280",
+                  marginTop: "0.5rem",
+                }}
+              >
+                Al autorizar, el cliente deberá traer la pieza defectuosa. El
+                reemplazo se entregará al registrar la devolución.
+              </p>
             </div>
             <div className={styles.modalActions}>
               <button
@@ -367,7 +386,7 @@ export default function CentroGarantiasPage() {
                 className={styles.btnApprove}
                 onClick={() => handleResolver(true)}
               >
-                Aprobar y Entregar Nuevo
+                Autorizar Garantía
               </button>
             </div>
           </div>
@@ -379,9 +398,23 @@ export default function CentroGarantiasPage() {
         <div className={styles.modalOverlay}>
           <div className={styles.modalContent}>
             <h2>Recibir Producto Dañado</h2>
-            <p style={{ marginBottom: "1rem", color: "gray" }}>
-              El cliente ha traído la pieza a la tienda.
-            </p>
+
+            <div
+              style={{
+                background: "#fffbeb",
+                border: "1px solid #f59e0b",
+                borderRadius: "6px",
+                padding: "0.75rem 1rem",
+                marginBottom: "1rem",
+                fontSize: "0.875rem",
+                color: "#92400e",
+              }}
+            >
+              <strong>⚠ Al confirmar:</strong> se descontará una unidad del
+              inventario y se autorizará la entrega del producto nuevo al
+              cliente.
+            </div>
+
             <div className={styles.formGroup}>
               <label className={styles.label}>Condición Visual</label>
               <select
@@ -403,6 +436,7 @@ export default function CentroGarantiasPage() {
                 </option>
               </select>
             </div>
+
             <div className={styles.formGroup}>
               <label className={styles.label}>Notas de Recepción</label>
               <textarea
@@ -415,6 +449,7 @@ export default function CentroGarantiasPage() {
                 placeholder="Viene en su caja original..."
               />
             </div>
+
             <div className={styles.modalActions}>
               <button
                 className={styles.btnCancel}
@@ -422,8 +457,8 @@ export default function CentroGarantiasPage() {
               >
                 Cancelar
               </button>
-              <button className={styles.btnAction} onClick={handleRecibir}>
-                Confirmar Ingreso a Bodega
+              <button className={styles.btnApprove} onClick={handleRecibir}>
+                Recibir Pieza y Entregar Reemplazo
               </button>
             </div>
           </div>
@@ -437,44 +472,6 @@ export default function CentroGarantiasPage() {
             <h2>Inspección Técnica de Bodega</h2>
 
             <div className={styles.formGroup} style={{ marginTop: "1rem" }}>
-              <label className={styles.label}>Dictamen / Resultado</label>
-              <select
-                className={styles.select}
-                value={modalInspeccion.resultado}
-                onChange={(e) =>
-                  setModalInspeccion({
-                    ...modalInspeccion,
-                    resultado: e.target.value,
-                  })
-                }
-              >
-                <option value="descarte">Pérdida Total (Descarte)</option>
-                <option value="devolver_proveedor">
-                  Reclamar al Proveedor Internacional
-                </option>
-                <option value="aprobado_reventa">
-                  Funciona: Pasar a Lote Reacondicionado (Segunda)
-                </option>
-              </select>
-            </div>
-
-            <div className={styles.formGroup}>
-              <label className={styles.label}>Destino Físico</label>
-              <input
-                type="text"
-                className={styles.input}
-                value={modalInspeccion.destino}
-                onChange={(e) =>
-                  setModalInspeccion({
-                    ...modalInspeccion,
-                    destino: e.target.value,
-                  })
-                }
-                placeholder="Ej. Basurero, Bodega de Defectuosos..."
-              />
-            </div>
-
-            <div className={styles.formGroup}>
               <label className={styles.label}>Observaciones Técnicas</label>
               <textarea
                 className={styles.textarea}
@@ -486,22 +483,88 @@ export default function CentroGarantiasPage() {
                     notas: e.target.value,
                   })
                 }
-                placeholder="Se midió voltaje y está quemado internamente..."
+                placeholder="Ej. Se midió voltaje, el componente está quemado internamente..."
               />
             </div>
-            <div className={styles.modalActions}>
+
+            <p
+              style={{
+                fontSize: "0.85rem",
+                color: "#6b7280",
+                marginBottom: "1rem",
+              }}
+            >
+              Seleccione el dictamen para cerrar la inspección:
+            </p>
+
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "0.75rem",
+              }}
+            >
+              <button
+                onClick={() => handleInspeccionar("aprobado_reventa")}
+                style={{
+                  background: "#d1fae5",
+                  color: "#065f46",
+                  border: "2px solid #16a34a",
+                  borderRadius: "8px",
+                  padding: "0.75rem 1rem",
+                  cursor: "pointer",
+                  fontWeight: "bold",
+                  textAlign: "left",
+                  fontSize: "0.95rem",
+                }}
+              >
+                Vender como segunda — Pasar a lote reacondicionado
+              </button>
+
+              <button
+                onClick={() => handleInspeccionar("devolver_proveedor")}
+                style={{
+                  background: "#fef3c7",
+                  color: "#92400e",
+                  border: "2px solid #f59e0b",
+                  borderRadius: "8px",
+                  padding: "0.75rem 1rem",
+                  cursor: "pointer",
+                  fontWeight: "bold",
+                  textAlign: "left",
+                  fontSize: "0.95rem",
+                }}
+              >
+                Reclamar al proveedor — Defecto de fabricación comprobado
+              </button>
+
+              <button
+                onClick={() => handleInspeccionar("descarte")}
+                style={{
+                  background: "#fee2e2",
+                  color: "#991b1b",
+                  border: "2px solid #dc2626",
+                  borderRadius: "8px",
+                  padding: "0.75rem 1rem",
+                  cursor: "pointer",
+                  fontWeight: "bold",
+                  textAlign: "left",
+                  fontSize: "0.95rem",
+                }}
+              >
+                Dar de baja — Pieza sin valor, descarte definitivo
+              </button>
+            </div>
+
+            <div
+              className={styles.modalActions}
+              style={{ marginTop: "1.5rem" }}
+            >
               <button
                 className={styles.btnCancel}
                 onClick={() => setModalInspeccion(null)}
               >
                 Cancelar
-              </button>
-              <button
-                className={styles.btnAction}
-                style={{ backgroundColor: "#8b5cf6" }}
-                onClick={handleInspeccionar}
-              >
-                Finalizar Inspección
               </button>
             </div>
           </div>
