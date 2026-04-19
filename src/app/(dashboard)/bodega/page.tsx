@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { BodegaService } from "@/services/bodega.service";
 import { InventarioService } from "@/services/inventario.service";
 import { InventarioBodega, RecepcionPendiente } from "@/types/bodega.types";
+import { GarantiaService } from "@/services/garantia.service";
 import styles from "./Bodega.module.css";
 
 const SUCURSALES = [
@@ -19,8 +20,10 @@ const SUCURSALES = [
 
 export default function BodegaPage() {
   const [tabActual, setTabActual] = useState<
-    "stock" | "emitir" | "recibir" | "ajustes"
+    "stock" | "emitir" | "recibir" | "ajustes" | "reacondicionados"
   >("stock");
+  const [reacondicionados, setReacondicionados] = useState<any[]>([]);
+  const [cargandoReac, setCargandoReac] = useState(false);
   const [cargando, setCargando] = useState(false);
 
   // --- TAB 1: Stock local ---
@@ -100,7 +103,24 @@ export default function BodegaPage() {
 
   useEffect(() => {
     if (tabActual === "recibir") cargarRecepciones();
+    if (tabActual === "reacondicionados") cargarReacondicionados();
   }, [tabActual]);
+
+  const cargarReacondicionados = async () => {
+    try {
+      setCargandoReac(true);
+      const userString = localStorage.getItem("usuario");
+      if (!userString) return;
+      const { id_sucursal } = JSON.parse(userString);
+      const res =
+        await GarantiaService.obtenerReacondicionadosDisponibles(id_sucursal);
+      setReacondicionados(Array.isArray(res) ? res : (res.data ?? []));
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setCargandoReac(false);
+    }
+  };
 
   useEffect(() => {
     if (busquedaVehiculo.id_marca) {
@@ -298,18 +318,21 @@ export default function BodegaPage() {
       <h1 className={styles.title}>Panel de Bodega e Inventario</h1>
 
       <div className={styles.tabs}>
-        {["stock", "emitir", "recibir", "ajustes"].map((t) => (
-          <button
-            key={t}
-            className={`${styles.tabBtn} ${tabActual === t ? styles.tabActive : ""}`}
-            onClick={() => setTabActual(t as any)}
-          >
-            {t === "stock" && "Stock y Alertas"}
-            {t === "emitir" && "Emitir Traslado"}
-            {t === "recibir" && "Recibir Traslado"}
-            {t === "ajustes" && "Ajustes (Mermas)"}
-          </button>
-        ))}
+        {["stock", "emitir", "recibir", "ajustes", "reacondicionados"].map(
+          (t) => (
+            <button
+              key={t}
+              className={`${styles.tabBtn} ${tabActual === t ? styles.tabActive : ""}`}
+              onClick={() => setTabActual(t as any)}
+            >
+              {t === "stock" && "Stock y Alertas"}
+              {t === "emitir" && "Emitir Traslado"}
+              {t === "recibir" && "Recibir Traslado"}
+              {t === "ajustes" && "Ajustes de bodega"}
+              {t === "reacondicionados" && "Reacondicionados"}
+            </button>
+          ),
+        )}
       </div>
 
       {/* TAB 1: STOCK */}
@@ -914,6 +937,94 @@ export default function BodegaPage() {
                   Registrar Ajuste en Bitácora
                 </button>
               </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* TAB 5: REACONDICIONADOS */}
+      {tabActual === "reacondicionados" && (
+        <div className={styles.card}>
+          <h2 style={{ marginBottom: "0.5rem" }}>
+            Inventario de Productos Reacondicionados
+          </h2>
+          <p
+            style={{
+              color: "#6b7280",
+              fontSize: "0.875rem",
+              marginBottom: "1.5rem",
+            }}
+          >
+            Piezas recuperadas de garantías, inspeccionadas y disponibles para
+            venta como "segunda". El precio ya fue calculado al 50% del valor
+            original.
+          </p>
+
+          {cargandoReac ? (
+            <p>Cargando...</p>
+          ) : reacondicionados.length === 0 ? (
+            <div
+              style={{ textAlign: "center", padding: "3rem", color: "#9ca3af" }}
+            >
+              No hay productos reacondicionados disponibles en esta sucursal.
+            </div>
+          ) : (
+            <div style={{ overflowX: "auto" }}>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>Lote #</th>
+                    <th>SKU</th>
+                    <th>Producto</th>
+                    <th>Unidades</th>
+                    <th>Precio Segunda</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {reacondicionados.map((r) => (
+                    <tr key={r.id_producto_reacondicionado}>
+                      <td style={{ color: "#6b7280", fontSize: "0.85rem" }}>
+                        #{r.id_producto_reacondicionado}
+                      </td>
+                      <td>
+                        <strong>{r.sku}</strong>
+                      </td>
+                      <td>{r.nombre}</td>
+                      <td style={{ fontWeight: "bold" }}>
+                        {Number(r.cantidad)}
+                      </td>
+                      <td style={{ color: "#065f46", fontWeight: "600" }}>
+                        Q {Number(r.precio_venta_reac).toFixed(2)}
+                        <span
+                          style={{
+                            marginLeft: "0.5rem",
+                            fontSize: "0.75rem",
+                            color: "#9ca3af",
+                            fontWeight: "normal",
+                          }}
+                        >
+                          (segunda)
+                        </span>
+                      </td>
+                      <td>
+                        <span
+                          style={{
+                            background: "#d1fae5",
+                            color: "#065f46",
+                            padding: "0.2rem 0.6rem",
+                            borderRadius: "9999px",
+                            fontSize: "0.75rem",
+                            fontWeight: "600",
+                          }}
+                        >
+                          Disponible
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </div>
