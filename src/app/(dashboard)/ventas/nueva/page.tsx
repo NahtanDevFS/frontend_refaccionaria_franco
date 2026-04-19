@@ -89,6 +89,8 @@ export default function NuevaVentaPage() {
   // Buscador con autocomplete
   const [termBusqCliente, setTermBusqCliente] = useState("");
   const [sugerencias, setSugerencias] = useState<ClienteDB[]>([]);
+  const [busquedaLibre, setBusquedaLibre] = useState("");
+  const [resultadosCliente, setResultadosCliente] = useState<any[]>([]);
   const [buscandoCliente, setBuscandoCliente] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -110,6 +112,11 @@ export default function NuevaVentaPage() {
   // ── Logística ────────────────────────────────────────────────────────────────
   const [esDomicilio, setEsDomicilio] = useState(false);
   const [idRepartidor, setIdRepartidor] = useState("");
+  const [deptoEntrega, setDeptoEntrega] = useState("");
+  const [municipioEntrega, setMunicipioEntrega] = useState("");
+  const [municipiosEntrega, setMunicipiosEntrega] = useState<
+    { id_municipio: number; nombre: string }[]
+  >([]);
   const [pagoContraEntrega, setPagoContraEntrega] = useState(false);
   const [nombreContacto, setNombreContacto] = useState("");
   const [telefonoContacto, setTelefonoContacto] = useState("");
@@ -158,6 +165,20 @@ export default function NuevaVentaPage() {
         .catch(console.error);
     }
   }, []);
+
+  useEffect(() => {
+    if (deptoEntrega) {
+      UbicacionService.obtenerMunicipios(parseInt(deptoEntrega))
+        .then((data) => {
+          if (Array.isArray(data)) setMunicipiosEntrega(data);
+        })
+        .catch(console.error);
+      setMunicipioEntrega("");
+    } else {
+      setMunicipiosEntrega([]);
+      setMunicipioEntrega("");
+    }
+  }, [deptoEntrega]);
 
   useEffect(() => {
     if (nuevoCliente.id_departamento) {
@@ -449,6 +470,8 @@ export default function NuevaVentaPage() {
         : null,
       nombre_contacto: esDomicilio ? nombreContacto : null,
       telefono_contacto: esDomicilio ? telefonoContacto : null,
+      id_municipio_entrega:
+        esDomicilio && municipioEntrega ? parseInt(municipioEntrega) : null,
       detalles: carrito.map((c) => ({
         id_producto: c.id_producto,
         id_producto_reacondicionado: c.id_producto_reacondicionado,
@@ -475,6 +498,9 @@ export default function NuevaVentaPage() {
       setPagoContraEntrega(false);
       setDescuentoPorcentaje(0);
       setIdRepartidor("");
+      setDeptoEntrega("");
+      setMunicipioEntrega("");
+      setMunicipiosEntrega([]);
       setNombreContacto("");
       setTelefonoContacto("");
     } catch (error: any) {
@@ -1118,7 +1144,7 @@ export default function NuevaVentaPage() {
                   type="text"
                   className={styles.input}
                   value={telefonoContacto}
-                  maxLength={9}
+                  maxLength={8}
                   onChange={(e) => setTelefonoContacto(e.target.value)}
                   placeholder="Teléfono para el repartidor"
                 />
@@ -1147,6 +1173,38 @@ export default function NuevaVentaPage() {
                   }
                   placeholder="Dirección exacta, referencias..."
                 />
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.label}>Departamento de Entrega</label>
+                <select
+                  className={styles.select}
+                  value={deptoEntrega}
+                  onChange={(e) => setDeptoEntrega(e.target.value)}
+                >
+                  <option value="">Seleccione...</option>
+                  {departamentos.map((d) => (
+                    <option key={d.id_departamento} value={d.id_departamento}>
+                      {d.nombre}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.label}>Municipio de Entrega</label>
+                <select
+                  className={styles.select}
+                  value={municipioEntrega}
+                  onChange={(e) => setMunicipioEntrega(e.target.value)}
+                  disabled={!deptoEntrega}
+                >
+                  <option value="">Seleccione...</option>
+                  {municipiosEntrega.map((m) => (
+                    <option key={m.id_municipio} value={m.id_municipio}>
+                      {m.nombre}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className={styles.formGroup}>
                 <label className={styles.label}>Asignar Repartidor</label>
@@ -1276,7 +1334,7 @@ export default function NuevaVentaPage() {
                 <input
                   type="text"
                   className={styles.input}
-                  maxLength={9}
+                  maxLength={8}
                   value={nuevoCliente.telefono}
                   onChange={(e) =>
                     setNuevoCliente({
