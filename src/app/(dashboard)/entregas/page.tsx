@@ -59,7 +59,7 @@ export default function EntregasPage() {
     useState<PedidoDomicilio | null>(null);
 
   const [modalExito, setModalExito] = useState(false);
-  const [montoCobrado, setMontoCobrado] = useState<string>("");
+  //const [montoCobrado, setMontoCobrado] = useState<string>("");
   const [procesando, setProcesando] = useState(false);
 
   const [modalFallo, setModalFallo] = useState(false);
@@ -103,7 +103,7 @@ export default function EntregasPage() {
   const iniciarEntrega = (pedido: PedidoDomicilio) => {
     if (pedido.pago_contra_entrega) {
       setPedidoSeleccionado(pedido);
-      setMontoCobrado(pedido.total.toString());
+      //setMontoCobrado(pedido.total.toString());
       setModalExito(true);
     } else {
       if (confirm(`¿Confirmar entrega del Pedido #${pedido.id_pedido}?`)) {
@@ -489,25 +489,6 @@ export default function EntregasPage() {
               <strong>Q{pedidoSeleccionado.total.toFixed(2)}</strong>.
             </p>
 
-            <div className={styles.inputGroup}>
-              <label className={styles.inputLabel}>
-                Efectivo Recibido (Q):
-              </label>
-              <input
-                type="number"
-                className={styles.inputLarge}
-                value={montoCobrado}
-                onChange={(e) => setMontoCobrado(e.target.value)}
-              />
-            </div>
-
-            {Number(montoCobrado) > pedidoSeleccionado.total && (
-              <div className={styles.vueltoBox}>
-                Vuelto: Q
-                {(Number(montoCobrado) - pedidoSeleccionado.total).toFixed(2)}
-              </div>
-            )}
-
             <div className={styles.modalActions}>
               <button
                 className={styles.btnCancelGray}
@@ -522,7 +503,7 @@ export default function EntregasPage() {
                 onClick={() =>
                   procesarExito(
                     pedidoSeleccionado.id_pedido,
-                    Number(montoCobrado),
+                    pedidoSeleccionado.total,
                   )
                 }
               >
