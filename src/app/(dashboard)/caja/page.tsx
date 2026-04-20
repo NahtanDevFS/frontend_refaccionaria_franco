@@ -26,7 +26,7 @@ export default function CajaPage() {
   const [tabActual, setTabActual] = useState<Tab>("cobros");
   const [cargando, setCargando] = useState(false);
 
-  // ── Tab 1: Cobros pendientes ───────────────────────────────────────────────
+  // ── Tab 1: Cobros pendientes
   const [pendientes, setPendientes] = useState<OrdenPendienteCaja[]>([]);
   const [modalCobro, setModalCobro] = useState(false);
   const [ordenSeleccionada, setOrdenSeleccionada] =
@@ -37,11 +37,10 @@ export default function CajaPage() {
   const [monto, setMonto] = useState("");
   const [referencia, setReferencia] = useState("");
 
-  // ── Tab 2: Arqueo + Liquidación ────────────────────────────────────────────
+  // ── Tab 2: Arqueo + Liquidación
   const [resumen, setResumen] = useState<ResumenCaja[]>([]);
   const [efectivoContado, setEfectivoContado] = useState("");
   const [obsArqueo, setObservacionesArqueo] = useState("");
-  // Liquidación
   const [cobrosRepartidor, setCobrosRepartidor] = useState<
     CobroRepartidorPendiente[]
   >([]);
@@ -50,14 +49,14 @@ export default function CajaPage() {
   );
   const [liquidando, setLiquidando] = useState(false);
 
-  // ── Tab 3: Historial de cobros ─────────────────────────────────────────────
+  // ── Tab 3: Historial de cobros
   const [historial, setHistorial] = useState<HistorialCobro[]>([]);
   const [fechaDesde, setFechaDesde] = useState(hoy());
   const [fechaHasta, setFechaHasta] = useState(hoy());
   const [modalFactura, setModalFactura] = useState<HistorialCobro | null>(null);
   const facturaRef = useRef<HTMLDivElement>(null);
 
-  // ── Tab 4: Historial de arqueos ────────────────────────────────────────────
+  // ── Tab 4: Historial de arqueos
   const [arqueos, setArqueos] = useState<ArqueoHistorial[]>([]);
   const [resumenArqueos, setResumenArqueos] = useState<ResumenArqueos | null>(
     null,
@@ -95,7 +94,6 @@ export default function CajaPage() {
     }
   }, [tabActual]);
 
-  // ── Helpers ────────────────────────────────────────────────────────────────
   const fmtQ = (n: number) => `Q ${n.toFixed(2)}`;
   const fmtFecha = (iso: string) => new Date(iso).toLocaleString("es-GT");
   const fmtDate = (iso: string) => new Date(iso).toLocaleDateString("es-GT");
@@ -106,7 +104,7 @@ export default function CajaPage() {
         ? "Tarjeta POS"
         : "Transferencia";
 
-  // ── Tab 1 ─────────────────────────────────────────────────────────────────
+  // ── Funciones Tab 1
   const cargarPendientes = async () => {
     try {
       setCargando(true);
@@ -147,7 +145,7 @@ export default function CajaPage() {
     }
   };
 
-  // ── Tab 2 ─────────────────────────────────────────────────────────────────
+  // ── Funciones Tab 2
   const cargarResumen = async () => {
     try {
       setCargando(true);
@@ -208,6 +206,7 @@ export default function CajaPage() {
       )
     )
       return;
+
     try {
       setLiquidando(true);
       const resultado = await CajaService.liquidarRepartidor({
@@ -234,6 +233,7 @@ export default function CajaPage() {
         "Hay cobros de repartidores sin liquidar. Liquídalos primero antes de cerrar caja.",
       );
     if (!confirm("¿Registrar cierre de caja?")) return;
+
     try {
       await CajaService.registrarArqueo({
         efectivo_contado: Number(efectivoContado),
@@ -250,8 +250,6 @@ export default function CajaPage() {
 
   const efectivoSistema =
     resumen.find((r) => r.metodo_pago === "efectivo")?.total || 0;
-
-  // Agrupar cobros de repartidores por repartidor
   const cobrosAgrupados = cobrosRepartidor.reduce<
     Record<
       string,
@@ -265,7 +263,7 @@ export default function CajaPage() {
     return acc;
   }, {});
 
-  // ── Tab 3 ─────────────────────────────────────────────────────────────────
+  // ── Funciones Tab 3
   const cargarHistorial = async () => {
     try {
       setCargando(true);
@@ -303,7 +301,7 @@ export default function CajaPage() {
     setTimeout(() => ventana.print(), 300);
   };
 
-  // ── Tab 4 ─────────────────────────────────────────────────────────────────
+  // ── Funciones Tab 4
   const cargarHistorialArqueos = async () => {
     try {
       setCargando(true);
@@ -344,7 +342,6 @@ export default function CajaPage() {
     }
   };
 
-  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className={styles.container}>
       <h1 className={styles.title}>Caja y Cobros</h1>
@@ -366,68 +363,60 @@ export default function CajaPage() {
       </div>
 
       {cargando ? (
-        <p style={{ padding: "2rem", color: "#6b7280" }}>Cargando...</p>
+        <p className={styles.loadingText}>Cargando...</p>
       ) : (
         <>
           {/* ═══ TAB 1: COBROS PENDIENTES ═══════════════════════════════ */}
           {tabActual === "cobros" && (
             <div className={styles.card}>
               {pendientes.length === 0 ? (
-                <p
-                  style={{
-                    textAlign: "center",
-                    color: "gray",
-                    padding: "2rem",
-                  }}
-                >
-                  No hay órdenes pendientes.
-                </p>
+                <p className={styles.emptyState}>No hay órdenes pendientes.</p>
               ) : (
-                <table className={styles.table}>
-                  <thead>
-                    <tr>
-                      <th>ID</th>
-                      <th>Cliente</th>
-                      <th>Fecha</th>
-                      <th>Tipo</th>
-                      <th>Total</th>
-                      <th>Acción</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {pendientes.map((p) => (
-                      <tr key={p.id_venta}>
-                        <td>
-                          <strong>#{p.id_venta}</strong>
-                        </td>
-                        <td>{p.cliente}</td>
-                        <td>{new Date(p.created_at).toLocaleString()}</td>
-                        <td>
-                          {p.pago_contra_entrega ? (
-                            <span className={styles.badgeCE}>
-                              Contra Entrega
-                            </span>
-                          ) : (
-                            <span className={styles.badgeNormal}>
-                              Mostrador
-                            </span>
-                          )}
-                        </td>
-                        <td>
-                          <strong>Q {p.total.toFixed(2)}</strong>
-                        </td>
-                        <td>
-                          <button
-                            className={styles.btnCobrar}
-                            onClick={() => abrirModalCobro(p)}
-                          >
-                            Cobrar
-                          </button>
-                        </td>
+                <div className={styles.tableContainer}>
+                  <table className={styles.table}>
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Cliente</th>
+                        <th>Fecha</th>
+                        <th>Tipo</th>
+                        <th>Total</th>
+                        <th>Acción</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {pendientes.map((p) => (
+                        <tr key={p.id_venta}>
+                          <td className={styles.textBold}>#{p.id_venta}</td>
+                          <td>{p.cliente}</td>
+                          <td>{new Date(p.created_at).toLocaleString()}</td>
+                          <td>
+                            {p.pago_contra_entrega ? (
+                              <span className={styles.badgeCE}>
+                                Contra Entrega
+                              </span>
+                            ) : (
+                              <span className={styles.badgeNormal}>
+                                Mostrador
+                              </span>
+                            )}
+                          </td>
+                          <td className={styles.textBold}>
+                            Q {p.total.toFixed(2)}
+                          </td>
+                          <td>
+                            <button
+                              className={styles.btnCobrar}
+                              onClick={() => abrirModalCobro(p)}
+                            >
+                              Cobrar
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
           )}
@@ -435,33 +424,14 @@ export default function CajaPage() {
           {/* ═══ TAB 2: ARQUEO + LIQUIDACIÓN ════════════════════════════ */}
           {tabActual === "arqueo" && (
             <>
-              {/* ── Sección liquidación de repartidores ────────────────── */}
+              {/* Liquidación Repartidores */}
               {Object.keys(cobrosAgrupados).length > 0 && (
-                <div
-                  className={styles.card}
-                  style={{
-                    marginBottom: "1.5rem",
-                    borderLeft: "4px solid #f59e0b",
-                  }}
-                >
-                  <h2
-                    style={{
-                      fontSize: "1rem",
-                      fontWeight: 700,
-                      marginBottom: "1rem",
-                      color: "#92400e",
-                    }}
-                  >
+                <div className={`${styles.card} ${styles.cardWarning}`}>
+                  <h2 className={styles.warningTitle}>
                     ⚠ Cobros de Repartidores Pendientes de Liquidar
                   </h2>
-                  <p
-                    style={{
-                      fontSize: "0.85rem",
-                      color: "#6b7280",
-                      marginBottom: "1.25rem",
-                    }}
-                  >
-                    Los repartidores listados cobrado efectivo en ruta.
+                  <p className={styles.warningDesc}>
+                    Los repartidores listados han cobrado efectivo en ruta.
                     Selecciona los cobros recibidos y confirma la liquidación
                     para incluirlos en tu arqueo.
                   </p>
@@ -474,83 +444,42 @@ export default function CajaPage() {
                     const todosSeleccionados = grupo.cobros.every((c) =>
                       pagosSeleccionados.has(c.id_pago),
                     );
+                    const algunSeleccionado = grupo.cobros.some((c) =>
+                      pagosSeleccionados.has(c.id_pago),
+                    );
+
                     return (
-                      <div
-                        key={grupo.id}
-                        style={{
-                          marginBottom: "1.25rem",
-                          background: "#fffbeb",
-                          border: "1px solid #fde68a",
-                          borderRadius: 8,
-                          padding: "1rem",
-                        }}
-                      >
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                            marginBottom: "0.75rem",
-                          }}
-                        >
+                      <div key={grupo.id} className={styles.repartidorGroup}>
+                        <div className={styles.repartidorHeader}>
                           <div>
-                            <strong style={{ color: "#92400e" }}>
+                            <strong className={styles.repartidorName}>
                               🛵 {grupo.nombre}
                             </strong>
-                            <span
-                              style={{
-                                marginLeft: "0.75rem",
-                                fontSize: "0.82rem",
-                                color: "#6b7280",
-                              }}
-                            >
+                            <span className={styles.repartidorMeta}>
                               {grupo.cobros.length} cobro(s) — Total:{" "}
-                              <strong>{fmtQ(totalGrupo)}</strong>
+                              <span className={styles.textBold}>
+                                {fmtQ(totalGrupo)}
+                              </span>
                             </span>
                           </div>
-                          <div style={{ display: "flex", gap: "0.5rem" }}>
+                          <div className={styles.repartidorActions}>
                             <button
+                              className={styles.btnOutline}
                               onClick={() =>
                                 toggleTodosRepartidor(
                                   grupo.id,
                                   !todosSeleccionados,
                                 )
                               }
-                              style={{
-                                fontSize: "0.78rem",
-                                padding: "0.3rem 0.7rem",
-                                background: "white",
-                                border: "1px solid #d1d5db",
-                                borderRadius: 4,
-                                cursor: "pointer",
-                              }}
                             >
                               {todosSeleccionados
                                 ? "Deseleccionar todos"
                                 : "Seleccionar todos"}
                             </button>
                             <button
+                              className={`${styles.btnSolid} ${algunSeleccionado ? styles.btnSolidActive : styles.btnSolidDisabled}`}
                               onClick={() => liquidar(grupo.id)}
-                              disabled={
-                                liquidando ||
-                                !grupo.cobros.some((c) =>
-                                  pagosSeleccionados.has(c.id_pago),
-                                )
-                              }
-                              style={{
-                                fontSize: "0.82rem",
-                                padding: "0.3rem 0.9rem",
-                                background: grupo.cobros.some((c) =>
-                                  pagosSeleccionados.has(c.id_pago),
-                                )
-                                  ? "#16a34a"
-                                  : "#9ca3af",
-                                color: "white",
-                                border: "none",
-                                borderRadius: 4,
-                                cursor: "pointer",
-                                fontWeight: 600,
-                              }}
+                              disabled={liquidando || !algunSeleccionado}
                             >
                               {liquidando
                                 ? "Liquidando..."
@@ -559,91 +488,81 @@ export default function CajaPage() {
                           </div>
                         </div>
 
-                        <table
-                          className={styles.table}
-                          style={{ fontSize: "0.82rem" }}
-                        >
-                          <thead>
-                            <tr>
-                              <th style={{ width: 32 }}></th>
-                              <th>#Pago</th>
-                              <th>Cliente</th>
-                              <th>Dirección</th>
-                              <th>Fecha</th>
-                              <th>Monto</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {grupo.cobros.map((c) => (
-                              <tr
-                                key={c.id_pago}
-                                style={{ cursor: "pointer" }}
-                                onClick={() => togglePago(c.id_pago)}
-                              >
-                                <td>
-                                  <input
-                                    type="checkbox"
-                                    checked={pagosSeleccionados.has(c.id_pago)}
-                                    onChange={() => togglePago(c.id_pago)}
-                                    style={{ width: 16, height: 16 }}
-                                  />
-                                </td>
-                                <td>#{c.id_pago}</td>
-                                <td>{c.cliente}</td>
-                                <td style={{ color: "#6b7280" }}>
-                                  {c.direccion_entrega ?? "—"}
-                                </td>
-                                <td>{fmtFecha(c.fecha_pago)}</td>
-                                <td>
-                                  <strong>{fmtQ(c.monto)}</strong>
-                                </td>
+                        <div className={styles.tableContainer}>
+                          <table
+                            className={`${styles.table} ${styles.tableSmall}`}
+                          >
+                            <thead>
+                              <tr>
+                                <th className={styles.colCheck}></th>
+                                <th>#Pago</th>
+                                <th>Cliente</th>
+                                <th>Dirección</th>
+                                <th>Fecha</th>
+                                <th>Monto</th>
                               </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                            </thead>
+                            <tbody>
+                              {grupo.cobros.map((c) => (
+                                <tr
+                                  key={c.id_pago}
+                                  className={styles.rowClickable}
+                                  onClick={() => togglePago(c.id_pago)}
+                                >
+                                  <td>
+                                    <input
+                                      type="checkbox"
+                                      className={styles.checkbox}
+                                      checked={pagosSeleccionados.has(
+                                        c.id_pago,
+                                      )}
+                                      onChange={() => togglePago(c.id_pago)}
+                                    />
+                                  </td>
+                                  <td>#{c.id_pago}</td>
+                                  <td>{c.cliente}</td>
+                                  <td className={styles.textMuted}>
+                                    {c.direccion_entrega ?? "—"}
+                                  </td>
+                                  <td>{fmtFecha(c.fecha_pago)}</td>
+                                  <td className={styles.textBold}>
+                                    {fmtQ(c.monto)}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
                       </div>
                     );
                   })}
                 </div>
               )}
 
-              {/* ── Arqueo ─────────────────────────────────────────────── */}
+              {/* Arqueo */}
               <div className={styles.arqueoGrid}>
                 <div className={styles.card}>
-                  <h2
-                    style={{
-                      marginBottom: "1rem",
-                      borderBottom: "1px solid #eee",
-                      paddingBottom: "0.5rem",
-                    }}
-                  >
+                  <h2 className={styles.sectionTitle}>
                     Resumen de Cobros de Hoy
                   </h2>
                   <ul className={styles.resumenList}>
                     {resumen.length === 0 ? (
-                      <li
-                        style={{ color: "#6b7280", justifyContent: "center" }}
-                      >
+                      <li className={styles.resumenEmpty}>
                         Sin cobros registrados hoy
                       </li>
                     ) : (
                       resumen.map((r) => (
                         <li key={r.metodo_pago}>
                           <span>{labelMetodo(r.metodo_pago)}</span>
-                          <strong>{fmtQ(r.total)}</strong>
+                          <strong className={styles.textBold}>
+                            {fmtQ(r.total)}
+                          </strong>
                         </li>
                       ))
                     )}
                   </ul>
                   {cobrosRepartidor.length > 0 && (
-                    <p
-                      style={{
-                        marginTop: "0.75rem",
-                        fontSize: "0.8rem",
-                        color: "#d97706",
-                        fontWeight: 600,
-                      }}
-                    >
+                    <p className={styles.resumenWarning}>
                       ⚠ Aún hay cobros de repartidores sin liquidar que no están
                       incluidos aquí.
                     </p>
@@ -651,19 +570,15 @@ export default function CajaPage() {
                 </div>
 
                 <div className={styles.card}>
-                  <h2
-                    style={{
-                      marginBottom: "1rem",
-                      borderBottom: "1px solid #eee",
-                      paddingBottom: "0.5rem",
-                    }}
-                  >
+                  <h2 className={styles.sectionTitle}>
                     Registrar Cierre de Caja
                   </h2>
                   <div className={styles.inputGroup}>
                     <label>
                       Efectivo según sistema:{" "}
-                      <strong>{fmtQ(efectivoSistema)}</strong>
+                      <strong className={styles.textBold}>
+                        {fmtQ(efectivoSistema)}
+                      </strong>
                     </label>
                   </div>
                   <div className={styles.inputGroup}>
@@ -678,26 +593,14 @@ export default function CajaPage() {
                   </div>
                   {efectivoContado && (
                     <div
-                      style={{
-                        padding: "0.75rem",
-                        borderRadius: 6,
-                        marginBottom: "1rem",
-                        background:
-                          Number(efectivoContado) === efectivoSistema
-                            ? "#d1fae5"
-                            : "#fee2e2",
-                        color:
-                          Number(efectivoContado) === efectivoSistema
-                            ? "#065f46"
-                            : "#991b1b",
-                        fontWeight: 600,
-                      }}
+                      className={`${styles.diffBadge} ${Number(efectivoContado) === efectivoSistema ? styles.diffBadgeOk : styles.diffBadgeError}`}
                     >
                       Diferencia:{" "}
-                      {fmtQ(Number(efectivoContado) - efectivoSistema)}
+                      {fmtQ(Number(efectivoContado) - efectivoSistema)} (
                       {Number(efectivoContado) === efectivoSistema
                         ? "Cuadrado"
                         : "Con diferencia"}
+                      )
                     </div>
                   )}
                   <div className={styles.inputGroup}>
@@ -751,7 +654,10 @@ export default function CajaPage() {
               {historial.length > 0 && (
                 <div className={styles.historialResumen}>
                   <span>
-                    <strong>{historial.length}</strong> cobros
+                    <strong className={styles.textBold}>
+                      {historial.length}
+                    </strong>{" "}
+                    cobros
                   </span>
                   <span>
                     Total:{" "}
@@ -763,17 +669,11 @@ export default function CajaPage() {
               )}
 
               {historial.length === 0 ? (
-                <p
-                  style={{
-                    textAlign: "center",
-                    color: "gray",
-                    padding: "2rem",
-                  }}
-                >
+                <p className={styles.emptyState}>
                   No hay cobros en este período.
                 </p>
               ) : (
-                <div style={{ overflowX: "auto" }}>
+                <div className={styles.tableContainer}>
                   <table className={styles.table}>
                     <thead>
                       <tr>
@@ -804,27 +704,17 @@ export default function CajaPage() {
                           </td>
                           <td>{h.cliente}</td>
                           <td>
-                            <span
-                              style={{
-                                fontFamily: "monospace",
-                                fontSize: "0.8rem",
-                              }}
-                            >
+                            <span className={styles.fontMono}>
                               {h.nit ?? "CF"}
                             </span>
                           </td>
                           <td>{labelMetodo(h.metodo_pago)}</td>
-                          <td style={{ fontSize: "0.82rem", color: "#374151" }}>
+                          <td className={styles.textSmall}>
                             {h.es_cobro_ruta ? (
                               <>
                                 {h.repartidor}
                                 <br />
-                                <span
-                                  style={{
-                                    fontSize: "0.75rem",
-                                    color: "#9ca3af",
-                                  }}
-                                >
+                                <span className={styles.textTiny}>
                                   Liquidado a: {h.cajero ?? "Pendiente"}
                                 </span>
                               </>
@@ -832,9 +722,7 @@ export default function CajaPage() {
                               h.cajero
                             )}
                           </td>
-                          <td>
-                            <strong>{fmtQ(h.monto)}</strong>
-                          </td>
+                          <td className={styles.textBold}>{fmtQ(h.monto)}</td>
                           <td>
                             <button
                               className={styles.btnVerFactura}
@@ -938,33 +826,27 @@ export default function CajaPage() {
                       {fmtQ(resumenArqueos.sumaDiferencias)}
                     </span>
                   </div>
-                </div>
-              )}
-              {resumenArqueos && resumenArqueos.sinVerificar > 0 && (
-                <div
-                  className={`${styles.arqueoResumenCard} ${styles.arqueoResumenAmarillo}`}
-                >
-                  <span className={styles.arqueoResumenLabel}>
-                    Sin verificar
-                  </span>
-                  <span className={styles.arqueoResumenValor}>
-                    {resumenArqueos.sinVerificar}
-                  </span>
+                  {resumenArqueos.sinVerificar > 0 && (
+                    <div
+                      className={`${styles.arqueoResumenCard} ${styles.arqueoResumenAmarillo}`}
+                    >
+                      <span className={styles.arqueoResumenLabel}>
+                        Sin verificar
+                      </span>
+                      <span className={styles.arqueoResumenValor}>
+                        {resumenArqueos.sinVerificar}
+                      </span>
+                    </div>
+                  )}
                 </div>
               )}
 
               {arqueos.length === 0 ? (
-                <p
-                  style={{
-                    textAlign: "center",
-                    color: "gray",
-                    padding: "2rem",
-                  }}
-                >
+                <p className={styles.emptyState}>
                   No hay arqueos en este período.
                 </p>
               ) : (
-                <div style={{ overflowX: "auto" }}>
+                <div className={styles.tableContainer}>
                   <table className={styles.table}>
                     <thead>
                       <tr>
@@ -982,12 +864,10 @@ export default function CajaPage() {
                     <tbody>
                       {arqueos.map((a) => (
                         <tr key={a.id_arqueo}>
-                          <td style={{ color: "#6b7280" }}>#{a.id_arqueo}</td>
+                          <td className={styles.textMuted}>#{a.id_arqueo}</td>
                           <td>
                             <div>{fmtDate(a.fecha_cierre)}</div>
-                            <div
-                              style={{ fontSize: "0.75rem", color: "#9ca3af" }}
-                            >
+                            <div className={styles.textTiny}>
                               {new Date(a.created_at).toLocaleTimeString(
                                 "es-GT",
                                 { hour: "2-digit", minute: "2-digit" },
@@ -999,15 +879,13 @@ export default function CajaPage() {
                           <td>{fmtQ(a.efectivo_contado)}</td>
                           <td>
                             <span
-                              style={{
-                                fontWeight: 700,
-                                color:
-                                  a.diferencia === 0
-                                    ? "#059669"
-                                    : a.diferencia > 0
-                                      ? "#d97706"
-                                      : "#dc2626",
-                              }}
+                              className={
+                                a.diferencia === 0
+                                  ? styles.diffValueOk
+                                  : a.diferencia > 0
+                                    ? styles.diffValuePos
+                                    : styles.diffValueNeg
+                              }
                             >
                               {a.diferencia >= 0 ? "+" : ""}
                               {fmtQ(a.diferencia)}
@@ -1026,53 +904,23 @@ export default function CajaPage() {
                           </td>
                           <td>
                             {a.supervisor_verifica?.trim() ? (
-                              <span
-                                style={{
-                                  fontSize: "0.82rem",
-                                  color: "#374151",
-                                }}
-                              >
+                              <span className={styles.textSmall}>
                                 {a.supervisor_verifica}
                               </span>
                             ) : a.pendiente_verificacion && esSupervisor ? (
                               <button
+                                className={styles.btnVerify}
                                 onClick={() => verificar(a.id_arqueo)}
                                 disabled={verificando}
-                                style={{
-                                  background: "#d97706",
-                                  color: "white",
-                                  border: "none",
-                                  padding: "0.3rem 0.7rem",
-                                  borderRadius: 4,
-                                  fontSize: "0.78rem",
-                                  fontWeight: 600,
-                                  cursor: "pointer",
-                                  whiteSpace: "nowrap",
-                                }}
                               >
                                 Verificar
                               </button>
                             ) : (
-                              // Cuadró, sin supervisor (normal)
-                              <span
-                                style={{
-                                  color: "#9ca3af",
-                                  fontSize: "0.82rem",
-                                }}
-                              >
-                                —
-                              </span>
+                              <span className={styles.textSmallMuted}>—</span>
                             )}
                           </td>
                           <td
-                            style={{
-                              fontSize: "0.8rem",
-                              color: "#6b7280",
-                              maxWidth: 180,
-                              whiteSpace: "nowrap",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                            }}
+                            className={styles.textTruncate}
                             title={a.observaciones ?? ""}
                           >
                             {a.observaciones ?? "—"}
@@ -1092,28 +940,37 @@ export default function CajaPage() {
       {modalCobro && ordenSeleccionada && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalContent}>
-            <h2 style={{ marginBottom: "1rem" }}>
+            <h2 className={styles.modalTitle}>
               Cobrar Orden #{ordenSeleccionada.id_venta}
             </h2>
-            <p style={{ fontSize: "1.25rem", marginBottom: "1rem" }}>
-              Total: <strong>Q {ordenSeleccionada.total.toFixed(2)}</strong>
+            <p className={styles.modalSubtitle}>
+              Total:{" "}
+              <strong className={styles.textBold}>
+                Q {ordenSeleccionada.total.toFixed(2)}
+              </strong>
             </p>
-            <label style={{ fontWeight: "bold" }}>Método de Pago:</label>
-            <div className={styles.paymentMethods}>
-              {(["efectivo", "tarjeta", "transferencia"] as const).map((m) => (
-                <button
-                  key={m}
-                  className={`${styles.methodBtn} ${metodoPago === m ? styles.methodActive : ""}`}
-                  onClick={() => setMetodoPago(m)}
-                >
-                  {m === "efectivo"
-                    ? "Efectivo"
-                    : m === "tarjeta"
-                      ? "Tarjeta"
-                      : "Transferencia"}
-                </button>
-              ))}
+
+            <div className={styles.inputGroup}>
+              <label>Método de Pago:</label>
+              <div className={styles.paymentMethods}>
+                {(["efectivo", "tarjeta", "transferencia"] as const).map(
+                  (m) => (
+                    <button
+                      key={m}
+                      className={`${styles.methodBtn} ${metodoPago === m ? styles.methodActive : ""}`}
+                      onClick={() => setMetodoPago(m)}
+                    >
+                      {m === "efectivo"
+                        ? "Efectivo"
+                        : m === "tarjeta"
+                          ? "Tarjeta"
+                          : "Transferencia"}
+                    </button>
+                  ),
+                )}
+              </div>
             </div>
+
             <div className={styles.inputGroup}>
               <label>Monto Recibido (Q):</label>
               <input
@@ -1123,6 +980,7 @@ export default function CajaPage() {
                 onChange={(e) => setMonto(e.target.value)}
               />
             </div>
+
             {metodoPago !== "efectivo" && (
               <div className={styles.inputGroup}>
                 <label>No. de Autorización / Referencia:</label>
@@ -1135,15 +993,17 @@ export default function CajaPage() {
                 />
               </div>
             )}
+
             {metodoPago === "efectivo" &&
               Number(monto) > ordenSeleccionada.total && (
                 <div className={styles.vueltoBox}>
                   Vuelto:{" "}
-                  <strong>
+                  <strong className={styles.textBold}>
                     Q {(Number(monto) - ordenSeleccionada.total).toFixed(2)}
                   </strong>
                 </div>
               )}
+
             <div className={styles.modalActions}>
               <button
                 className={styles.btnCancelar}

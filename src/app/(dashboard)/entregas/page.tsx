@@ -37,7 +37,6 @@ function labelMetodo(m: string): string {
       : "Transferencia";
 }
 
-// Calcula fecha por defecto: hace N días en formato YYYY-MM-DD
 function fechaHaceNDias(n: number): string {
   const d = new Date();
   d.setDate(d.getDate() - n);
@@ -73,7 +72,7 @@ export default function EntregasPage() {
   const [resumen, setResumen] = useState<ResumenHistorial | null>(null);
   const [cargandoHistorial, setCargandoHistorial] = useState(false);
 
-  // ── Modal Comprobante (compartido entre tabs) ────────────────────────────────
+  // ── Modal Comprobante ───────────────────────────────────────────────────────
   const [modalComprobante, setModalComprobante] =
     useState<ComprobanteEntrega | null>(null);
   const [cargandoComprobante, setCargandoComprobante] = useState(false);
@@ -86,7 +85,6 @@ export default function EntregasPage() {
 
   useEffect(() => {
     if (tabActual === "historial") cargarHistorial();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tabActual]);
 
   // ─── Lógica Ruta ──────────────────────────────────────────────────────────
@@ -180,7 +178,7 @@ export default function EntregasPage() {
     }
   };
 
-  // ─── Comprobante (compartido) ─────────────────────────────────────────────
+  // ─── Comprobante ──────────────────────────────────────────────────────────
   const abrirComprobante = async (id_pago: number) => {
     setCargandoComprobante(true);
     setModalComprobante(null);
@@ -418,7 +416,6 @@ export default function EntregasPage() {
                           : ""
                       }`}
                     >
-                      {/* Cabecera */}
                       <div className={styles.cardHeader}>
                         <span className={styles.orderId}>
                           Pedido #{entrega.id_pedido}
@@ -430,7 +427,6 @@ export default function EntregasPage() {
                         )}
                       </div>
 
-                      {/* Info */}
                       <div className={styles.infoRow}>
                         <strong>Fecha:</strong>{" "}
                         {entrega.fecha_entrega
@@ -445,7 +441,6 @@ export default function EntregasPage() {
                         <strong>Dirección:</strong> {entrega.direccion_entrega}
                       </div>
 
-                      {/* Monto cobrado si fue CE */}
                       {entrega.pago_contra_entrega &&
                         entrega.estado_pedido === "entregado" && (
                           <div className={styles.montoCobrado}>
@@ -456,7 +451,6 @@ export default function EntregasPage() {
                           </div>
                         )}
 
-                      {/* Motivo si fue fallida */}
                       {entrega.estado_pedido === "fallido" &&
                         entrega.motivo_fallido && (
                           <div className={styles.motivoFallido}>
@@ -464,7 +458,6 @@ export default function EntregasPage() {
                           </div>
                         )}
 
-                      {/* Botón comprobante solo si hay id_pago */}
                       {entrega.id_pago !== null && (
                         <button
                           className={styles.btnComprobante}
@@ -490,21 +483,23 @@ export default function EntregasPage() {
       {modalExito && pedidoSeleccionado && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalContent}>
-            <h2>Registrar Cobro</h2>
-            <p>
+            <h2 className={styles.modalTitle}>Registrar Cobro</h2>
+            <p className={styles.modalText}>
               El cliente debe pagar{" "}
               <strong>Q{pedidoSeleccionado.total.toFixed(2)}</strong>.
             </p>
 
-            <label style={{ marginTop: "1rem", display: "block" }}>
-              Efectivo Recibido (Q):
-            </label>
-            <input
-              type="number"
-              className={styles.inputLarge}
-              value={montoCobrado}
-              onChange={(e) => setMontoCobrado(e.target.value)}
-            />
+            <div className={styles.inputGroup}>
+              <label className={styles.inputLabel}>
+                Efectivo Recibido (Q):
+              </label>
+              <input
+                type="number"
+                className={styles.inputLarge}
+                value={montoCobrado}
+                onChange={(e) => setMontoCobrado(e.target.value)}
+              />
+            </div>
 
             {Number(montoCobrado) > pedidoSeleccionado.total && (
               <div className={styles.vueltoBox}>
@@ -513,10 +508,9 @@ export default function EntregasPage() {
               </div>
             )}
 
-            <div style={{ display: "flex", gap: "1rem", marginTop: "1.25rem" }}>
+            <div className={styles.modalActions}>
               <button
-                className={styles.btnDanger}
-                style={{ backgroundColor: "#9ca3af" }}
+                className={styles.btnCancelGray}
                 onClick={() => setModalExito(false)}
                 disabled={procesando}
               >
@@ -543,8 +537,8 @@ export default function EntregasPage() {
       {modalFallo && pedidoSeleccionado && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalContent}>
-            <h2>Reportar Problema</h2>
-            <p>
+            <h2 className={styles.modalTitle}>Reportar Problema</h2>
+            <p className={styles.modalText}>
               Indique por qué no se pudo entregar el Pedido #
               {pedidoSeleccionado.id_pedido}
             </p>
@@ -555,10 +549,9 @@ export default function EntregasPage() {
               value={motivoFallo}
               onChange={(e) => setMotivoFallo(e.target.value)}
             />
-            <div style={{ display: "flex", gap: "1rem" }}>
+            <div className={styles.modalActions}>
               <button
-                className={styles.btnDanger}
-                style={{ backgroundColor: "#9ca3af" }}
+                className={styles.btnCancelGray}
                 onClick={() => setModalFallo(false)}
               >
                 Volver

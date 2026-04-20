@@ -1,5 +1,3 @@
-/* src/app/(dashboard)/entregas/Entregas.module.css */
-
 .container {
   padding: 1rem;
   background-color: #f3f4f6;
@@ -210,12 +208,14 @@
   margin-bottom: 1.25rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
   border: 1px solid #e5e7eb;
+  flex-wrap: wrap; /* Asegura que no se aplaste en pantallas muy pequeñas */
 }
 
 .filtroGroup {
   display: flex;
   flex-direction: column;
   flex: 1;
+  min-width: 140px; /* Evita que el input de fecha sea muy angosto */
   gap: 0.3rem;
 }
 
@@ -235,6 +235,7 @@
   font-family: inherit;
   color: #111827;
   background: white;
+  width: 100%;
 }
 
 .filtroInput:focus {
@@ -255,6 +256,7 @@
   transition: background 0.2s;
   white-space: nowrap;
   align-self: flex-end;
+  height: 38px;
 }
 
 .btnBuscar:hover:not(:disabled) {
@@ -360,10 +362,7 @@
 
 .modalOverlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   background: rgba(0, 0, 0, 0.6);
   display: flex;
   align-items: center;
@@ -380,10 +379,30 @@
   max-width: 400px;
 }
 
-.modalContent h2 {
+.modalTitle {
+  margin-top: 0;
   margin-bottom: 0.5rem;
   font-size: 1.1rem;
   color: #111827;
+}
+
+.modalText {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  color: #4b5563;
+  font-size: 0.95rem;
+}
+
+.inputGroup {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
+.inputLabel {
+  display: block;
+  font-weight: bold;
+  color: #374151;
+  margin-bottom: 0.5rem;
 }
 
 .inputLarge {
@@ -392,8 +411,6 @@
   font-size: 1.25rem;
   border: 2px solid #d1d5db;
   border-radius: 0.5rem;
-  margin-top: 0.5rem;
-  margin-bottom: 0.75rem;
 }
 
 .vueltoBox {
@@ -416,6 +433,34 @@
   margin-bottom: 1rem;
   font-family: inherit;
   resize: vertical;
+}
+
+.modalActions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+
+.btnCancelGray {
+  flex: 1;
+  background-color: #9ca3af;
+  color: white;
+  padding: 0.875rem;
+  border-radius: 0.5rem;
+  border: none;
+  font-weight: bold;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btnCancelGray:hover:not(:disabled) {
+  background-color: #6b7280;
+}
+
+.btnCancelGray:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* ── Modal Comprobante ──────────────────────────────────────────────────────── */
@@ -446,11 +491,13 @@
   font-weight: bold;
   color: #111827;
   margin-bottom: 0.2rem;
+  margin-top: 0;
 }
 
 .modalComprobanteSubtitle {
   font-size: 0.75rem;
   color: #6b7280;
+  margin: 0;
 }
 
 .modalComprobanteBtns {
@@ -508,18 +555,17 @@
   -webkit-overflow-scrolling: touch;
 }
 
+/* Conservando los globales de la factura */
 .comprobanteBody :global(.imp-empresa) {
   margin-bottom: 16px;
   padding-bottom: 12px;
   border-bottom: 1px solid #e5e7eb;
 }
-
 .comprobanteBody :global(.imp-empresa h2) {
   font-size: 15px;
   font-weight: bold;
   color: #111827;
 }
-
 .comprobanteBody :global(.imp-numero) {
   font-size: 12px;
   font-weight: bold;
@@ -527,11 +573,9 @@
   margin: 14px 0 18px;
   letter-spacing: 0.02em;
 }
-
 .comprobanteBody :global(.imp-seccion) {
   margin-bottom: 18px;
 }
-
 .comprobanteBody :global(.imp-seccion h3) {
   font-size: 10px;
   font-weight: bold;
@@ -542,7 +586,6 @@
   padding-bottom: 4px;
   margin-bottom: 8px;
 }
-
 .comprobanteBody :global(.imp-fila) {
   display: flex;
   justify-content: space-between;
@@ -550,16 +593,13 @@
   font-size: 12px;
   gap: 1rem;
 }
-
 .comprobanteBody :global(.imp-fila span:first-child) {
   color: #6b7280;
   flex-shrink: 0;
 }
-
 .comprobanteBody :global(.imp-fila span:last-child) {
   text-align: right;
 }
-
 .comprobanteBody :global(.imp-gran-total) {
   font-weight: bold;
   font-size: 14px;
@@ -567,13 +607,11 @@
   padding-top: 6px;
   margin-top: 4px;
 }
-
 .comprobanteBody :global(table) {
   width: 100%;
   border-collapse: collapse;
   font-size: 12px;
 }
-
 .comprobanteBody :global(th) {
   text-align: left;
   font-size: 10px;
@@ -583,13 +621,11 @@
   border-bottom: 1px solid #e5e7eb;
   padding: 4px 0;
 }
-
 .comprobanteBody :global(td) {
   padding: 6px 0;
   border-bottom: 1px solid #f3f4f6;
   vertical-align: top;
 }
-
 .comprobanteBody :global(.imp-footer) {
   margin-top: 24px;
   text-align: center;
@@ -613,12 +649,26 @@
 @media (max-width: 480px) {
   .historialFiltros {
     flex-direction: column;
-    gap: 0.6rem;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .filtroGroup {
+    width: 100%;
   }
 
   .btnBuscar {
     width: 100%;
-    padding: 0.7rem;
+    margin-top: 0.5rem;
+  }
+
+  .resumenGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* Opcional: el tercer elemento ocupa el ancho completo en mobile */
+  .resumenCobrado {
+    grid-column: span 2;
   }
 
   .resumenNumero {
