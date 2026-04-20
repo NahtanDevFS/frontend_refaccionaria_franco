@@ -384,19 +384,19 @@ export default function CentroGarantiasPage() {
                 className={styles.btnDestino}
                 onClick={() => handleInspeccionar("descarte")}
               >
-                🗑 Dar de baja
+                Dar de baja
               </button>
               <button
                 className={styles.btnDestino}
                 onClick={() => handleInspeccionar("devolver_proveedor")}
               >
-                📦 Devolver a proveedor
+                Devolver a proveedor
               </button>
               <button
                 className={styles.btnApprove}
                 onClick={() => handleInspeccionar("aprobado_reventa")}
               >
-                ♻ Reacondicionado
+                Reacondicionado
               </button>
             </div>
           </div>

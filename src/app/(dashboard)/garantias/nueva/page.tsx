@@ -127,70 +127,72 @@ export default function NuevaGarantiaPage() {
       )}
 
       {detalles.length > 0 && (
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th>Producto</th>
-              <th>SKU</th>
-              <th>Cantidad</th>
-              <th>Garantía</th>
-              <th>Acción</th>
-            </tr>
-          </thead>
-          <tbody>
-            {detalles.map((det) => {
-              const diasRestantes = calcularDiasRestantes(
-                venta.created_at,
-                det.garantia_dias,
-              );
-              const garantiaVigente = diasRestantes > 0;
-              const sinGarantia = det.garantia_dias <= 0;
+        <div className={styles.tableContainer}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th>SKU</th>
+                <th>Cantidad</th>
+                <th>Garantía</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              {detalles.map((det) => {
+                const diasRestantes = calcularDiasRestantes(
+                  venta.created_at,
+                  det.garantia_dias,
+                );
+                const garantiaVigente = diasRestantes > 0;
+                const sinGarantia = det.garantia_dias <= 0;
 
-              return (
-                <tr key={det.id_detalle}>
-                  <td>{det.producto}</td>
-                  <td>{det.sku}</td>
-                  <td>{det.cantidad}</td>
-                  <td>
-                    {sinGarantia ? (
-                      <span className={styles.badgeNoGarantia}>
-                        Sin garantía
-                      </span>
-                    ) : garantiaVigente ? (
-                      <span className={styles.badgeVigente}>
-                        {diasRestantes} día{diasRestantes !== 1 ? "s" : ""}{" "}
-                        restante{diasRestantes !== 1 ? "s" : ""}
-                      </span>
-                    ) : (
-                      <span className={styles.badgeVencida}>Vencida</span>
-                    )}
-                  </td>
-                  <td>
-                    {/* Caso 1: ya tiene un reclamo (cualquier estado) */}
-                    {det.tiene_garantia ? (
-                      <button className={styles.btnReclamado} disabled>
-                        ✓ Reclamado
-                      </button>
-                    ) : /* Caso 2: sin garantía o vencida */ sinGarantia ||
-                      !garantiaVigente ? (
-                      <button className={styles.btnDisabled} disabled>
-                        No aplica
-                      </button>
-                    ) : (
-                      /* Caso 3: apto para reclamar */
-                      <button
-                        className={styles.btnReclamar}
-                        onClick={() => abrirModal(det)}
-                      >
-                        Reclamar
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                return (
+                  <tr key={det.id_detalle}>
+                    <td>{det.producto}</td>
+                    <td>{det.sku}</td>
+                    <td>{det.cantidad}</td>
+                    <td>
+                      {sinGarantia ? (
+                        <span className={styles.badgeNoGarantia}>
+                          Sin garantía
+                        </span>
+                      ) : garantiaVigente ? (
+                        <span className={styles.badgeVigente}>
+                          {diasRestantes} día{diasRestantes !== 1 ? "s" : ""}{" "}
+                          restante{diasRestantes !== 1 ? "s" : ""}
+                        </span>
+                      ) : (
+                        <span className={styles.badgeVencida}>Vencida</span>
+                      )}
+                    </td>
+                    <td>
+                      {/* Caso 1: ya tiene un reclamo (cualquier estado) */}
+                      {det.tiene_garantia ? (
+                        <button className={styles.btnReclamado} disabled>
+                          ✓ Reclamado
+                        </button>
+                      ) : /* Caso 2: sin garantía o vencida */ sinGarantia ||
+                        !garantiaVigente ? (
+                        <button className={styles.btnDisabled} disabled>
+                          No aplica
+                        </button>
+                      ) : (
+                        /* Caso 3: apto para reclamar */
+                        <button
+                          className={styles.btnReclamar}
+                          onClick={() => abrirModal(det)}
+                        >
+                          Reclamar
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       )}
 
       {/* Modal de reclamo */}

@@ -395,6 +395,116 @@
   background-color: #f3f4f6;
 }
 
+/* ── CONTENIDO DE LAS PESTAÑAS (GRID DE TARJETAS) ── */
+.tabContent {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.loadingText,
+.emptyText {
+  text-align: center;
+  padding: 3rem;
+  color: #6b7280;
+  background-color: #f9fafb;
+  border-radius: 8px;
+  border: 1px dashed #d1d5db;
+  font-size: 1rem;
+  grid-column: 1 / -1; /* Ocupa todo el ancho disponible */
+}
+
+/* ── TARJETAS (CARDS) DE GARANTÍAS ── */
+.card {
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition:
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+.cardHeader {
+  background-color: var(--light-blue, #f0f6ff);
+  padding: 1rem 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.cardTitle {
+  font-weight: 700;
+  color: var(--primary-blue, #1e3a8a);
+  font-size: 1rem;
+}
+
+.cardSku {
+  font-size: 0.75rem;
+  background: white;
+  color: #4b5563;
+  padding: 0.25rem 0.6rem;
+  border-radius: 12px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  border: 1px solid #e5e7eb;
+}
+
+.cardBody {
+  padding: 1.25rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.cardBody p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #374151;
+  line-height: 1.4;
+}
+
+.cardBody strong {
+  color: #111827;
+  font-weight: 600;
+}
+
+.cardActions {
+  padding: 1rem 1.25rem;
+  background-color: #f9fafb;
+  border-top: 1px solid #f3f4f6;
+  display: flex;
+}
+
+/* Botón revisar / inspeccionar dentro de la tarjeta */
+.btnReview {
+  width: 100%;
+  padding: 0.65rem;
+  border-radius: 6px;
+  background-color: white;
+  border: 1px solid var(--primary-blue, #1e3a8a);
+  color: var(--primary-blue, #1e3a8a);
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btnReview:hover {
+  background-color: var(--primary-blue, #1e3a8a);
+  color: white;
+}
+
 @media (max-width: 768px) {
   .container {
     padding: 1rem;
