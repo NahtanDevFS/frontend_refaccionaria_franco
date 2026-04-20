@@ -326,6 +326,10 @@ export default function NuevaVentaPage() {
     );
   };
 
+  const eliminarDelCarrito = (uid: string) => {
+    setCarrito(carrito.filter((item) => item.uid !== uid));
+  };
+
   const handleTermBusqCliente = useCallback((valor: string) => {
     setTermBusqCliente(valor);
     setSugerencias([]);
@@ -733,12 +737,14 @@ export default function NuevaVentaPage() {
                 <th>P.U.</th>
                 <th>Cantidad</th>
                 <th>Subtotal</th>
+                <th style={{ width: "50px", textAlign: "center" }}> </th>
               </tr>
             </thead>
             <tbody>
               {carrito.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className={styles.textCenter}>
+                  {/* Actualizamos colSpan a 5 */}
+                  <td colSpan={5} className={styles.textCenter}>
                     El carrito está vacío
                   </td>
                 </tr>
@@ -775,6 +781,32 @@ export default function NuevaVentaPage() {
                     </td>
                     <td className={styles.bold}>
                       Q {item.subtotal.toFixed(2)}
+                    </td>
+                    <td style={{ textAlign: "center" }}>
+                      <button
+                        onClick={() => eliminarDelCarrito(item.uid)}
+                        title="Quitar del carrito"
+                        style={{
+                          background: "none",
+                          border: "none",
+                          color: "#ef4444",
+                          cursor: "pointer",
+                          fontSize: "1.1rem",
+                          fontWeight: "bold",
+                          padding: "4px 8px",
+                          borderRadius: "4px",
+                          transition: "background-color 0.2s",
+                        }}
+                        onMouseOver={(e) =>
+                          (e.currentTarget.style.backgroundColor = "#fee2e2")
+                        }
+                        onMouseOut={(e) =>
+                          (e.currentTarget.style.backgroundColor =
+                            "transparent")
+                        }
+                      >
+                        X
+                      </button>
                     </td>
                   </tr>
                 ))

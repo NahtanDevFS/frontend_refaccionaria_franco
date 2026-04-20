@@ -135,14 +135,13 @@ export default function InicioPage() {
       setVendedorSel(null);
       setSugerencia(null);
       setMontoMeta("");
+
+      setEmpleadoHist("");
+      setHistorial([]);
     } catch (err: any) {
       setMsgError(err.message);
     }
   }, [usuario, sucursalFiltro, anioMeta, mesMeta]);
-
-  useEffect(() => {
-    if (tabActual === "asignar") cargarVendedores();
-  }, [tabActual, cargarVendedores]);
 
   // ─── Tab Asignar: seleccionar vendedor → cargar sugerencia ─
   const seleccionarVendedor = async (v: VendedorParaMeta) => {
@@ -221,12 +220,12 @@ export default function InicioPage() {
     }
   }, []);
 
-  // Para el historial necesitamos la lista de vendedores también
+  // Efecto unificado para recargar vendedores al entrar a la tab o cambiar de sucursal
   useEffect(() => {
-    if (tabActual === "historial" && vendedores.length === 0) {
+    if (tabActual === "asignar" || tabActual === "historial") {
       cargarVendedores();
     }
-  }, [tabActual, vendedores.length, cargarVendedores]);
+  }, [tabActual, cargarVendedores]);
 
   useEffect(() => {
     if (empleadoHist !== "") cargarHistorial(Number(empleadoHist));
