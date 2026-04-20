@@ -1,5 +1,5 @@
 .container {
-  padding: 2rem;
+  padding: 1.5rem;
   background-color: #f9fafb;
   min-height: 100vh;
 }
@@ -30,6 +30,10 @@
   max-width: 300px;
 }
 
+.inputGroupModal {
+  margin-top: 1rem;
+}
+
 .label {
   font-size: 0.875rem;
   font-weight: 500;
@@ -41,6 +45,7 @@
   border: 1px solid #d1d5db;
   border-radius: 0.375rem;
   font-size: 1rem;
+  width: 100%;
 }
 
 .btnSearch {
@@ -59,6 +64,15 @@
   background-color: #2563eb;
 }
 
+.errorText {
+  color: #dc2626;
+  background-color: #fee2e2;
+  padding: 0.75rem 1rem;
+  border-radius: 0.375rem;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+}
+
 .card {
   background: white;
   padding: 1.5rem;
@@ -67,10 +81,23 @@
   margin-bottom: 2rem;
 }
 
+.subtitle {
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
+  color: #111827;
+}
+
+/* ── Contenedor de Tabla para Responsividad ── */
+.tableContainer {
+  overflow-x: auto;
+  margin-top: 1rem;
+  width: 100%;
+}
+
 .table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 1rem;
+  min-width: 600px; /* Evita que las columnas colapsen demasiado */
 }
 
 .table th {
@@ -88,6 +115,13 @@
   font-size: 0.875rem;
 }
 
+.textMuted {
+  color: #6b7280;
+  font-size: 0.8em;
+  display: block;
+  margin-top: 0.2rem;
+}
+
 .badgeValida {
   background: #d1fae5;
   color: #065f46;
@@ -95,6 +129,7 @@
   border-radius: 999px;
   font-size: 0.75rem;
   font-weight: bold;
+  white-space: nowrap;
 }
 
 .badgeExpirada {
@@ -104,6 +139,7 @@
   border-radius: 999px;
   font-size: 0.75rem;
   font-weight: bold;
+  white-space: nowrap;
 }
 
 .btnAction {
@@ -114,29 +150,82 @@
   border-radius: 0.375rem;
   cursor: pointer;
   font-size: 0.875rem;
+  white-space: nowrap;
 }
+
 .btnAction:disabled {
   background-color: #d1d5db;
   cursor: not-allowed;
 }
 
-/* Modal igual al anterior */
+/* ── Modal ── */
 .modalOverlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 1rem; /* Margen para que no toque los bordes en móvil */
+  z-index: 50;
 }
 
 .modalContent {
   background: white;
-  padding: 2rem;
+  padding: 1.5rem;
   border-radius: 0.5rem;
   width: 100%;
   max-width: 500px;
+  max-height: 90vh; /* Evita que el modal sea más alto que la pantalla */
+  overflow-y: auto;
+}
+
+.modalActions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 1.5rem;
+}
+
+.btnCancel {
+  background: white;
+  border: 1px solid #d1d5db;
+  color: #374151;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.btnCancel:hover {
+  background-color: #f3f4f6;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   MEDIA QUERIES (RESPONSIVE)
+   ═══════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+
+  .searchBox {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 1rem;
+  }
+
+  .inputGroup {
+    max-width: 100%;
+  }
+
+  .btnSearch {
+    width: 100%;
+    margin-top: 0.5rem;
+  }
+
+  .card {
+    padding: 1rem;
+  }
 }

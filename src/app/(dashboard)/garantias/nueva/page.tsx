@@ -32,7 +32,6 @@ export default function NuevaGarantiaPage() {
     }
   };
 
-  // CORRECCIÓN: Cálculo de fechas más robusto
   const calcularDiasRestantes = (
     fechaCompra: string,
     diasGarantia: number | undefined,
@@ -108,13 +107,11 @@ export default function NuevaGarantiaPage() {
         </button>
       </div>
 
-      {error && <p style={{ color: "red" }}>{error}</p>}
+      {error && <p className={styles.errorText}>{error}</p>}
 
       {venta && (
         <div className={styles.card}>
-          <h2 style={{ fontSize: "1.2rem", marginBottom: "1rem" }}>
-            Datos de Venta #{venta.id_venta}
-          </h2>
+          <h2 className={styles.subtitle}>Datos de Venta #{venta.id_venta}</h2>
           <p>
             <strong>Fecha de Compra:</strong>{" "}
             {new Date(venta.created_at || venta.fecha).toLocaleDateString()}
@@ -123,55 +120,57 @@ export default function NuevaGarantiaPage() {
             <strong>Cliente:</strong> {venta.cliente || "Consumidor Final"}
           </p>
 
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Producto (SKU)</th>
-                <th>Cant. Comprada</th>
-                <th>Días Garantía</th>
-                <th>Estado Plazo</th>
-                <th>Acción</th>
-              </tr>
-            </thead>
-            <tbody>
-              {detalles.map((d) => {
-                const diasRestantes = calcularDiasRestantes(
-                  venta.created_at || venta.fecha,
-                  d.garantia_dias,
-                );
-                const esValida = diasRestantes >= 0;
+          <div className={styles.tableContainer}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th>Producto (SKU)</th>
+                  <th>Cant. Comprada</th>
+                  <th>Días Garantía</th>
+                  <th>Estado Plazo</th>
+                  <th>Acción</th>
+                </tr>
+              </thead>
+              <tbody>
+                {detalles.map((d) => {
+                  const diasRestantes = calcularDiasRestantes(
+                    venta.created_at || venta.fecha,
+                    d.garantia_dias,
+                  );
+                  const esValida = diasRestantes >= 0;
 
-                return (
-                  <tr key={d.id_detalle}>
-                    <td>
-                      {d.producto} <br />{" "}
-                      <small style={{ color: "gray" }}>{d.sku}</small>
-                    </td>
-                    <td>{d.cantidad} und</td>
-                    <td>{d.garantia_dias || 0} días</td>
-                    <td>
-                      {esValida ? (
-                        <span className={styles.badgeValida}>
-                          Vigente ({diasRestantes} días rest.)
-                        </span>
-                      ) : (
-                        <span className={styles.badgeExpirada}>Expirada</span>
-                      )}
-                    </td>
-                    <td>
-                      <button
-                        className={styles.btnAction}
-                        disabled={!esValida}
-                        onClick={() => abrirModal(d)}
-                      >
-                        Reclamar
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                  return (
+                    <tr key={d.id_detalle}>
+                      <td>
+                        {d.producto}
+                        <span className={styles.textMuted}>{d.sku}</span>
+                      </td>
+                      <td>{d.cantidad} und</td>
+                      <td>{d.garantia_dias || 0} días</td>
+                      <td>
+                        {esValida ? (
+                          <span className={styles.badgeValida}>
+                            Vigente ({diasRestantes} días rest.)
+                          </span>
+                        ) : (
+                          <span className={styles.badgeExpirada}>Expirada</span>
+                        )}
+                      </td>
+                      <td>
+                        <button
+                          className={styles.btnAction}
+                          disabled={!esValida}
+                          onClick={() => abrirModal(d)}
+                        >
+                          Reclamar
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
@@ -179,12 +178,12 @@ export default function NuevaGarantiaPage() {
       {modalAbierto && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalContent}>
-            <h2 style={{ marginBottom: "1rem" }}>Registrar Reclamo</h2>
+            <h2 className={styles.subtitle}>Registrar Reclamo</h2>
             <p>
               <strong>Producto:</strong> {productoSeleccionado?.producto}
             </p>
 
-            <div className={styles.inputGroup} style={{ marginTop: "1rem" }}>
+            <div className={`${styles.inputGroup} ${styles.inputGroupModal}`}>
               <label className={styles.label}>
                 Cantidad a Reclamar (Máx {productoSeleccionado?.cantidad})
               </label>
@@ -198,7 +197,7 @@ export default function NuevaGarantiaPage() {
               />
             </div>
 
-            <div className={styles.inputGroup} style={{ marginTop: "1rem" }}>
+            <div className={`${styles.inputGroup} ${styles.inputGroupModal}`}>
               <label className={styles.label}>Motivo del Defecto</label>
               <textarea
                 rows={3}
@@ -209,16 +208,9 @@ export default function NuevaGarantiaPage() {
               />
             </div>
 
-            <div
-              style={{
-                display: "flex",
-                gap: "1rem",
-                justifyContent: "flex-end",
-                marginTop: "1.5rem",
-              }}
-            >
+            <div className={styles.modalActions}>
               <button
-                style={{ padding: "0.5rem 1rem", cursor: "pointer" }}
+                className={styles.btnCancel}
                 onClick={() => setModalAbierto(false)}
               >
                 Cancelar

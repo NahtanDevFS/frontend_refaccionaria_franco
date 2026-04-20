@@ -1,43 +1,49 @@
 .container {
-  padding: 2rem;
+  padding: 1.5rem;
   max-width: 1200px;
   margin: 0 auto;
+  min-height: 100vh;
+  background-color: #f9fafb;
 }
 
 .title {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #1f2937;
-  margin-bottom: 1.5rem;
+  font-size: 1.4rem;
+  font-weight: bold;
+  color: #111827;
+  margin-bottom: 1.25rem;
 }
 
 .card {
   background: white;
   border-radius: 8px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  padding: 1.5rem;
+  padding: 1.25rem;
 }
 
 .error {
   background-color: #fee2e2;
   color: #991b1b;
-  padding: 1rem;
+  padding: 0.75rem 1rem;
   border-radius: 6px;
   margin-bottom: 1rem;
+  font-size: 0.85rem;
 }
 
+/* ── Tabla Responsive ── */
 .tableResponsive {
   overflow-x: auto;
+  width: 100%;
 }
 
 .table {
   width: 100%;
   border-collapse: collapse;
+  min-width: 600px; /* Obliga a hacer scroll en móvil en lugar de aplastar el texto */
 }
 
 .table th,
 .table td {
-  padding: 0.75rem 1rem;
+  padding: 0.6rem 0.75rem;
   text-align: left;
   border-bottom: 1px solid #e5e7eb;
 }
@@ -46,6 +52,15 @@
   background-color: #f9fafb;
   font-weight: 600;
   color: #4b5563;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.table td {
+  font-size: 0.8rem;
+  color: #374151;
+  vertical-align: middle;
 }
 
 .textCenter {
@@ -54,13 +69,20 @@
   padding: 2rem !important;
 }
 
-/* Badges de estados */
+.textMuted {
+  color: #6b7280;
+  font-size: 0.85em;
+  margin-left: 0.25rem;
+}
+
+/* ── Badges de estados ── */
 .badge {
-  padding: 0.25rem 0.75rem;
+  padding: 0.2rem 0.5rem;
   border-radius: 9999px;
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: 0.7rem;
+  font-weight: 600;
   text-transform: capitalize;
+  white-space: nowrap;
 }
 
 .badgeSuccess {
@@ -88,18 +110,20 @@
   background-color: #3b82f6;
   color: white;
   border: none;
-  padding: 0.5rem 1rem;
+  padding: 0.4rem 0.8rem;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 0.875rem;
+  font-size: 0.75rem;
+  font-weight: bold;
   transition: background-color 0.2s;
+  white-space: nowrap;
 }
 
 .btnAction:hover {
   background-color: #2563eb;
 }
 
-/* Modal */
+/* ── Modal ── */
 .modalOverlay {
   position: fixed;
   top: 0;
@@ -122,6 +146,7 @@
   max-height: 90vh;
   display: flex;
   flex-direction: column;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
 }
 
 .modalHeader {
@@ -133,7 +158,7 @@
 }
 
 .modalHeader h2 {
-  font-size: 1.25rem;
+  font-size: 1.15rem;
   margin: 0;
   color: #111827;
 }
@@ -144,6 +169,12 @@
   font-size: 1.5rem;
   color: #6b7280;
   cursor: pointer;
+  line-height: 1;
+  padding: 0 0.25rem;
+}
+
+.btnClose:hover {
+  color: #111827;
 }
 
 .modalBody {
@@ -151,7 +182,7 @@
   overflow-y: auto;
 }
 
-/* Timeline (Línea de tiempo) */
+/* ── Timeline (Línea de tiempo) ── */
 .timeline {
   position: relative;
   padding-left: 1.5rem;
@@ -160,7 +191,7 @@
 
 .timelineItem {
   position: relative;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
 }
 
 .timelineItem:last-child {
@@ -170,7 +201,7 @@
 .timelineItem::before {
   content: "";
   position: absolute;
-  left: -1.9rem;
+  left: -1.85rem;
   top: 0.25rem;
   width: 12px;
   height: 12px;
@@ -180,7 +211,8 @@
 }
 
 .timelineDate {
-  font-size: 0.875rem;
+  font-size: 0.75rem;
+  font-weight: 600;
   color: #6b7280;
   margin-bottom: 0.25rem;
 }
@@ -193,13 +225,34 @@
 }
 
 .timelineContent h3 {
-  font-size: 1rem;
+  font-size: 0.95rem;
   margin: 0 0 0.5rem 0;
   color: #1f2937;
 }
 
 .timelineContent p {
   margin: 0.25rem 0;
-  font-size: 0.875rem;
+  font-size: 0.85rem;
   color: #4b5563;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   MEDIA QUERIES (RESPONSIVE)
+   ═══════════════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+
+  .card {
+    padding: 1rem;
+  }
+
+  .modalBody {
+    padding: 1rem;
+  }
+
+  .timelineContent {
+    padding: 0.75rem;
+  }
 }

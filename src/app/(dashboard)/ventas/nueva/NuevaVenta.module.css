@@ -14,6 +14,229 @@
   box-shadow: 0 2px 4px rgba(0, 51, 102, 0.05);
 }
 
+/* ── Estilos extraídos de estilos en línea ── */
+.headerFlex {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.headerTitle {
+  margin: 0;
+}
+
+.btnGroup {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.btnTab {
+  padding: 0.4rem 1rem;
+  border-radius: 4px;
+  font-weight: bold;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btnTabActive {
+  background-color: var(--primary-blue);
+  color: white;
+}
+
+.btnTabInactive {
+  background-color: #ccc;
+  color: #333;
+}
+
+.searchBox {
+  margin-bottom: 1.5rem;
+  background: #f8fafc;
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.tableContainer {
+  overflow-x: auto;
+  margin-bottom: 1.5rem;
+}
+
+.stockGreen {
+  color: green;
+  font-weight: bold;
+}
+
+.stockRed {
+  color: red;
+  font-weight: bold;
+}
+
+.btnAddCart {
+  padding: 0.4rem 0.8rem;
+  background-color: var(--primary-blue);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.2s;
+}
+
+.btnAddCart:hover:not(:disabled) {
+  background-color: var(--secondary-blue);
+}
+
+.btnAddCart:disabled {
+  background-color: var(--border-color);
+  cursor: not-allowed;
+}
+
+.btnAddCartReac {
+  background-color: #d97706;
+}
+
+.btnAddCartReac:hover:not(:disabled) {
+  background-color: #b45309;
+}
+
+.stockDetails {
+  margin-top: 4px;
+}
+
+.stockSummary {
+  font-size: 0.75rem;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.stockList {
+  padding-left: 0.5rem;
+  margin-top: 4px;
+}
+
+.stockItem {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  padding: 2px 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.stockItem:last-child {
+  border-bottom: none;
+}
+
+.stockItemQty {
+  margin-left: 12px;
+  font-weight: bold;
+}
+
+.textCenter {
+  text-align: center;
+}
+
+.mr05 {
+  margin-right: 0.5rem;
+}
+
+.bold {
+  font-weight: bold;
+}
+
+.mt0 {
+  margin-top: 0 !important;
+}
+
+.mt2 {
+  margin-top: 2rem;
+}
+
+.discountRow {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.discountLabel {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--primary-blue);
+}
+
+.discountInput {
+  width: 70px;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  text-align: center;
+}
+
+.discountResult {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.totalRow {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1rem;
+  align-items: center;
+}
+
+.checkboxGroup {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.checkboxInput {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+}
+
+.checkboxLabel {
+  margin-bottom: 0;
+  cursor: pointer;
+}
+
+.btnLink {
+  color: var(--primary-blue);
+  font-weight: 700;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+
+.hintText {
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+.hintTextWarning {
+  color: #d97706;
+  font-weight: 600;
+  font-size: 0.72rem;
+}
+
+.subTextBtn {
+  font-size: 0.72rem;
+  font-weight: 400;
+}
+
+/* ── Estilos originales mantenidos ── */
 .sectionTitle {
   color: var(--primary-blue);
   border-bottom: 2px solid var(--light-blue);
@@ -34,7 +257,7 @@
   margin-bottom: 1rem;
 }
 
-.formGroup.fullWidth {
+.fullWidth {
   grid-column: span 2;
 }
 
@@ -68,6 +291,8 @@
   font-weight: bold;
   margin-top: 1rem;
   width: 100%;
+  border: none;
+  cursor: pointer;
 }
 
 .btnAction:hover:not(:disabled) {
@@ -79,17 +304,12 @@
   cursor: not-allowed;
 }
 
-.searchRow {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-}
-
 /* Tabla del Carrito */
 .table {
   width: 100%;
   border-collapse: collapse;
   margin-top: 1rem;
+  min-width: 500px;
 }
 
 .table th {
@@ -119,6 +339,8 @@
   height: 28px;
   border-radius: 4px;
   font-weight: bold;
+  border: none;
+  cursor: pointer;
 }
 
 .totalBox {
@@ -133,77 +355,6 @@
   font-size: 1.5rem;
   font-weight: bold;
   color: var(--primary-blue);
-}
-
-.badgeStock {
-  font-size: 0.75rem;
-  padding: 0.2rem 0.5rem;
-  border-radius: 12px;
-  background-color: #e6f4ea;
-  color: #1e7e34;
-  margin-left: 0.5rem;
-}
-.badgeStockOut {
-  background-color: #fce8e6;
-  color: #d93025;
-}
-
-.reacSection {
-  margin-top: 2rem;
-  padding: 1.25rem;
-  background-color: #fffbeb;
-  border: 1px dashed #f59e0b;
-  border-radius: 8px;
-}
-
-.reacTitle {
-  color: #d97706;
-  font-weight: 700;
-  margin-top: 0;
-  margin-bottom: 1rem;
-  font-size: 1.1rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.reacGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 1rem;
-}
-
-.reacCard {
-  background-color: white;
-  border: 1px solid #fcd34d;
-  border-radius: 6px;
-  padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-
-.reacCard span {
-  font-size: 0.9rem;
-  color: #374151;
-}
-
-.reacCard strong {
-  color: #d97706;
-  font-size: 1.1rem;
-}
-
-.badgeReac {
-  background-color: #fef3c7;
-  color: #d97706;
-  font-size: 0.7rem;
-  padding: 0.2rem 0.5rem;
-  border-radius: 12px;
-  font-weight: bold;
-  display: inline-block;
-  margin-right: 0.5rem;
-  border: 1px solid #fcd34d;
 }
 
 .badgeReacTable {
@@ -250,8 +401,7 @@
   color: var(--primary-blue);
 }
 
-/* ── Buscador con autocomplete ───────────────────────────────────────────────── */
-
+/* Buscador con autocomplete */
 .buscadorWrapper {
   position: relative;
   margin-bottom: 1rem;
@@ -328,8 +478,7 @@
   text-align: center;
 }
 
-/* ── Tarjeta de cliente seleccionado ────────────────────────────────────────── */
-
+/* Tarjeta de cliente seleccionado */
 .clienteCard {
   background-color: var(--light-blue);
   border: 1.5px solid var(--border-color);
@@ -365,12 +514,6 @@
   gap: 0.5rem;
 }
 
-.clienteCardDetalle span {
-  display: flex;
-  align-items: center;
-  gap: 0.2rem;
-}
-
 .btnCambiarCliente {
   background: white;
   border: 1px solid var(--border-color);
@@ -389,8 +532,6 @@
   background-color: var(--light-blue);
 }
 
-/* ── Badge NIT en tarjeta ───────────────────────────────────────────────────── */
-
 .nitBadge {
   background: white;
   border: 1px solid var(--border-color);
@@ -402,8 +543,7 @@
   font-weight: 600;
 }
 
-/* ── Modal cliente nuevo ────────────────────────────────────────────────────── */
-
+/* Modal cliente nuevo */
 .modalOverlay {
   position: fixed;
   inset: 0;
@@ -503,8 +643,7 @@
   color: #374151;
 }
 
-/* ── Separador de sección ────────────────────────────────────────────────────── */
-
+/* Separador de sección */
 .seccionEntrega {
   margin-top: 1.5rem;
   padding-top: 1.25rem;
@@ -519,4 +658,53 @@
   display: flex;
   align-items: center;
   gap: 0.4rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   MEDIA QUERIES (RESPONSIVE)
+   ═══════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 1024px) {
+  .container {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .fullWidth {
+    grid-column: span 1 !important;
+  }
+
+  .headerFlex {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .panel {
+    padding: 1rem;
+  }
+
+  .tipoClienteSelector {
+    grid-template-columns: 1fr;
+  }
+
+  .modalNuevoCliente {
+    width: 95%;
+  }
+}
+
+@media (max-width: 480px) {
+  .btnGroup {
+    width: 100%;
+  }
+
+  .btnTab {
+    width: 100%;
+    text-align: center;
+  }
 }

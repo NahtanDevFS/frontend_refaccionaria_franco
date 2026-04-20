@@ -88,7 +88,9 @@ export default function HistorialGarantiasPage() {
 
       <div className={styles.card}>
         {loading ? (
-          <p>Cargando historial...</p>
+          <p style={{ color: "#6b7280", padding: "1rem 0" }}>
+            Cargando historial...
+          </p>
         ) : (
           <div className={styles.tableResponsive}>
             <table className={styles.table}>
@@ -104,10 +106,11 @@ export default function HistorialGarantiasPage() {
               <tbody>
                 {historial.map((g) => (
                   <tr key={g.id_garantia}>
-                    <td>#{g.id_garantia}</td>
+                    <td style={{ fontWeight: "bold" }}>#{g.id_garantia}</td>
                     <td>{formatearFecha(g.fecha_solicitud)}</td>
                     <td>
-                      {g.producto} <small>({g.sku})</small>
+                      {g.producto}{" "}
+                      <span className={styles.textMuted}>({g.sku})</span>
                     </td>
                     <td>{getEstadoBadge(g.estado_garantia)}</td>
                     <td>
@@ -149,7 +152,7 @@ export default function HistorialGarantiasPage() {
                 className={styles.btnClose}
                 onClick={() => setSelectedGarantia(null)}
               >
-                ×
+                &times;
               </button>
             </div>
 
@@ -171,7 +174,9 @@ export default function HistorialGarantiasPage() {
                     </p>
                     <p>
                       <strong>Estado inicial:</strong>{" "}
-                      {selectedGarantia.estado_garantia}
+                      <span style={{ textTransform: "capitalize" }}>
+                        {selectedGarantia.estado_garantia.replace("_", " ")}
+                      </span>
                     </p>
                   </div>
                 </div>
@@ -186,7 +191,12 @@ export default function HistorialGarantiasPage() {
                       <h3>2. Recepción Física en Sucursal</h3>
                       <p>
                         <strong>Condición al recibir:</strong>{" "}
-                        {selectedGarantia.condicion_recibido}
+                        <span style={{ textTransform: "capitalize" }}>
+                          {selectedGarantia.condicion_recibido?.replace(
+                            "_",
+                            " ",
+                          )}
+                        </span>
                       </p>
                     </div>
                   </div>
@@ -205,7 +215,9 @@ export default function HistorialGarantiasPage() {
                       </p>
                       <p>
                         <strong>Destino Final:</strong>{" "}
-                        {selectedGarantia.destino}
+                        <span style={{ textTransform: "capitalize" }}>
+                          {selectedGarantia.destino?.replace("_", " ")}
+                        </span>
                       </p>
                     </div>
                   </div>
@@ -221,7 +233,9 @@ export default function HistorialGarantiasPage() {
                       <h3>4. Reacondicionamiento</h3>
                       <p>
                         Pieza enviada a inventario de segunda. Estado:{" "}
-                        {selectedGarantia.estado_lote}
+                        <span style={{ textTransform: "capitalize" }}>
+                          {selectedGarantia.estado_lote?.replace("_", " ")}
+                        </span>
                       </p>
                     </div>
                   </div>

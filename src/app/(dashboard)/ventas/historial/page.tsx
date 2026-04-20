@@ -1,4 +1,3 @@
-// src/app/(dashboard)/ventas/historial/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -230,10 +229,10 @@ export default function ListadoVentas() {
       {/* Tabla */}
       <div className={styles.card}>
         {loading ? (
-          <p style={{ padding: "2rem", color: "#6b7280" }}>Cargando datos...</p>
+          <p className={styles.textMuted}>Cargando datos...</p>
         ) : (
           <>
-            <div style={{ overflowX: "auto" }}>
+            <div className={styles.tableContainer}>
               <table className={styles.table}>
                 <thead>
                   <tr>
@@ -254,11 +253,7 @@ export default function ListadoVentas() {
                     <tr>
                       <td
                         colSpan={10}
-                        style={{
-                          textAlign: "center",
-                          padding: "2rem",
-                          color: "#6b7280",
-                        }}
+                        className={`${styles.textCenter} ${styles.textMuted}`}
                       >
                         No se encontraron ventas con estos filtros.
                       </td>
@@ -266,16 +261,16 @@ export default function ListadoVentas() {
                   ) : (
                     ventas.map((v) => (
                       <tr key={v.id_venta}>
-                        <td style={{ fontWeight: "bold" }}>#{v.id_venta}</td>
+                        <td className={styles.textBold}>#{v.id_venta}</td>
                         <td>{new Date(v.fecha).toLocaleDateString("es-GT")}</td>
                         <td>{v.cliente}</td>
                         <td>{v.vendedor || "No asignado"}</td>
-                        <td style={{ textTransform: "capitalize" }}>
+                        <td className={styles.textCapitalize}>
                           {v.canal || "Mostrador"}
                         </td>
                         <td>Q {(v.subtotal || v.total).toFixed(2)}</td>
                         <td>Q {(v.descuento || 0).toFixed(2)}</td>
-                        <td style={{ fontWeight: "bold" }}>
+                        <td className={styles.textBold}>
                           Q {v.total.toFixed(2)}
                         </td>
                         <td>
@@ -310,8 +305,11 @@ export default function ListadoVentas() {
                   Anterior
                 </button>
                 <span className={styles.paginacionInfo}>
-                  Página <strong>{meta.currentPage}</strong> de{" "}
-                  {meta.totalPages}
+                  Página{" "}
+                  <strong className={styles.textBold}>
+                    {meta.currentPage}
+                  </strong>{" "}
+                  de {meta.totalPages}
                   <small> ({meta.totalRecords} registros)</small>
                 </span>
                 <button

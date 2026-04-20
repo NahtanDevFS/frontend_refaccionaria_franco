@@ -76,11 +76,7 @@ export default function NuevaVentaPage() {
   >([]);
   const [carrito, setCarrito] = useState<ItemCarrito[]>([]);
 
-  // ── Estado del cliente (nuevo diseño) ────────────────────────────────────────
-  // "cf"        → Consumidor Final, listo para vender
-  // "buscando"  → mostrando el buscador libre
-  // "seleccionado" → cliente encontrado y confirmado
-  // "nuevo"     → modal de registro abierto
+  // ── Estado del cliente ────────────────────────────────────────
   type ModoCliente = "cf" | "buscando" | "seleccionado" | "nuevo";
   const [modoCliente, setModoCliente] = useState<ModoCliente>("cf");
   const [clienteSeleccionado, setClienteSeleccionado] =
@@ -89,8 +85,6 @@ export default function NuevaVentaPage() {
   // Buscador con autocomplete
   const [termBusqCliente, setTermBusqCliente] = useState("");
   const [sugerencias, setSugerencias] = useState<ClienteDB[]>([]);
-  const [busquedaLibre, setBusquedaLibre] = useState("");
-  const [resultadosCliente, setResultadosCliente] = useState<any[]>([]);
   const [buscandoCliente, setBuscandoCliente] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -128,9 +122,6 @@ export default function NuevaVentaPage() {
   // ── Ubicación ────────────────────────────────────────────────────────────────
   const [departamentos, setDepartamentos] = useState<
     { id_departamento: number; nombre: string }[]
-  >([]);
-  const [municipios, setMunicipios] = useState<
-    { id_municipio: number; nombre: string }[]
   >([]);
   const [deptoModal, setDeptoModal] = useState<
     { id_departamento: number; nombre: string }[]
@@ -198,7 +189,7 @@ export default function NuevaVentaPage() {
         .then(setMarcasVehiculo)
         .catch(console.error);
     }
-  }, [tipoBusqueda]);
+  }, [tipoBusqueda, marcasVehiculo.length]);
 
   useEffect(() => {
     if (busquedaVehiculo.id_marca) {
@@ -213,7 +204,6 @@ export default function NuevaVentaPage() {
     setBusquedaVehiculo((prev) => ({ ...prev, id_modelo: "", anio: "" }));
   }, [busquedaVehiculo.id_marca]);
 
-  // Cerrar dropdown al hacer click fuera
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (
@@ -227,7 +217,6 @@ export default function NuevaVentaPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // ── Carga de repartidores ────────────────────────────────────────────────────
   const cargarRepartidores = async () => {
     try {
       const data = await VentaService.obtenerRepartidores();
@@ -237,7 +226,6 @@ export default function NuevaVentaPage() {
     }
   };
 
-  // ── Búsqueda de productos ────────────────────────────────────────────────────
   const buscarProductoTexto = async () => {
     if (!usuarioSesion) return;
     if (!terminoBusqueda && !filtroCategoria && !filtroMarca) {
@@ -338,9 +326,6 @@ export default function NuevaVentaPage() {
     );
   };
 
-  // ── Lógica de cliente (nuevo diseño) ─────────────────────────────────────────
-
-  // Autocomplete con debounce
   const handleTermBusqCliente = useCallback((valor: string) => {
     setTermBusqCliente(valor);
     setSugerencias([]);
@@ -381,7 +366,6 @@ export default function NuevaVentaPage() {
   };
 
   const abrirModalNuevoCliente = () => {
-    // Si había texto buscado, prellenar el NIT o nombre
     const esNit = /^\d+$/.test(termBusqCliente.trim());
     setNuevoCliente({
       nit: esNit ? termBusqCliente.trim() : "",
@@ -405,8 +389,6 @@ export default function NuevaVentaPage() {
     }
     setGuardandoCliente(true);
     try {
-      // El backend crea el cliente dentro de crearOrdenVenta si viene cliente_nuevo
-      // Aquí solo lo guardamos en el estado local como "seleccionado"
       const clienteLocal: ClienteDB = {
         nombre_razon_social: nuevoCliente.nombre.trim(),
         nit: nuevoCliente.nit.trim() || "CF",
@@ -426,19 +408,16 @@ export default function NuevaVentaPage() {
     }
   };
 
-  // ── Totales ──────────────────────────────────────────────────────────────────
   const subtotalCarrito = carrito.reduce((sum, item) => sum + item.subtotal, 0);
   const descuentoMonto = subtotalCarrito * (descuentoPorcentaje / 100);
   const totalVentaConIva = subtotalCarrito - descuentoMonto;
 
-  // ── Procesar orden ───────────────────────────────────────────────────────────
   const procesarOrden = async () => {
     if (!usuarioSesion) {
       alert("No se detectó una sesión activa.");
       return;
     }
 
-    // Determinar NIT y cliente_nuevo según modo
     const esCF = modoCliente === "cf";
     const nitFinal = esCF ? "CF" : clienteSeleccionado?.nit || "CF";
     const esClienteNuevo =
@@ -490,7 +469,6 @@ export default function NuevaVentaPage() {
       await VentaService.crearOrdenVenta(payload);
       alert(`Orden enviada exitosamente.\nEstado: ${mensajeEstado}`);
 
-      // Reset
       setCarrito([]);
       setModoCliente("cf");
       setClienteSeleccionado(null);
@@ -508,45 +486,22 @@ export default function NuevaVentaPage() {
     }
   };
 
-  // ── Render ────────────────────────────────────────────────────────────────────
   return (
     <div className={styles.container}>
-      {/* ═══════════════════════════════════════════════════════════════════════
-          PANEL IZQUIERDO — Catálogo (sin cambios)
-         ═══════════════════════════════════════════════════════════════════════ */}
       <div className={styles.panel}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: "1rem",
-          }}
-        >
-          <h2 className={styles.sectionTitle} style={{ margin: 0 }}>
+        <div className={styles.headerFlex}>
+          <h2 className={`${styles.sectionTitle} ${styles.headerTitle}`}>
             Catálogo de Repuestos
           </h2>
-          <div style={{ display: "flex", gap: "0.5rem" }}>
+          <div className={styles.btnGroup}>
             <button
-              className={styles.btnAction}
-              style={{
-                margin: 0,
-                padding: "0.4rem 1rem",
-                background:
-                  tipoBusqueda === "texto" ? "var(--primary-blue)" : "#ccc",
-              }}
+              className={`${styles.btnTab} ${tipoBusqueda === "texto" ? styles.btnTabActive : styles.btnTabInactive}`}
               onClick={() => setTipoBusqueda("texto")}
             >
               Texto / SKU
             </button>
             <button
-              className={styles.btnAction}
-              style={{
-                margin: 0,
-                padding: "0.4rem 1rem",
-                background:
-                  tipoBusqueda === "vehiculo" ? "var(--primary-blue)" : "#ccc",
-              }}
+              className={`${styles.btnTab} ${tipoBusqueda === "vehiculo" ? styles.btnTabActive : styles.btnTabInactive}`}
               onClick={() => setTipoBusqueda("vehiculo")}
             >
               Por Vehículo
@@ -554,19 +509,9 @@ export default function NuevaVentaPage() {
           </div>
         </div>
 
-        {/* Buscador texto */}
         {tipoBusqueda === "texto" && (
-          <div
-            className={styles.formGrid}
-            style={{
-              marginBottom: "1.5rem",
-              background: "#f8fafc",
-              padding: "1rem",
-              borderRadius: "8px",
-              border: "1px solid #e2e8f0",
-            }}
-          >
-            <div className={styles.formGroup} style={{ gridColumn: "span 2" }}>
+          <div className={`${styles.formGrid} ${styles.searchBox}`}>
+            <div className={`${styles.formGroup} ${styles.fullWidth}`}>
               <label className={styles.label}>Buscar por Nombre o SKU</label>
               <input
                 type="text"
@@ -607,10 +552,9 @@ export default function NuevaVentaPage() {
                 ))}
               </select>
             </div>
-            <div className={styles.formGroup} style={{ gridColumn: "span 2" }}>
+            <div className={`${styles.formGroup} ${styles.fullWidth}`}>
               <button
-                className={styles.btnAction}
-                style={{ marginTop: 0 }}
+                className={`${styles.btnAction} ${styles.mt0}`}
                 onClick={buscarProductoTexto}
               >
                 Buscar
@@ -619,18 +563,8 @@ export default function NuevaVentaPage() {
           </div>
         )}
 
-        {/* Buscador vehículo */}
         {tipoBusqueda === "vehiculo" && (
-          <div
-            className={styles.formGrid}
-            style={{
-              marginBottom: "1.5rem",
-              background: "#f8fafc",
-              padding: "1rem",
-              borderRadius: "8px",
-              border: "1px solid #e2e8f0",
-            }}
-          >
+          <div className={`${styles.formGrid} ${styles.searchBox}`}>
             <div className={styles.formGroup}>
               <label className={styles.label}>Marca Vehículo</label>
               <select
@@ -702,10 +636,9 @@ export default function NuevaVentaPage() {
                 ))}
               </select>
             </div>
-            <div className={styles.formGroup} style={{ gridColumn: "span 2" }}>
+            <div className={`${styles.formGroup} ${styles.fullWidth}`}>
               <button
-                className={styles.btnAction}
-                style={{ marginTop: 0 }}
+                className={`${styles.btnAction} ${styles.mt0}`}
                 onClick={buscarPorVehiculo}
                 disabled={!busquedaVehiculo.id_modelo}
               >
@@ -715,9 +648,8 @@ export default function NuevaVentaPage() {
           </div>
         )}
 
-        {/* Tabla resultados */}
         {resultadosProducto.length > 0 && (
-          <div style={{ overflowX: "auto", marginBottom: "1.5rem" }}>
+          <div className={styles.tableContainer}>
             <table className={styles.table}>
               <thead>
                 <tr>
@@ -743,14 +675,8 @@ export default function NuevaVentaPage() {
                       {p.nombre}
                       {p.stock_otras_sucursales &&
                         p.stock_otras_sucursales.length > 0 && (
-                          <details style={{ marginTop: "4px" }}>
-                            <summary
-                              style={{
-                                fontSize: "0.75rem",
-                                color: "#6b7280",
-                                cursor: "pointer",
-                              }}
-                            >
+                          <details className={styles.stockDetails}>
+                            <summary className={styles.stockSummary}>
                               Stock otras sucursales (
                               {p.stock_otras_sucursales.reduce(
                                 (a, b) => a + b.cantidad,
@@ -758,28 +684,11 @@ export default function NuevaVentaPage() {
                               )}{" "}
                               und)
                             </summary>
-                            <div
-                              style={{
-                                paddingLeft: "0.5rem",
-                                marginTop: "4px",
-                              }}
-                            >
+                            <div className={styles.stockList}>
                               {p.stock_otras_sucursales.map((otra, i) => (
-                                <div
-                                  key={i}
-                                  style={{
-                                    display: "flex",
-                                    justifyContent: "space-between",
-                                    fontSize: "0.75rem",
-                                    borderBottom:
-                                      i < p.stock_otras_sucursales!.length - 1
-                                        ? "1px solid #e2e8f0"
-                                        : "none",
-                                    padding: "2px 0",
-                                  }}
-                                >
+                                <div key={i} className={styles.stockItem}>
                                   <span>{otra.sucursal}</span>
-                                  <strong style={{ marginLeft: "12px" }}>
+                                  <strong className={styles.stockItemQty}>
                                     {otra.cantidad} und
                                   </strong>
                                 </div>
@@ -789,19 +698,16 @@ export default function NuevaVentaPage() {
                         )}
                     </td>
                     <td>Q {p.precio_venta.toFixed(2)}</td>
-                    <td style={{ color: p.stock_local > 0 ? "green" : "red" }}>
+                    <td
+                      className={
+                        p.stock_local > 0 ? styles.stockGreen : styles.stockRed
+                      }
+                    >
                       {p.stock_local}
                     </td>
                     <td>
                       <button
-                        className={styles.btnAction}
-                        style={{
-                          padding: "0.4rem 0.8rem",
-                          marginTop: 0,
-                          backgroundColor: p.is_reacondicionado
-                            ? "#d97706"
-                            : "var(--primary-blue)",
-                        }}
+                        className={`${styles.btnAddCart} ${p.is_reacondicionado ? styles.btnAddCartReac : ""}`}
                         onClick={() => agregarAlCarrito(p)}
                         disabled={p.stock_local === 0}
                       >
@@ -815,87 +721,71 @@ export default function NuevaVentaPage() {
           </div>
         )}
 
-        {/* Carrito */}
-        <h2 className={styles.sectionTitle} style={{ marginTop: "2rem" }}>
+        <h2 className={`${styles.sectionTitle} ${styles.mt2}`}>
           Detalle de la Orden
         </h2>
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th>Producto</th>
-              <th>P.U.</th>
-              <th>Cantidad</th>
-              <th>Subtotal</th>
-            </tr>
-          </thead>
-          <tbody>
-            {carrito.length === 0 ? (
+
+        <div className={styles.tableContainer}>
+          <table className={styles.table}>
+            <thead>
               <tr>
-                <td colSpan={4} style={{ textAlign: "center" }}>
-                  El carrito está vacío
-                </td>
+                <th>Producto</th>
+                <th>P.U.</th>
+                <th>Cantidad</th>
+                <th>Subtotal</th>
               </tr>
-            ) : (
-              carrito.map((item) => (
-                <tr key={item.uid}>
-                  <td>
-                    {item.es_reacondicionado && (
-                      <span
-                        className={styles.badgeReacTable}
-                        style={{ marginRight: "0.5rem" }}
-                      >
-                        REAC
-                      </span>
-                    )}
-                    {item.nombre}
-                  </td>
-                  <td>Q {item.precio_venta.toFixed(2)}</td>
-                  <td>
-                    <div className={styles.qtyControl}>
-                      <button
-                        className={styles.qtyBtn}
-                        onClick={() => modificarCantidad(item.uid, -1)}
-                      >
-                        -
-                      </button>
-                      <span>{item.cantidad}</span>
-                      <button
-                        className={styles.qtyBtn}
-                        onClick={() => modificarCantidad(item.uid, 1)}
-                      >
-                        +
-                      </button>
-                    </div>
-                  </td>
-                  <td style={{ fontWeight: "bold" }}>
-                    Q {item.subtotal.toFixed(2)}
+            </thead>
+            <tbody>
+              {carrito.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className={styles.textCenter}>
+                    El carrito está vacío
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                carrito.map((item) => (
+                  <tr key={item.uid}>
+                    <td>
+                      {item.es_reacondicionado && (
+                        <span
+                          className={`${styles.badgeReacTable} ${styles.mr05}`}
+                        >
+                          REAC
+                        </span>
+                      )}
+                      {item.nombre}
+                    </td>
+                    <td>Q {item.precio_venta.toFixed(2)}</td>
+                    <td>
+                      <div className={styles.qtyControl}>
+                        <button
+                          className={styles.qtyBtn}
+                          onClick={() => modificarCantidad(item.uid, -1)}
+                        >
+                          -
+                        </button>
+                        <span>{item.cantidad}</span>
+                        <button
+                          className={styles.qtyBtn}
+                          onClick={() => modificarCantidad(item.uid, 1)}
+                        >
+                          +
+                        </button>
+                      </div>
+                    </td>
+                    <td className={styles.bold}>
+                      Q {item.subtotal.toFixed(2)}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
 
-        {/* Descuento y totales */}
         <div className={styles.totalBox}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "flex-end",
-              gap: "1rem",
-              marginBottom: "0.75rem",
-            }}
-          >
-            <label
-              style={{
-                fontSize: "0.9rem",
-                fontWeight: 600,
-                color: "var(--primary-blue)",
-              }}
-            >
-              Descuento %
-            </label>
+          <div className={styles.discountRow}>
+            <label className={styles.discountLabel}>Descuento %</label>
             <input
               type="number"
               min={0}
@@ -907,34 +797,16 @@ export default function NuevaVentaPage() {
                   Math.min(100, Math.max(0, Number(e.target.value))),
                 )
               }
-              style={{
-                width: "70px",
-                padding: "0.35rem 0.5rem",
-                border: "1px solid var(--border-color)",
-                borderRadius: "4px",
-                textAlign: "center",
-              }}
+              className={styles.discountInput}
             />
           </div>
           {descuentoPorcentaje > 0 && (
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                marginBottom: "0.5rem",
-              }}
-            >
+            <div className={styles.discountResult}>
               <span>Descuento:</span>
               <span>- Q {descuentoMonto.toFixed(2)}</span>
             </div>
           )}
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              marginTop: "1rem",
-            }}
-          >
+          <div className={styles.totalRow}>
             <span>Total a Pagar:</span>
             <span className={styles.totalText}>
               Q {totalVentaConIva.toFixed(2)}
@@ -943,13 +815,9 @@ export default function NuevaVentaPage() {
         </div>
       </div>
 
-      {/* ═══════════════════════════════════════════════════════════════════════
-          PANEL DERECHO — Cliente y Logística (REDISEÑADO)
-         ═══════════════════════════════════════════════════════════════════════ */}
       <div className={styles.panel}>
         <h2 className={styles.sectionTitle}>Cliente</h2>
 
-        {/* ── Selector CF / Cliente registrado ─────────────────────────── */}
         {(modoCliente === "cf" || modoCliente === "buscando") && (
           <div className={styles.tipoClienteSelector}>
             <button
@@ -958,9 +826,7 @@ export default function NuevaVentaPage() {
             >
               Consumidor Final
               <br />
-              <span style={{ fontSize: "0.72rem", fontWeight: 400 }}>
-                Sin NIT (CF)
-              </span>
+              <span className={styles.subTextBtn}>Sin NIT (CF)</span>
             </button>
             <button
               className={`${styles.tipoClienteBtn} ${modoCliente === "buscando" ? styles.tipoClienteBtnActivo : ""}`}
@@ -968,14 +834,13 @@ export default function NuevaVentaPage() {
             >
               Cliente registrado
               <br />
-              <span style={{ fontSize: "0.72rem", fontWeight: 400 }}>
+              <span className={styles.subTextBtn}>
                 Buscar por NIT, nombre o tel.
               </span>
             </button>
           </div>
         )}
 
-        {/* ── Buscador con autocomplete ─────────────────────────────────── */}
         {modoCliente === "buscando" && (
           <div ref={dropdownRef} className={styles.buscadorWrapper}>
             <input
@@ -992,7 +857,6 @@ export default function NuevaVentaPage() {
                 : "Escribe al menos 2 caracteres"}
             </p>
 
-            {/* Dropdown de sugerencias */}
             {(sugerencias.length > 0 ||
               (termBusqCliente.length >= 2 && !buscandoCliente)) && (
               <div className={styles.autocompleteDropdown}>
@@ -1001,14 +865,7 @@ export default function NuevaVentaPage() {
                     No encontrado —{" "}
                     <button
                       onClick={abrirModalNuevoCliente}
-                      style={{
-                        color: "var(--primary-blue)",
-                        fontWeight: 700,
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
-                        textDecoration: "underline",
-                      }}
+                      className={styles.btnLink}
                     >
                       Registrar cliente nuevo
                     </button>
@@ -1031,13 +888,14 @@ export default function NuevaVentaPage() {
                       </div>
                     ))}
                     <div
-                      className={styles.autocompleteItem}
+                      className={`${styles.autocompleteItem} ${styles.btnLink}`}
                       onClick={abrirModalNuevoCliente}
                       style={{
-                        borderTop: "1px solid #e5e7eb",
-                        color: "var(--primary-blue)",
-                        fontWeight: 600,
                         fontSize: "0.82rem",
+                        display: "block",
+                        textAlign: "left",
+                        width: "100%",
+                        padding: "0.65rem 0.9rem",
                       }}
                     >
                       + Registrar cliente nuevo
@@ -1049,7 +907,6 @@ export default function NuevaVentaPage() {
           </div>
         )}
 
-        {/* ── Tarjeta de cliente seleccionado ──────────────────────────── */}
         {modoCliente === "cf" && (
           <div className={styles.clienteCard}>
             <div className={styles.clienteCardInfo}>
@@ -1089,13 +946,7 @@ export default function NuevaVentaPage() {
                   <span>{clienteSeleccionado.direccion}</span>
                 )}
                 {!clienteSeleccionado.id_cliente && (
-                  <span
-                    style={{
-                      color: "#d97706",
-                      fontWeight: 600,
-                      fontSize: "0.72rem",
-                    }}
-                  >
+                  <span className={styles.hintTextWarning}>
                     Nuevo — se guardará al confirmar
                   </span>
                 )}
@@ -1110,7 +961,6 @@ export default function NuevaVentaPage() {
           </div>
         )}
 
-        {/* ── Sección de Entrega ────────────────────────────────────────── */}
         <div className={styles.seccionEntrega}>
           <h3 className={styles.seccionEntregaTitulo}>Entrega</h3>
 
@@ -1221,26 +1071,17 @@ export default function NuevaVentaPage() {
                   ))}
                 </select>
               </div>
-              <div
-                className={styles.formGroup}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: "0.5rem",
-                  marginTop: "0.5rem",
-                }}
-              >
+              <div className={styles.checkboxGroup}>
                 <input
                   type="checkbox"
                   id="contraEntrega"
                   checked={pagoContraEntrega}
                   onChange={(e) => setPagoContraEntrega(e.target.checked)}
-                  style={{ width: "18px", height: "18px", margin: 0 }}
+                  className={styles.checkboxInput}
                 />
                 <label
                   htmlFor="contraEntrega"
-                  className={styles.label}
-                  style={{ marginBottom: 0, cursor: "pointer" }}
+                  className={`${styles.label} ${styles.checkboxLabel}`}
                 >
                   El cliente pagará al recibir (Contra Entrega)
                 </label>
@@ -1249,7 +1090,6 @@ export default function NuevaVentaPage() {
           )}
         </div>
 
-        {/* ── Botón confirmar ───────────────────────────────────────────── */}
         <button
           className={styles.btnAction}
           onClick={procesarOrden}
@@ -1268,9 +1108,6 @@ export default function NuevaVentaPage() {
         </button>
       </div>
 
-      {/* ═══════════════════════════════════════════════════════════════════════
-          MODAL — Registrar cliente nuevo
-         ═══════════════════════════════════════════════════════════════════════ */}
       {modoCliente === "nuevo" && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalNuevoCliente}>
@@ -1288,7 +1125,7 @@ export default function NuevaVentaPage() {
               <div className={styles.formGroup}>
                 <label className={styles.label}>
                   NIT{" "}
-                  <span style={{ color: "#9ca3af", fontWeight: 400 }}>
+                  <span className={styles.hintText}>
                     (dejar vacío si no tiene)
                   </span>
                 </label>

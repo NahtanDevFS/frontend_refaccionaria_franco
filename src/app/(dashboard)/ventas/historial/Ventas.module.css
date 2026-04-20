@@ -1,16 +1,14 @@
-/* src/app/(dashboard)/ventas/historial/Ventas.module.css */
-
 .container {
-  padding: 2rem;
+  padding: 1.5rem;
   background-color: #f9fafb;
   min-height: 100vh;
 }
 
 .title {
-  font-size: 1.75rem;
+  font-size: 1.4rem;
   font-weight: bold;
   color: #111827;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
 }
 
 .error {
@@ -19,23 +17,23 @@
   padding: 0.75rem 1rem;
   border-radius: 0.375rem;
   margin-bottom: 1rem;
-  font-size: 0.875rem;
+  font-size: 0.8rem;
 }
 
 /* Card contenedor */
 .card {
   background: white;
-  padding: 1.5rem;
+  padding: 1.25rem;
   border-radius: 0.5rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
 }
 
 /* Filtros */
 .filtrosGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.875rem;
   align-items: flex-end;
 }
 
@@ -46,17 +44,19 @@
 }
 
 .filterGroup label {
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  color: #374151;
+  color: #4b5563;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
 }
 
 .input,
 .select {
-  padding: 0.625rem 0.75rem;
+  padding: 0.5rem 0.625rem;
   border: 1px solid #d1d5db;
   border-radius: 0.375rem;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   font-family: inherit;
   width: 100%;
   background-color: white;
@@ -77,7 +77,7 @@
 
 .filterActions button {
   flex: 1;
-  height: 40px;
+  height: 34px;
 }
 
 /* Botones */
@@ -85,10 +85,10 @@
   background-color: #3b82f6;
   color: white;
   border: none;
-  padding: 0.625rem 1.25rem;
+  padding: 0.4rem 1rem;
   border-radius: 0.375rem;
   font-weight: 600;
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   cursor: pointer;
   transition: 0.2s;
 }
@@ -101,10 +101,10 @@
   background-color: white;
   color: #374151;
   border: 1px solid #d1d5db;
-  padding: 0.625rem 1.25rem;
+  padding: 0.4rem 1rem;
   border-radius: 0.375rem;
   font-weight: 600;
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   cursor: pointer;
   transition: 0.2s;
 }
@@ -122,9 +122,9 @@
   color: #3b82f6;
   border: 1px solid #3b82f6;
   background: white;
-  padding: 0.35rem 0.875rem;
+  padding: 0.25rem 0.6rem;
   border-radius: 0.375rem;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 600;
   text-decoration: none;
   display: inline-block;
@@ -136,6 +136,10 @@
 }
 
 /* Tabla */
+.tableContainer {
+  overflow-x: auto;
+}
+
 .table {
   width: 100%;
   border-collapse: collapse;
@@ -143,31 +147,52 @@
 
 .table th {
   background-color: #f3f4f6;
-  padding: 0.75rem 1rem;
+  padding: 0.6rem 0.75rem;
   text-align: left;
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: #4b5563;
   border-bottom: 1px solid #e5e7eb;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
 }
 
 .table td {
-  padding: 0.85rem 1rem;
-  font-size: 0.875rem;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.8rem;
   color: #374151;
   border-bottom: 1px solid #e5e7eb;
+  vertical-align: middle;
 }
 
 .table tbody tr:hover {
   background-color: #f9fafb;
 }
 
+/* Clases de utilidad extraídas de estilos en línea */
+.textBold {
+  font-weight: 700;
+}
+
+.textCapitalize {
+  text-transform: capitalize;
+}
+
+.textCenter {
+  text-align: center;
+}
+
+.textMuted {
+  color: #6b7280;
+  padding: 2rem;
+}
+
 /* Badges de estado */
 .badge {
   display: inline-block;
-  padding: 0.25rem 0.625rem;
+  padding: 0.2rem 0.5rem;
   border-radius: 9999px;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 600;
 }
 
@@ -196,13 +221,13 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 1.25rem;
+  margin-top: 1rem;
   padding-top: 1rem;
   border-top: 1px solid #e5e7eb;
 }
 
 .paginacionInfo {
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   color: #374151;
 }
 
