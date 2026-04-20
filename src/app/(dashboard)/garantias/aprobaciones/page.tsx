@@ -4,30 +4,37 @@ import { useEffect, useState } from "react";
 import styles from "./Garantias.module.css";
 import { GarantiaService } from "@/services/garantia.service";
 
+const CONDICION_OPTIONS = [
+  { value: "buena", label: "Buena — visible pero funcional" },
+  { value: "dañada", label: "Dañada — defecto claro" },
+  { value: "muy_dañada", label: "Muy dañada — inutilizable" },
+];
+
+const DESTINO_POR_RESULTADO: Record<string, string> = {
+  descarte: "baja_inventario",
+  devolver_proveedor: "retorno_proveedor",
+  aprobado_reventa: "inventario_reacondicionado",
+};
+
 export default function CentroGarantiasPage() {
-  const [activeTab, setActiveTab] = useState<0 | 1 | 2>(0);
+  const [activeTab, setActiveTab] = useState<0 | 1>(0);
   const [idSucursal, setIdSucursal] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Estados de Datos
+  // Datos
   const [pendientesAprobar, setPendientesAprobar] = useState<any[]>([]);
-  const [pendientesRecepcion, setPendientesRecepcion] = useState<any[]>([]);
   const [pendientesInspeccion, setPendientesInspeccion] = useState<any[]>([]);
 
-  // Estados de Modales
-  const [modalAprobar, setModalAprobar] = useState<{
+  // Modal de aprobación/rechazo (con recepción fusionada al aprobar)
+  const [modalResolver, setModalResolver] = useState<{
     visible: boolean;
     id: number;
     resolucion: string;
-  } | null>(null);
-
-  const [modalRecibir, setModalRecibir] = useState<{
-    visible: boolean;
-    id: number;
     condicion: string;
     notas: string;
   } | null>(null);
 
+  // Modal de inspección técnica
   const [modalInspeccion, setModalInspeccion] = useState<{
     visible: boolean;
     id: number;
@@ -54,11 +61,7 @@ export default function CentroGarantiasPage() {
         const res =
           await GarantiaService.obtenerPendientesAutorizacion(idSucursal);
         setPendientesAprobar(res.data);
-      } else if (activeTab === 1) {
-        const res =
-          await GarantiaService.obtenerPendientesRecepcion(idSucursal);
-        setPendientesRecepcion(res.data);
-      } else if (activeTab === 2) {
+      } else {
         const res =
           await GarantiaService.obtenerPendientesInspeccion(idSucursal);
         setPendientesInspeccion(res.data);
@@ -70,55 +73,37 @@ export default function CentroGarantiasPage() {
     }
   };
 
-  // ── TAB 1: Aprobar / Rechazar
+  // ── TAB 1: Aprobar (con recepción fusionada) o Rechazar
   const handleResolver = async (aprobado: boolean) => {
-    if (!modalAprobar) return;
-    if (!modalAprobar.resolucion.trim())
+    if (!modalResolver) return;
+    if (!modalResolver.resolucion.trim())
       return alert("Debe ingresar una resolución.");
+    if (aprobado && !modalResolver.condicion)
+      return alert("Debe indicar la condición de la pieza recibida.");
+
     try {
       await GarantiaService.resolverGarantia({
-        id_garantia: modalAprobar.id,
+        id_garantia: modalResolver.id,
         aprobado,
-        resolucion: modalAprobar.resolucion,
+        resolucion: modalResolver.resolucion,
+        ...(aprobado && {
+          condicion_recibido: modalResolver.condicion,
+          notas_inspeccion: modalResolver.notas,
+        }),
       });
       alert(
         aprobado
-          ? "Garantía autorizada. El cliente debe traer la pieza defectuosa para recibir el reemplazo."
-          : "Garantía rechazada. Se notificará al vendedor.",
+          ? "Garantía aprobada. Pieza recibida e inventario actualizado. Se puede entregar el reemplazo al cliente."
+          : "Reclamo rechazado. El cliente se retira con su pieza.",
       );
-      setModalAprobar(null);
+      setModalResolver(null);
       cargarDatosTab();
     } catch (error: any) {
       alert(error.message);
     }
   };
 
-  // ── TAB 2: Recibir pieza física
-  const handleRecibir = async () => {
-    if (!modalRecibir) return;
-    try {
-      await GarantiaService.recibirRetorno({
-        id_garantia: modalRecibir.id,
-        condicion_recibido: modalRecibir.condicion,
-        notas_inspeccion: modalRecibir.notas,
-      });
-      alert(
-        "Pieza recibida. El stock ha sido descontado y el cliente puede recibir su reemplazo.",
-      );
-      setModalRecibir(null);
-      cargarDatosTab();
-    } catch (error: any) {
-      alert(error.message);
-    }
-  };
-
-  // ── TAB 3: Inspección técnica
-  const DESTINO_POR_RESULTADO: Record<string, string> = {
-    descarte: "baja_inventario",
-    devolver_proveedor: "retorno_proveedor",
-    aprobado_reventa: "inventario_reacondicionado",
-  };
-
+  // ── TAB 2: Inspección técnica
   const handleInspeccionar = async (resultado: string) => {
     if (!modalInspeccion) return;
     try {
@@ -155,224 +140,192 @@ export default function CentroGarantiasPage() {
           className={`${styles.tab} ${activeTab === 1 ? styles.activeTab : ""}`}
           onClick={() => setActiveTab(1)}
         >
-          2. Esperando Pieza (
-          {activeTab === 1 && !loading ? pendientesRecepcion.length : "..."})
-        </button>
-        <button
-          className={`${styles.tab} ${activeTab === 2 ? styles.activeTab : ""}`}
-          onClick={() => setActiveTab(2)}
-        >
-          3. Inspección Técnica (
-          {activeTab === 2 && !loading ? pendientesInspeccion.length : "..."})
+          2. Inspección Técnica (
+          {activeTab === 1 && !loading ? pendientesInspeccion.length : "..."})
         </button>
       </div>
 
       {loading ? (
-        <p>Cargando datos...</p>
+        <p className={styles.loadingText}>Cargando...</p>
       ) : (
         <>
-          {/* ── TAB 1: SOLICITUDES NUEVAS ── */}
+          {/* ── TAB 1: Solicitudes pendientes ── */}
           {activeTab === 0 && (
-            <div className={styles.tableContainer}>
-              <table className={styles.table}>
-                <thead>
-                  <tr>
-                    <th>Fecha</th>
-                    <th>Producto</th>
-                    <th>Cliente</th>
-                    <th>Motivo</th>
-                    <th>Acción</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {pendientesAprobar.length === 0 ? (
-                    <tr>
-                      <td colSpan={5}>No hay solicitudes pendientes.</td>
-                    </tr>
-                  ) : (
-                    pendientesAprobar.map((g) => (
-                      <tr key={g.id_garantia}>
-                        <td>
-                          {new Date(g.fecha_solicitud).toLocaleDateString()}
-                        </td>
-                        <td>
-                          <span className={styles.textBold}>{g.sku}</span>
-                          <span className={styles.textMuted}>
-                            {g.producto} (x{g.cantidad})
-                          </span>
-                        </td>
-                        <td>{g.cliente}</td>
-                        <td>{g.motivo_reclamo}</td>
-                        <td>
-                          <button
-                            className={styles.btnAction}
-                            onClick={() =>
-                              setModalAprobar({
-                                visible: true,
-                                id: g.id_garantia,
-                                resolucion: "",
-                              })
-                            }
-                          >
-                            Evaluar
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+            <div className={styles.tabContent}>
+              {pendientesAprobar.length === 0 ? (
+                <p className={styles.emptyText}>
+                  No hay solicitudes pendientes.
+                </p>
+              ) : (
+                pendientesAprobar.map((g) => (
+                  <div key={g.id_garantia} className={styles.card}>
+                    <div className={styles.cardHeader}>
+                      <span className={styles.cardTitle}>{g.producto}</span>
+                      <span className={styles.cardSku}>{g.sku}</span>
+                    </div>
+                    <div className={styles.cardBody}>
+                      <p>
+                        <strong>Cliente:</strong> {g.cliente}
+                      </p>
+                      <p>
+                        <strong>Ticket #:</strong> {g.id_venta}
+                      </p>
+                      <p>
+                        <strong>Fecha compra:</strong>{" "}
+                        {new Date(g.fecha_compra).toLocaleDateString("es-GT")}
+                      </p>
+                      <p>
+                        <strong>Cantidad reclamada:</strong> {g.cantidad}
+                      </p>
+                      <p>
+                        <strong>Motivo:</strong> {g.motivo_reclamo}
+                      </p>
+                    </div>
+                    <div className={styles.cardActions}>
+                      <button
+                        className={styles.btnReview}
+                        onClick={() =>
+                          setModalResolver({
+                            visible: true,
+                            id: g.id_garantia,
+                            resolucion: "",
+                            condicion: "",
+                            notas: "",
+                          })
+                        }
+                      >
+                        Revisar
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           )}
 
-          {/* ── TAB 2: RECEPCIÓN FÍSICA ── */}
+          {/* ── TAB 2: Inspección técnica ── */}
           {activeTab === 1 && (
-            <div className={styles.tableContainer}>
-              <table className={styles.table}>
-                <thead>
-                  <tr>
-                    <th>Aprobada el</th>
-                    <th>Producto</th>
-                    <th>Cliente</th>
-                    <th>Motivo Aprobado</th>
-                    <th>Acción</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {pendientesRecepcion.length === 0 ? (
-                    <tr>
-                      <td colSpan={5}>No hay piezas pendientes de recibir.</td>
-                    </tr>
-                  ) : (
-                    pendientesRecepcion.map((g) => (
-                      <tr key={g.id_garantia}>
-                        <td>
-                          {new Date(g.fecha_solicitud).toLocaleDateString()}
-                        </td>
-                        <td>
-                          <span className={styles.textBold}>{g.sku}</span>
-                          <span className={styles.textMuted}>
-                            {g.producto} (x{g.cantidad})
-                          </span>
-                        </td>
-                        <td>{g.cliente}</td>
-                        <td>{g.motivo_reclamo}</td>
-                        <td>
-                          <button
-                            className={`${styles.btnAction} ${styles.btnActionInfo}`}
-                            onClick={() =>
-                              setModalRecibir({
-                                visible: true,
-                                id: g.id_garantia,
-                                condicion: "bueno",
-                                notas: "",
-                              })
-                            }
-                          >
-                            Recibir Físico
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {/* ── TAB 3: INSPECCIÓN TÉCNICA ── */}
-          {activeTab === 2 && (
-            <div className={styles.tableContainer}>
-              <table className={styles.table}>
-                <thead>
-                  <tr>
-                    <th>Recibido el</th>
-                    <th>Producto</th>
-                    <th>Recibido por</th>
-                    <th>Condición Inicial</th>
-                    <th>Acción</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {pendientesInspeccion.length === 0 ? (
-                    <tr>
-                      <td colSpan={5}>
-                        No hay piezas pendientes de inspección.
-                      </td>
-                    </tr>
-                  ) : (
-                    pendientesInspeccion.map((r) => (
-                      <tr key={r.id_retorno}>
-                        <td>{new Date(r.fecha_ingreso).toLocaleString()}</td>
-                        <td>
-                          <span className={styles.textBold}>{r.sku}</span>
-                          <span className={styles.textMuted}>
-                            {r.producto} (x{r.cantidad})
-                          </span>
-                        </td>
-                        <td>{r.recibio_nombre}</td>
-                        <td>
-                          <span className={styles.badge}>
-                            {r.condicion_recibido}
-                          </span>
-                          <span className={styles.textMuted}>
-                            {r.notas_inspeccion}
-                          </span>
-                        </td>
-                        <td>
-                          <button
-                            className={`${styles.btnAction} ${styles.btnActionPurple}`}
-                            onClick={() =>
-                              setModalInspeccion({
-                                visible: true,
-                                id: r.id_retorno,
-                                notas: "",
-                              })
-                            }
-                          >
-                            Dictaminar
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+            <div className={styles.tabContent}>
+              {pendientesInspeccion.length === 0 ? (
+                <p className={styles.emptyText}>
+                  No hay piezas pendientes de inspección.
+                </p>
+              ) : (
+                pendientesInspeccion.map((rg) => (
+                  <div key={rg.id_retorno} className={styles.card}>
+                    <div className={styles.cardHeader}>
+                      <span className={styles.cardTitle}>{rg.producto}</span>
+                      <span className={styles.cardSku}>{rg.sku}</span>
+                    </div>
+                    <div className={styles.cardBody}>
+                      <p>
+                        <strong>Recibida el:</strong>{" "}
+                        {new Date(rg.fecha_ingreso).toLocaleDateString("es-GT")}
+                      </p>
+                      <p>
+                        <strong>Condición al recibir:</strong>{" "}
+                        {rg.condicion_recibido?.replace("_", " ")}
+                      </p>
+                      {rg.notas_inspeccion && (
+                        <p>
+                          <strong>Notas:</strong> {rg.notas_inspeccion}
+                        </p>
+                      )}
+                      <p>
+                        <strong>Recibió:</strong> {rg.recibio_nombre}
+                      </p>
+                    </div>
+                    <div className={styles.cardActions}>
+                      <button
+                        className={styles.btnReview}
+                        onClick={() =>
+                          setModalInspeccion({
+                            visible: true,
+                            id: rg.id_retorno,
+                            notas: "",
+                          })
+                        }
+                      >
+                        Inspeccionar
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           )}
         </>
       )}
 
-      {/* ═══════════════ MODALES ═══════════════ */}
-
-      {/* Modal 1: Aprobar / Rechazar */}
-      {modalAprobar && (
+      {/* ── MODAL RESOLVER (Aprobar / Rechazar) ── */}
+      {modalResolver && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalContent}>
-            <h2 className={styles.modalTitle}>Resolver Garantía</h2>
+            <h2 className={styles.modalTitle}>Resolución de Garantía</h2>
+
             <div className={styles.formGroup}>
-              <label className={styles.label}>Resolución / Justificación</label>
+              <label className={styles.label}>Resolución / Observaciones</label>
               <textarea
                 className={styles.textarea}
-                rows={4}
-                value={modalAprobar.resolucion}
+                rows={3}
+                placeholder="Ej: Se verificó defecto de fábrica. Procede cambio."
+                value={modalResolver.resolucion}
                 onChange={(e) =>
-                  setModalAprobar({
-                    ...modalAprobar,
-                    resolucion: e.target.value,
-                  })
+                  setModalResolver(
+                    (p) => p && { ...p, resolucion: e.target.value },
+                  )
                 }
-                placeholder="Ej. Procede cambio por defecto de fábrica comprobado..."
               />
-              <p className={styles.helperText}>
-                Al autorizar, el cliente deberá traer la pieza defectuosa. El
-                reemplazo se entregará al registrar la devolución.
-              </p>
             </div>
+
+            <div className={styles.sectionDivider}>
+              <span>Al APROBAR, complete la recepción de la pieza</span>
+            </div>
+
+            <div className={styles.formGroup}>
+              <label className={styles.label}>
+                Condición de la pieza recibida{" "}
+                <span className={styles.requiredIfApprove}>
+                  (requerido al aprobar)
+                </span>
+              </label>
+              <select
+                className={styles.select}
+                value={modalResolver.condicion}
+                onChange={(e) =>
+                  setModalResolver(
+                    (p) => p && { ...p, condicion: e.target.value },
+                  )
+                }
+              >
+                <option value="">— Seleccionar —</option>
+                {CONDICION_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className={styles.formGroup}>
+              <label className={styles.label}>
+                Notas de recepción (opcional)
+              </label>
+              <textarea
+                className={styles.textarea}
+                rows={2}
+                placeholder="Observaciones adicionales sobre el estado físico..."
+                value={modalResolver.notas}
+                onChange={(e) =>
+                  setModalResolver((p) => p && { ...p, notas: e.target.value })
+                }
+              />
+            </div>
+
             <div className={styles.modalActions}>
               <button
                 className={styles.btnCancel}
-                onClick={() => setModalAprobar(null)}
+                onClick={() => setModalResolver(null)}
               >
                 Cancelar
               </button>
@@ -386,126 +339,39 @@ export default function CentroGarantiasPage() {
                 className={styles.btnApprove}
                 onClick={() => handleResolver(true)}
               >
-                Autorizar Garantía
+                Aprobar y Recibir Pieza
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Modal 2: Recibir Pieza */}
-      {modalRecibir && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modalContent}>
-            <h2 className={styles.modalTitle}>Recibir Producto Dañado</h2>
-
-            <div className={styles.warningBanner}>
-              <strong>⚠ Al confirmar:</strong> se descontará una unidad del
-              inventario y se autorizará la entrega del producto nuevo al
-              cliente.
-            </div>
-
-            <div className={styles.formGroup}>
-              <label className={styles.label}>Condición Visual</label>
-              <select
-                className={styles.select}
-                value={modalRecibir.condicion}
-                onChange={(e) =>
-                  setModalRecibir({
-                    ...modalRecibir,
-                    condicion: e.target.value,
-                  })
-                }
-              >
-                <option value="bueno">Se ve en buen estado general</option>
-                <option value="dañado_leve">
-                  Dañado Levemente (raspones, uso normal)
-                </option>
-                <option value="dañado_grave">
-                  Dañado Gravemente (roto, quemado, piezas faltantes)
-                </option>
-              </select>
-            </div>
-
-            <div className={styles.formGroup}>
-              <label className={styles.label}>Notas de Recepción</label>
-              <textarea
-                className={styles.textarea}
-                rows={3}
-                value={modalRecibir.notas}
-                onChange={(e) =>
-                  setModalRecibir({ ...modalRecibir, notas: e.target.value })
-                }
-                placeholder="Viene en su caja original..."
-              />
-            </div>
-
-            <div className={styles.modalActions}>
-              <button
-                className={styles.btnCancel}
-                onClick={() => setModalRecibir(null)}
-              >
-                Cancelar
-              </button>
-              <button className={styles.btnApprove} onClick={handleRecibir}>
-                Recibir Pieza y Entregar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal 3: Inspección Técnica */}
+      {/* ── MODAL INSPECCIÓN TÉCNICA ── */}
       {modalInspeccion && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalContent}>
-            <h2 className={styles.modalTitle}>Inspección Técnica de Bodega</h2>
+            <h2 className={styles.modalTitle}>Inspección Técnica</h2>
 
             <div className={styles.formGroup}>
-              <label className={styles.label}>Observaciones Técnicas</label>
+              <label className={styles.label}>
+                Observaciones técnicas (opcional)
+              </label>
               <textarea
                 className={styles.textarea}
                 rows={3}
+                placeholder="Descripción técnica del estado de la pieza..."
                 value={modalInspeccion.notas}
                 onChange={(e) =>
-                  setModalInspeccion({
-                    ...modalInspeccion,
-                    notas: e.target.value,
-                  })
+                  setModalInspeccion(
+                    (p) => p && { ...p, notas: e.target.value },
+                  )
                 }
-                placeholder="Ej. Se midió voltaje, el componente está quemado internamente..."
               />
             </div>
 
-            <p
-              className={styles.helperText}
-              style={{ marginBottom: "1rem", marginTop: 0 }}
-            >
-              Seleccione el dictamen para cerrar la inspección:
+            <p className={styles.helperText}>
+              Seleccione el destino final de la pieza:
             </p>
-
-            <div className={styles.inspectionBtnStack}>
-              <button
-                onClick={() => handleInspeccionar("aprobado_reventa")}
-                className={`${styles.btnInspection} ${styles.btnReventa}`}
-              >
-                Vender como segunda — Pasar a lote reacondicionado
-              </button>
-
-              <button
-                onClick={() => handleInspeccionar("devolver_proveedor")}
-                className={`${styles.btnInspection} ${styles.btnProveedor}`}
-              >
-                Reclamar al proveedor — Defecto de fabricación comprobado
-              </button>
-
-              <button
-                onClick={() => handleInspeccionar("descarte")}
-                className={`${styles.btnInspection} ${styles.btnDescarte}`}
-              >
-                Dar de baja — Pieza sin valor, descarte definitivo
-              </button>
-            </div>
 
             <div className={styles.modalActions}>
               <button
@@ -513,6 +379,24 @@ export default function CentroGarantiasPage() {
                 onClick={() => setModalInspeccion(null)}
               >
                 Cancelar
+              </button>
+              <button
+                className={styles.btnDestino}
+                onClick={() => handleInspeccionar("descarte")}
+              >
+                🗑 Dar de baja
+              </button>
+              <button
+                className={styles.btnDestino}
+                onClick={() => handleInspeccionar("devolver_proveedor")}
+              >
+                📦 Devolver a proveedor
+              </button>
+              <button
+                className={styles.btnApprove}
+                onClick={() => handleInspeccionar("aprobado_reventa")}
+              >
+                ♻ Reacondicionado
               </button>
             </div>
           </div>

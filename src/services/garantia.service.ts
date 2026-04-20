@@ -27,7 +27,7 @@ export const GarantiaService = {
     return res.json();
   },
 
-  // Pestaña 1: Pendientes de Aprobar
+  // Pestaña 1: Solicitudes pendientes de resolver
   async obtenerPendientesAutorizacion(id_sucursal: number) {
     const res = await fetch(
       `${API_URL}/garantias/sucursal/${id_sucursal}/pendientes`,
@@ -37,10 +37,17 @@ export const GarantiaService = {
     return res.json();
   },
 
+  /**
+   * Resuelve una garantía.
+   * Si aprobado=true, se deben enviar condicion_recibido y opcionalmente notas_inspeccion.
+   * Si aprobado=false, solo se necesita resolucion.
+   */
   async resolverGarantia(payload: {
     id_garantia: number;
     aprobado: boolean;
     resolucion: string;
+    condicion_recibido?: string;
+    notas_inspeccion?: string;
   }) {
     const res = await fetch(`${API_URL}/garantias/resolver`, {
       method: "POST",
@@ -54,34 +61,7 @@ export const GarantiaService = {
     return res.json();
   },
 
-  // Pestaña 2: Pendientes de Recepción Física
-  async obtenerPendientesRecepcion(id_sucursal: number) {
-    const res = await fetch(
-      `${API_URL}/garantias/sucursal/${id_sucursal}/recepciones`,
-      { headers: getHeaders() },
-    );
-    if (!res.ok) throw new Error("Error obteniendo recepciones pendientes");
-    return res.json();
-  },
-
-  async recibirRetorno(payload: {
-    id_garantia: number;
-    condicion_recibido: string;
-    notas_inspeccion?: string;
-  }) {
-    const res = await fetch(`${API_URL}/garantias/retorno/recepcion`, {
-      method: "POST",
-      headers: getHeaders(),
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) {
-      const error = await res.json();
-      throw new Error(error.message || "Error al registrar la recepción");
-    }
-    return res.json();
-  },
-
-  // Pestaña 3: Pendientes de Inspección Técnica
+  // Pestaña 2: Pendientes de Inspección Técnica
   async obtenerPendientesInspeccion(id_sucursal: number) {
     const res = await fetch(
       `${API_URL}/garantias/sucursal/${id_sucursal}/inspecciones`,
@@ -109,7 +89,7 @@ export const GarantiaService = {
     return res.json();
   },
 
-  // Pestaña 4: Historial Completo
+  // Historial completo
   async obtenerHistorial(id_sucursal: number) {
     const res = await fetch(
       `${API_URL}/garantias/sucursal/${id_sucursal}/historial`,

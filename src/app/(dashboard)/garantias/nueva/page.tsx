@@ -46,7 +46,6 @@ export default function NuevaGarantiaPage() {
     const limite = new Date(fechaCompra);
     limite.setDate(limite.getDate() + diasGarantia);
 
-    // Usamos el inicio del día para que la hora exacta no interfiera en el cálculo
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
     limite.setHours(0, 0, 0, 0);
@@ -79,6 +78,9 @@ export default function NuevaGarantiaPage() {
         "Reclamo de garantía registrado con éxito. Pendiente de aprobación por el supervisor.",
       );
       setModalAbierto(false);
+      // Refrescar los detalles para que el botón cambie a "Reclamado"
+      const data = await VentaService.obtenerVentaPorId(Number(idVenta));
+      setDetalles(data.detalles);
     } catch (err: any) {
       alert("Error: " + err.message);
     }
@@ -96,7 +98,7 @@ export default function NuevaGarantiaPage() {
           <input
             type="number"
             className={styles.input}
-            placeholder="Ej. 1024"
+            placeholder="Ej. 1023"
             value={idVenta}
             onChange={(e) => setIdVenta(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && buscarVenta()}
@@ -107,104 +109,119 @@ export default function NuevaGarantiaPage() {
         </button>
       </div>
 
-      {error && <p className={styles.errorText}>{error}</p>}
+      {error && <p className={styles.error}>{error}</p>}
 
       {venta && (
-        <div className={styles.card}>
-          <h2 className={styles.subtitle}>Datos de Venta #{venta.id_venta}</h2>
+        <div className={styles.ventaInfo}>
           <p>
-            <strong>Fecha de Compra:</strong>{" "}
-            {new Date(venta.created_at || venta.fecha).toLocaleDateString()}
+            <strong>Ticket:</strong> #{venta.id_venta}
           </p>
           <p>
-            <strong>Cliente:</strong> {venta.cliente || "Consumidor Final"}
+            <strong>Cliente:</strong> {venta.cliente}
           </p>
-
-          <div className={styles.tableContainer}>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th>Producto (SKU)</th>
-                  <th>Cant. Comprada</th>
-                  <th>Días Garantía</th>
-                  <th>Estado Plazo</th>
-                  <th>Acción</th>
-                </tr>
-              </thead>
-              <tbody>
-                {detalles.map((d) => {
-                  const diasRestantes = calcularDiasRestantes(
-                    venta.created_at || venta.fecha,
-                    d.garantia_dias,
-                  );
-                  const esValida = diasRestantes >= 0;
-
-                  return (
-                    <tr key={d.id_detalle}>
-                      <td>
-                        {d.producto}
-                        <span className={styles.textMuted}>{d.sku}</span>
-                      </td>
-                      <td>{d.cantidad} und</td>
-                      <td>{d.garantia_dias || 0} días</td>
-                      <td>
-                        {esValida ? (
-                          <span className={styles.badgeValida}>
-                            Vigente ({diasRestantes} días rest.)
-                          </span>
-                        ) : (
-                          <span className={styles.badgeExpirada}>Expirada</span>
-                        )}
-                      </td>
-                      <td>
-                        <button
-                          className={styles.btnAction}
-                          disabled={!esValida}
-                          onClick={() => abrirModal(d)}
-                        >
-                          Reclamar
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          <p>
+            <strong>Fecha:</strong>{" "}
+            {new Date(venta.created_at).toLocaleDateString("es-GT")}
+          </p>
         </div>
       )}
 
-      {/* Modal */}
-      {modalAbierto && (
+      {detalles.length > 0 && (
+        <table className={styles.table}>
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th>SKU</th>
+              <th>Cantidad</th>
+              <th>Garantía</th>
+              <th>Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            {detalles.map((det) => {
+              const diasRestantes = calcularDiasRestantes(
+                venta.created_at,
+                det.garantia_dias,
+              );
+              const garantiaVigente = diasRestantes > 0;
+              const sinGarantia = det.garantia_dias <= 0;
+
+              return (
+                <tr key={det.id_detalle}>
+                  <td>{det.producto}</td>
+                  <td>{det.sku}</td>
+                  <td>{det.cantidad}</td>
+                  <td>
+                    {sinGarantia ? (
+                      <span className={styles.badgeNoGarantia}>
+                        Sin garantía
+                      </span>
+                    ) : garantiaVigente ? (
+                      <span className={styles.badgeVigente}>
+                        {diasRestantes} día{diasRestantes !== 1 ? "s" : ""}{" "}
+                        restante{diasRestantes !== 1 ? "s" : ""}
+                      </span>
+                    ) : (
+                      <span className={styles.badgeVencida}>Vencida</span>
+                    )}
+                  </td>
+                  <td>
+                    {/* Caso 1: ya tiene un reclamo (cualquier estado) */}
+                    {det.tiene_garantia ? (
+                      <button className={styles.btnReclamado} disabled>
+                        ✓ Reclamado
+                      </button>
+                    ) : /* Caso 2: sin garantía o vencida */ sinGarantia ||
+                      !garantiaVigente ? (
+                      <button className={styles.btnDisabled} disabled>
+                        No aplica
+                      </button>
+                    ) : (
+                      /* Caso 3: apto para reclamar */
+                      <button
+                        className={styles.btnReclamar}
+                        onClick={() => abrirModal(det)}
+                      >
+                        Reclamar
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
+
+      {/* Modal de reclamo */}
+      {modalAbierto && productoSeleccionado && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalContent}>
-            <h2 className={styles.subtitle}>Registrar Reclamo</h2>
-            <p>
-              <strong>Producto:</strong> {productoSeleccionado?.producto}
+            <h2 className={styles.modalTitle}>Registrar Reclamo</h2>
+            <p className={styles.modalSubtitle}>
+              {productoSeleccionado.producto} — SKU: {productoSeleccionado.sku}
             </p>
 
-            <div className={`${styles.inputGroup} ${styles.inputGroupModal}`}>
-              <label className={styles.label}>
-                Cantidad a Reclamar (Máx {productoSeleccionado?.cantidad})
-              </label>
+            <div className={styles.formGroup}>
+              <label className={styles.label}>Cantidad reclamada</label>
               <input
                 type="number"
+                className={styles.input}
                 min={1}
-                max={productoSeleccionado?.cantidad}
+                max={productoSeleccionado.cantidad}
                 value={cantidad}
                 onChange={(e) => setCantidad(Number(e.target.value))}
-                className={styles.input}
               />
             </div>
 
-            <div className={`${styles.inputGroup} ${styles.inputGroupModal}`}>
-              <label className={styles.label}>Motivo del Defecto</label>
+            <div className={styles.formGroup}>
+              <label className={styles.label}>Motivo del reclamo</label>
               <textarea
-                rows={3}
-                className={styles.input}
+                className={styles.textarea}
+                rows={4}
+                placeholder="Describa el defecto o problema con la pieza..."
                 value={motivo}
                 onChange={(e) => setMotivo(e.target.value)}
-                placeholder="Describa la falla según el cliente..."
               />
             </div>
 
@@ -215,8 +232,8 @@ export default function NuevaGarantiaPage() {
               >
                 Cancelar
               </button>
-              <button className={styles.btnSearch} onClick={enviarReclamo}>
-                Enviar Reclamo
+              <button className={styles.btnApprove} onClick={enviarReclamo}>
+                Registrar Reclamo
               </button>
             </div>
           </div>

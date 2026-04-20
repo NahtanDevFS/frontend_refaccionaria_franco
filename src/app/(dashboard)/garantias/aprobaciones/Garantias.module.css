@@ -292,9 +292,109 @@
   background-color: #aa0000;
 }
 
-/* ═══════════════════════════════════════════════════════════════════════
-   MEDIA QUERIES (RESPONSIVE)
-   ═══════════════════════════════════════════════════════════════════════ */
+/* Agregar estas clases al archivo NuevaGarantia.module.css existente */
+
+/* Botón estado: ya fue reclamado */
+.btnReclamado {
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: 1px solid #9ca3af;
+  background-color: #f3f4f6;
+  color: #6b7280;
+  font-size: 0.85rem;
+  cursor: not-allowed;
+  font-weight: 500;
+}
+
+/* Botón no aplica (sin garantía o vencida) */
+.btnDisabled {
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  background-color: #f9fafb;
+  color: #d1d5db;
+  font-size: 0.85rem;
+  cursor: not-allowed;
+}
+
+/* Badge garantía vigente */
+.badgeVigente {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background-color: #d1fae5;
+  color: #065f46;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+/* Badge garantía vencida */
+.badgeVencida {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background-color: #fee2e2;
+  color: #991b1b;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+/* Badge sin garantía */
+.badgeNoGarantia {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background-color: #f3f4f6;
+  color: #6b7280;
+  font-size: 0.78rem;
+}
+
+/* ─── Agregar estas clases al archivo Garantias.module.css existente ─── */
+
+/* Divisor visual dentro del modal */
+.sectionDivider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 16px 0 8px;
+  color: #6b7280;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.sectionDivider::before,
+.sectionDivider::after {
+  content: "";
+  flex: 1;
+  border-top: 1px solid #e5e7eb;
+}
+
+/* Indicador de campo requerido condicional */
+.requiredIfApprove {
+  color: #d97706;
+  font-size: 0.78rem;
+  font-weight: 400;
+}
+
+/* Botones de destino en inspección */
+.btnDestino {
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  background-color: #f9fafb;
+  color: #374151;
+  font-size: 0.88rem;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.15s;
+}
+
+.btnDestino:hover {
+  background-color: #f3f4f6;
+}
+
 @media (max-width: 768px) {
   .container {
     padding: 1rem;
