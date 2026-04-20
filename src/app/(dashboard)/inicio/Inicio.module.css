@@ -1,6 +1,7 @@
 .container {
   max-width: 1200px;
   margin: 0 auto;
+  padding: 1rem;
 }
 
 .header {
@@ -11,6 +12,7 @@
 
 .title {
   color: var(--primary-blue);
+  margin: 0;
 }
 
 /* ─── Selector de sucursal ─────────────────────────────── */
@@ -23,6 +25,7 @@
   padding: 0.75rem 1rem;
   border: 1px solid var(--border-color);
   border-radius: 8px;
+  flex-wrap: wrap;
 }
 
 .sucursalSelector label {
@@ -40,6 +43,8 @@
   color: var(--primary-blue);
   min-width: 220px;
   cursor: pointer;
+  width: 100%; /* Ajuste para móvil */
+  max-width: 300px;
 }
 
 .select:focus {
@@ -53,6 +58,8 @@
   gap: 0.25rem;
   margin-bottom: 1.5rem;
   border-bottom: 2px solid var(--border-color);
+  overflow-x: auto; /* Permitir scroll si hay muchas tabs */
+  white-space: nowrap;
 }
 
 .tab {
@@ -101,7 +108,7 @@
 
 .consolidadoStats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 1rem;
   margin-bottom: 1rem;
 }
@@ -141,15 +148,15 @@
 /* ─── Grid de cards por empleado (existente) ───────────── */
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.25rem;
 }
 
 .card {
   background-color: var(--white);
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  padding: 1.5rem;
+  padding: 1.25rem;
   box-shadow: 0 2px 4px rgba(0, 51, 102, 0.05);
 }
 
@@ -245,7 +252,7 @@
 
 .formRow {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 1rem;
   margin-bottom: 1.5rem;
 }
@@ -269,6 +276,8 @@
   font-size: 0.95rem;
   color: #111;
   background-color: var(--white);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .input:focus {
@@ -284,7 +293,7 @@
 
 .vendedoresList {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 0.75rem;
   margin-bottom: 1.5rem;
 }
@@ -374,6 +383,7 @@
   font-size: 0.95rem;
   cursor: pointer;
   transition: opacity 0.2s;
+  white-space: nowrap;
 }
 
 .btnPrimary:hover {
@@ -394,10 +404,17 @@
   font-weight: 600;
   font-size: 0.9rem;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .btnSecondary:hover {
   background-color: var(--light-blue);
+}
+
+.btnGroup {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
 .successMsg {
@@ -421,13 +438,21 @@
 }
 
 /* ─── Tab Historial ────────────────────────────────────── */
+
+/* Contenedor responsivo para la tabla */
+.tableContainer {
+  overflow-x: auto;
+  width: 100%;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background-color: var(--white);
+  -webkit-overflow-scrolling: touch;
+}
+
 .historyTable {
   width: 100%;
   border-collapse: collapse;
-  background-color: var(--white);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  overflow: hidden;
+  min-width: 600px; /* Fuerza el scroll si no cabe */
 }
 
 .historyTable th,
@@ -436,12 +461,14 @@
   text-align: left;
   border-bottom: 1px solid var(--border-color);
   font-size: 0.9rem;
+  vertical-align: middle;
 }
 
 .historyTable th {
   background-color: var(--light-blue);
   color: var(--primary-blue);
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .historyTable tbody tr:last-child td {
@@ -458,7 +485,7 @@
   background-color: var(--light-blue);
   border-radius: 5px;
   overflow: hidden;
-  min-width: 100px;
+  min-width: 80px;
 }
 
 .miniProgressBar {
@@ -478,6 +505,7 @@
   border-radius: 9999px;
   font-size: 0.75rem;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .badgeNoCumplio {
@@ -487,6 +515,17 @@
   border-radius: 9999px;
   font-size: 0.75rem;
   font-weight: 600;
+  white-space: nowrap;
+}
+
+.badgeEnCurso {
+  background-color: #dbeafe;
+  color: #1e40af;
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .empleadoSelectorRow {
@@ -497,11 +536,18 @@
   flex-wrap: wrap;
 }
 
-.badgeEnCurso {
-  background-color: #dbeafe;
-  color: #1e40af;
-  padding: 0.2rem 0.6rem;
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: 600;
+@media (max-width: 768px) {
+  .formContainer {
+    padding: 1rem;
+  }
+
+  .btnPrimary,
+  .btnSecondary {
+    width: 100%;
+    text-align: center;
+  }
+
+  .btnGroup {
+    flex-direction: column;
+  }
 }

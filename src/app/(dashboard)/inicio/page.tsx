@@ -601,7 +601,7 @@ export default function InicioPage() {
                 </div>
               </div>
 
-              <div style={{ display: "flex", gap: "0.75rem" }}>
+              <div className={styles.btnGroup}>
                 <button
                   className={styles.btnPrimary}
                   onClick={asignarMeta}
@@ -664,55 +664,57 @@ export default function InicioPage() {
               Este vendedor no tiene historial de metas.
             </div>
           ) : (
-            <table className={styles.historyTable}>
-              <thead>
-                <tr>
-                  <th>Periodo</th>
-                  <th>Meta</th>
-                  <th>Vendido</th>
-                  <th>Cumplimiento</th>
-                  <th>%</th>
-                  <th>Estado</th>
-                </tr>
-              </thead>
-              <tbody>
-                {historial.map((h) => (
-                  <tr key={`${h.anio}-${h.mes}`}>
-                    <td>
-                      {NOMBRES_MES[h.mes]} {h.anio}
-                    </td>
-                    <td>Q {h.monto_meta.toFixed(2)}</td>
-                    <td>Q {h.monto_vendido.toFixed(2)}</td>
-                    <td>
-                      <div className={styles.miniProgressContainer}>
-                        <div
-                          className={`${styles.miniProgressBar} ${
-                            h.estado === "cumplió"
-                              ? styles.miniProgressBarFull
-                              : ""
-                          }`}
-                          style={{
-                            width: `${Math.min(h.porcentaje_cumplimiento, 100)}%`,
-                          }}
-                        />
-                      </div>
-                    </td>
-                    <td>{h.porcentaje_cumplimiento.toFixed(2)}%</td>
-                    <td>
-                      {h.estado === "en_curso" ? (
-                        <span className={styles.badgeEnCurso}>En curso</span>
-                      ) : h.estado === "cumplió" ? (
-                        <span className={styles.badgeCumplio}>Cumplió</span>
-                      ) : (
-                        <span className={styles.badgeNoCumplio}>
-                          No cumplió
-                        </span>
-                      )}
-                    </td>
+            <div className={styles.tableContainer}>
+              <table className={styles.historyTable}>
+                <thead>
+                  <tr>
+                    <th>Periodo</th>
+                    <th>Meta</th>
+                    <th>Vendido</th>
+                    <th>Cumplimiento</th>
+                    <th>%</th>
+                    <th>Estado</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {historial.map((h) => (
+                    <tr key={`${h.anio}-${h.mes}`}>
+                      <td>
+                        {NOMBRES_MES[h.mes]} {h.anio}
+                      </td>
+                      <td>Q {h.monto_meta.toFixed(2)}</td>
+                      <td>Q {h.monto_vendido.toFixed(2)}</td>
+                      <td>
+                        <div className={styles.miniProgressContainer}>
+                          <div
+                            className={`${styles.miniProgressBar} ${
+                              h.estado === "cumplió"
+                                ? styles.miniProgressBarFull
+                                : ""
+                            }`}
+                            style={{
+                              width: `${Math.min(h.porcentaje_cumplimiento, 100)}%`,
+                            }}
+                          />
+                        </div>
+                      </td>
+                      <td>{h.porcentaje_cumplimiento.toFixed(2)}%</td>
+                      <td>
+                        {h.estado === "en_curso" ? (
+                          <span className={styles.badgeEnCurso}>En curso</span>
+                        ) : h.estado === "cumplió" ? (
+                          <span className={styles.badgeCumplio}>Cumplió</span>
+                        ) : (
+                          <span className={styles.badgeNoCumplio}>
+                            No cumplió
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       )}

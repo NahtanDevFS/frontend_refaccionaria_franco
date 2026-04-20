@@ -888,15 +888,8 @@ export default function NuevaVentaPage() {
                       </div>
                     ))}
                     <div
-                      className={`${styles.autocompleteItem} ${styles.btnLink}`}
+                      className={`${styles.autocompleteItem} ${styles.autocompleteItemAdd} ${styles.btnLink}`}
                       onClick={abrirModalNuevoCliente}
-                      style={{
-                        fontSize: "0.82rem",
-                        display: "block",
-                        textAlign: "left",
-                        width: "100%",
-                        padding: "0.65rem 0.9rem",
-                      }}
                     >
                       + Registrar cliente nuevo
                     </div>
