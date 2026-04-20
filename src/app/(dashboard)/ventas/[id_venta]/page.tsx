@@ -162,8 +162,15 @@ export default function DetalleVentaPage() {
       <div className={styles.totalsContainer}>
         <div className={styles.totalsCard}>
           <div className={styles.totalRow}>
-            <span>Subtotal:</span>
-            <span>Q {Number(venta.subtotal ?? venta.total).toFixed(2)}</span>
+            <span>Subtotal (Sin IVA):</span>
+            <span>
+              Q{" "}
+              {(
+                Number(venta.total) +
+                Number(venta.descuento_monto || 0) -
+                Number(venta.monto_iva || 0)
+              ).toFixed(2)}
+            </span>
           </div>
           {Number(venta.descuento_monto) > 0 && (
             <div className={styles.totalRow}>
