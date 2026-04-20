@@ -79,49 +79,68 @@
 }
 
 /* ── Navegación ─────────────────────────────────────────────────────────────── */
+/* ── Navegación ─────────────────────────────────────────────────────────────── */
 
 .nav {
   flex: 1;
-  padding: 1rem 0;
+  padding: 1.5rem 0; /* Un poco más de espacio superior e inferior */
   overflow-y: auto;
 }
 
 .menuSection {
-  margin-bottom: 1.5rem;
+  margin-bottom: 2rem; /* Más espacio para separar claramente los bloques de módulos */
 }
 
 .sectionTitle {
   padding: 0 1.5rem;
   font-size: 0.75rem;
+  font-weight: 700; /* Título en negrita para darle estructura */
   text-transform: uppercase;
-  color: var(--light-blue);
-  margin-bottom: 0.5rem;
-  letter-spacing: 1px;
+  color: rgba(
+    255,
+    255,
+    255,
+    0.45
+  ); /* Hacemos el texto más tenue para que pase a "segundo plano" */
+  margin-bottom: 0.75rem;
+  letter-spacing: 1.5px; /* Separamos un poco más las letras */
 }
 
 .navItem {
   display: block;
-  padding: 0.75rem 1.5rem;
-  color: var(--white);
+  /* Indentamos el texto a la derecha (2rem) para crear jerarquía visual padre/hijo */
+  padding: 0.65rem 1.5rem 0.65rem 2rem;
+  color: rgba(
+    255,
+    255,
+    255,
+    0.85
+  ); /* Enlaces un poco menos brillantes que el blanco puro */
   text-decoration: none;
-  transition: background-color 0.2s;
-  font-size: 0.95rem;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+  border-left: 3px solid transparent; /* Borde invisible preparado para el hover */
 }
 
 .navItem:hover {
   background-color: var(--secondary-blue);
+  color: var(--white);
+  border-left-color: var(
+    --light-blue
+  ); /* Aparece una sutil línea a la izquierda */
 }
 
 .active {
-  background-color: var(--white);
-  color: var(--primary-blue);
-  font-weight: bold;
+  /* En lugar de todo blanco, usamos un fondo sutil y resaltamos el texto y la línea lateral */
+  background-color: rgba(255, 255, 255, 0.08);
+  color: var(--white);
+  font-weight: 600;
+  border-left-color: var(--white); /* Línea lateral blanca sólida */
 }
 
 .active:hover {
-  background-color: var(--white);
+  background-color: rgba(255, 255, 255, 0.12);
 }
-
 /* ── Botón logout ───────────────────────────────────────────────────────────── */
 
 .logoutBtn {

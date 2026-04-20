@@ -58,6 +58,7 @@ export interface ComprobanteEntrega {
   nit: string | null;
   direccion_cliente: string | null;
   cajero: string;
+  repartidor?: string | null;
   subtotal: number;
   descuento_monto: number;
   total: number;

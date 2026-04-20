@@ -633,7 +633,11 @@ export default function EntregasPage() {
                   )}
                   <div className="imp-fila">
                     <span>Cobrado por</span>
-                    <span>{modalComprobante.cajero}</span>
+                    <span>
+                      {modalComprobante.repartidor
+                        ? `${modalComprobante.repartidor} (En Ruta)`
+                        : modalComprobante.cajero || "No asignado"}
+                    </span>
                   </div>
                   <div className="imp-fila">
                     <span>Forma de pago</span>
