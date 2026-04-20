@@ -13,11 +13,10 @@ const SUCURSALES = [
   { id: 2, nombre: "Sede Central - Puerto Barrios" },
   { id: 3, nombre: "Sucursal Guatemala Central" },
   { id: 4, nombre: "Sucursal Quetzaltenango" },
-  { id: 5, nombre: "Sucursal Cobán" },
+  { id: 5, nombre: "Sucursal Zacapa" },
   { id: 6, nombre: "Sucursal Escuintla" },
-  { id: 7, nombre: "Sucursal Retalhuleu" },
+  { id: 7, nombre: "Sucursal Suchitepéquez" },
 ];
-
 export default function BodegaPage() {
   const [tabActual, setTabActual] = useState<
     "stock" | "emitir" | "recibir" | "ajustes" | "reacondicionados"

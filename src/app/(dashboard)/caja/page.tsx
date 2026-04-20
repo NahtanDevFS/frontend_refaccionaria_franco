@@ -795,7 +795,7 @@ export default function CajaPage() {
                           <td>{fmtFecha(h.fecha_pago)}</td>
                           <td>
                             {h.es_cobro_ruta ? (
-                              <span className={styles.badgeCE}>🛵 En Ruta</span>
+                              <span className={styles.badgeCE}>En Ruta</span>
                             ) : (
                               <span className={styles.badgeNormal}>
                                 Mostrador
@@ -817,7 +817,7 @@ export default function CajaPage() {
                           <td style={{ fontSize: "0.82rem", color: "#374151" }}>
                             {h.es_cobro_ruta ? (
                               <>
-                                🛵 {h.repartidor}
+                                {h.repartidor}
                                 <br />
                                 <span
                                   style={{
