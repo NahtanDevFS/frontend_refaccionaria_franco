@@ -1,3 +1,4 @@
+// src/services/auth.service.ts
 import { LoginDTO, AuthResponse } from "../types/auth.types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
@@ -21,14 +22,18 @@ export const AuthService = {
   },
 
   guardarSesion(token: string, usuario: any) {
-    // Guardamos el token en una cookie para que el Middleware de Next.js lo pueda leer
+    // Guardamos el token Y el rol en cookies para el Middleware
     document.cookie = `token=${token}; path=/; max-age=1800; samesite=strict`;
-    // Guardamos los datos del usuario en localStorage para usarlos en la UI (nombre, rol, sucursal, etc.)
+    document.cookie = `rol=${usuario.rol}; path=/; max-age=1800; samesite=strict`;
+
+    // Guardamos todo el usuario en localStorage para la UI
     localStorage.setItem("usuario", JSON.stringify(usuario));
   },
 
   cerrarSesion() {
+    // Limpiamos ambas cookies y el localStorage
     document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
+    document.cookie = "rol=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
     localStorage.removeItem("usuario");
   },
 };

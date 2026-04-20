@@ -18,15 +18,29 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      // 1. Enviamos credenciales al backend
       const respuesta = await AuthService.login({ username, password });
-
-      // 2. Guardamos token y datos (el backend debe retornar el token en la respuesta)
-      // Ajusta 'respuesta.token' según la estructura exacta de tu backend
       AuthService.guardarSesion(respuesta.token, respuesta.usuario);
 
-      // 3. Redirigimos al módulo protegido
-      router.push("/ventas/nueva");
+      const rol = respuesta.usuario.rol;
+
+      if (
+        [
+          "ADMINISTRADOR",
+          "GERENTE_REGIONAL",
+          "SUPERVISOR_SUCURSAL",
+          "VENDEDOR",
+        ].includes(rol)
+      ) {
+        router.push("/inicio");
+      } else if (rol === "CAJERO") {
+        router.push("/caja");
+      } else if (rol === "BODEGUERO") {
+        router.push("/bodega");
+      } else if (rol === "REPARTIDOR") {
+        router.push("/entregas");
+      } else {
+        router.push("/inicio");
+      }
     } catch (err: any) {
       setError(err.message || "Error de conexión con el servidor");
     } finally {
