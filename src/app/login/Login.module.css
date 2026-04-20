@@ -77,3 +77,40 @@
   font-size: 0.9rem;
   border: 1px solid var(--error-color);
 }
+
+.passwordWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.inputPassword {
+  /* Le damos más padding a la derecha para que el texto no se cruce por debajo del ícono */
+  padding-right: 2.5rem;
+  width: 100%;
+}
+
+.btnTogglePassword {
+  position: absolute;
+  right: 10px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #9ca3af; /* Un gris neutro */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: color 0.2s ease;
+}
+
+.btnTogglePassword:hover {
+  color: var(--primary-blue);
+}
+
+.btnTogglePassword:focus {
+  outline: none;
+  color: var(--primary-blue);
+}
