@@ -49,7 +49,7 @@
 }
 
 .btnSearch {
-  background-color: #3b82f6;
+  background-color: var(--primary-blue);
   color: white;
   padding: 0.5rem 1.5rem;
   border: none;
@@ -61,7 +61,7 @@
 }
 
 .btnSearch:hover {
-  background-color: #2563eb;
+  background-color: #103fa5;
 }
 
 .errorText {

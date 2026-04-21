@@ -245,7 +245,7 @@
 }
 
 .btnBuscar {
-  background-color: #3b82f6;
+  background-color: var(--primary-blue);
   color: white;
   border: none;
   padding: 0.6rem 1.1rem;
@@ -260,7 +260,7 @@
 }
 
 .btnBuscar:hover:not(:disabled) {
-  background-color: #2563eb;
+  background-color: #133785;
 }
 
 .btnBuscar:disabled {
@@ -342,8 +342,8 @@
   margin-top: 1rem;
   width: 100%;
   background: white;
-  color: #3b82f6;
-  border: 1.5px solid #3b82f6;
+  color: var(--primary-blue);
+  border: 1.5px solid var(--primary-blue);
   padding: 0.65rem;
   border-radius: 0.5rem;
   font-weight: 700;

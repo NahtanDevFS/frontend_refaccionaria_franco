@@ -990,7 +990,7 @@ export default function BodegaPage() {
               ) : productoCompatSelect.compatibilidades.some(
                   (c) => c.es_universal,
                 ) ? (
-                <div className={styles.compatUniversal}>🌐 Pieza Universal</div>
+                <div className={styles.compatUniversal}>Pieza Universal</div>
               ) : (
                 <ul className={styles.compatList}>
                   {productoCompatSelect.compatibilidades.map((comp, idx) => (
