@@ -1,9 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { BodegaService } from "@/services/bodega.service";
 import { InventarioService } from "@/services/inventario.service";
-import { InventarioBodega, RecepcionPendiente } from "@/types/bodega.types";
+import {
+  InventarioBodega,
+  LoteInventario,
+  RecepcionPendiente,
+} from "@/types/bodega.types";
 import { GarantiaService } from "@/services/garantia.service";
 import styles from "./Bodega.module.css";
 
@@ -47,6 +51,14 @@ export default function BodegaPage() {
     id_marca: "",
     id_modelo: "",
   });
+
+  // ── Panel de lotes expandible ──────────────────────────────────────────────
+  // lotesExpandidos: id_producto → array de lotes (se carga lazy al expandir)
+  // cargandoLotes:  Set de id_producto que están en proceso de carga
+  const [lotesExpandidos, setLotesExpandidos] = useState<
+    Record<number, LoteInventario[]>
+  >({});
+  const [cargandoLotes, setCargandoLotes] = useState<Set<number>>(new Set());
 
   // --- TAB 2: Emitir Despacho ---
   const [idSucursalDestino, setIdSucursalDestino] = useState("");
@@ -137,6 +149,9 @@ export default function BodegaPage() {
   const cargarInventario = async (filtros?: any) => {
     try {
       setCargando(true);
+      // Al recargar el inventario se limpian los lotes expandidos
+      // para evitar mostrar datos obsoletos
+      setLotesExpandidos({});
       const data = await BodegaService.obtenerInventario(filtros);
       setInventario(data);
     } catch (err: any) {
@@ -162,6 +177,45 @@ export default function BodegaPage() {
     setBusquedaVehiculo({ id_marca: "", id_modelo: "" });
     cargarInventario();
   };
+
+  // ── Lógica del panel de lotes ──────────────────────────────────────────────
+  const toggleLotes = async (id_producto: number) => {
+    // Si ya están cargados, colapsar
+    if (lotesExpandidos[id_producto] !== undefined) {
+      setLotesExpandidos((prev) => {
+        const siguiente = { ...prev };
+        delete siguiente[id_producto];
+        return siguiente;
+      });
+      return;
+    }
+
+    // Si están en carga, ignorar el click
+    if (cargandoLotes.has(id_producto)) return;
+
+    // Cargar desde la API (lazy)
+    setCargandoLotes((prev) => new Set(prev).add(id_producto));
+    try {
+      const lotes = await BodegaService.obtenerLotes(id_producto);
+      setLotesExpandidos((prev) => ({ ...prev, [id_producto]: lotes }));
+    } catch (err: any) {
+      alert("Error al cargar lotes: " + err.message);
+    } finally {
+      setCargandoLotes((prev) => {
+        const siguiente = new Set(prev);
+        siguiente.delete(id_producto);
+        return siguiente;
+      });
+    }
+  };
+
+  const formatearFechaLote = (fechaISO: string) =>
+    new Date(fechaISO).toLocaleDateString("es-GT", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  // ──────────────────────────────────────────────────────────────────────────
 
   // --- LÓGICA TRASLADOS ---
   const buscarParaTraslado = async () => {
@@ -451,6 +505,7 @@ export default function BodegaPage() {
                     <th>Costo</th>
                     <th>Venta</th>
                     <th>Stock</th>
+                    <th>Lotes</th>
                     <th>Estado</th>
                     <th>Compat.</th>
                     <th>Otros</th>
@@ -458,64 +513,254 @@ export default function BodegaPage() {
                 </thead>
                 <tbody>
                   {inventario.map((item) => (
-                    <tr
-                      key={item.id_inventario}
-                      className={item.requiere_reorden ? styles.rowAlert : ""}
-                    >
-                      <td>{item.sku}</td>
-                      <td>{item.nombre}</td>
-                      <td>
-                        <span className={styles.textMuted}>
-                          {item.categoria || "N/A"}
-                        </span>
-                      </td>
-                      <td>
-                        <span className={styles.textMuted}>
-                          {item.marca_repuesto || "Genérica"}
-                        </span>
-                      </td>
-                      <td className={styles.textMuted}>
-                        Q {item.costo.toFixed(2)}
-                      </td>
-                      <td className={styles.textSuccess}>
-                        Q {item.precio_venta.toFixed(2)}
-                      </td>
-                      <td className={styles.textBold}>
-                        {item.cantidad_actual}
-                      </td>
-                      <td>
-                        {item.requiere_reorden ? (
-                          <span className={styles.badgeWarning}>Reorden</span>
-                        ) : (
-                          <span className={styles.badgeOk}>Suficiente</span>
-                        )}
-                      </td>
-                      <td>
-                        <button
-                          className={styles.btnSelectMini}
-                          onClick={() => {
-                            setProductoCompatSelect(item);
-                            setModalCompatAbierto(true);
-                          }}
-                        >
-                          Ver
-                        </button>
-                      </td>
-                      <td>
-                        {item.stock_otras_sucursales} und{" "}
-                        {item.stock_otras_sucursales > 0 && (
+                    <React.Fragment key={item.id_inventario}>
+                      {/* ── Fila principal del producto ── */}
+                      <tr
+                        className={item.requiere_reorden ? styles.rowAlert : ""}
+                      >
+                        <td>{item.sku}</td>
+                        <td>{item.nombre}</td>
+                        <td>
+                          <span className={styles.textMuted}>
+                            {item.categoria || "N/A"}
+                          </span>
+                        </td>
+                        <td>
+                          <span className={styles.textMuted}>
+                            {item.marca_repuesto || "Genérica"}
+                          </span>
+                        </td>
+                        <td className={styles.textMuted}>
+                          {/* Costo promedio ponderado de lotes activos */}Q{" "}
+                          {item.costo.toFixed(2)}
+                          {item.total_lotes > 1 && (
+                            <span
+                              style={{
+                                fontSize: "0.68rem",
+                                color: "#9ca3af",
+                                marginLeft: "0.25rem",
+                              }}
+                            >
+                              prom.
+                            </span>
+                          )}
+                        </td>
+                        <td className={styles.textSuccess}>
+                          Q {item.precio_venta.toFixed(2)}
+                        </td>
+                        <td className={styles.textBold}>
+                          {item.cantidad_actual}
+                        </td>
+
+                        {/* ── Columna Lotes ── */}
+                        <td>
+                          {item.total_lotes >= 1 ? (
+                            // 1 o más lotes: siempre mostrar botón expandible
+                            <button
+                              className={styles.btnSelectMini}
+                              onClick={() => toggleLotes(item.id_producto)}
+                              style={{
+                                backgroundColor:
+                                  lotesExpandidos[item.id_producto] !==
+                                  undefined
+                                    ? "#6b7280"
+                                    : undefined,
+                              }}
+                            >
+                              {cargandoLotes.has(item.id_producto)
+                                ? "..."
+                                : lotesExpandidos[item.id_producto] !==
+                                    undefined
+                                  ? `▲ ${item.total_lotes} ${item.total_lotes === 1 ? "lote" : "lotes"}`
+                                  : `▼ ${item.total_lotes} ${item.total_lotes === 1 ? "lote" : "lotes"}`}
+                            </button>
+                          ) : (
+                            // Sin lotes activos (stock en 0)
+                            <span className={styles.textMuted}>—</span>
+                          )}
+                        </td>
+
+                        <td>
+                          {item.requiere_reorden ? (
+                            <span className={styles.badgeWarning}>Reorden</span>
+                          ) : (
+                            <span className={styles.badgeOk}>Suficiente</span>
+                          )}
+                        </td>
+                        <td>
                           <button
                             className={styles.btnSelectMini}
                             onClick={() => {
-                              setProductoDetalle(item);
-                              setModalDetalleAbierto(true);
+                              setProductoCompatSelect(item);
+                              setModalCompatAbierto(true);
                             }}
                           >
                             Ver
                           </button>
-                        )}
-                      </td>
-                    </tr>
+                        </td>
+                        <td>
+                          {item.stock_otras_sucursales} und{" "}
+                          {item.stock_otras_sucursales > 0 && (
+                            <button
+                              className={styles.btnSelectMini}
+                              onClick={() => {
+                                setProductoDetalle(item);
+                                setModalDetalleAbierto(true);
+                              }}
+                            >
+                              Ver
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+
+                      {/* ── Fila expandible de lotes (se inserta justo debajo) ── */}
+                      {lotesExpandidos[item.id_producto] !== undefined && (
+                        <tr key={`lotes-${item.id_producto}`}>
+                          <td
+                            colSpan={11}
+                            style={{
+                              padding: 0,
+                              background: "#f8fafc",
+                              borderBottom: "2px solid #e2e8f0",
+                            }}
+                          >
+                            <div style={{ padding: "0.75rem 1.5rem" }}>
+                              <p
+                                style={{
+                                  margin: "0 0 0.5rem 0",
+                                  fontSize: "0.75rem",
+                                  fontWeight: 600,
+                                  color: "#6b7280",
+                                  textTransform: "uppercase",
+                                  letterSpacing: "0.05em",
+                                }}
+                              >
+                                Lotes activos — {item.nombre}
+                              </p>
+                              <table
+                                style={{
+                                  width: "auto",
+                                  borderCollapse: "collapse",
+                                  fontSize: "0.82rem",
+                                }}
+                              >
+                                <thead>
+                                  <tr>
+                                    {[
+                                      "Lote #",
+                                      "Unidades",
+                                      "Costo unitario",
+                                      "Fecha ingreso",
+                                      "Orden FIFO",
+                                    ].map((col) => (
+                                      <th
+                                        key={col}
+                                        style={{
+                                          padding: "0.35rem 1rem 0.35rem 0",
+                                          textAlign: "left",
+                                          color: "#9ca3af",
+                                          fontWeight: 600,
+                                          fontSize: "0.72rem",
+                                          textTransform: "uppercase",
+                                          letterSpacing: "0.04em",
+                                          borderBottom: "1px solid #e2e8f0",
+                                          whiteSpace: "nowrap",
+                                        }}
+                                      >
+                                        {col}
+                                      </th>
+                                    ))}
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {lotesExpandidos[item.id_producto].map(
+                                    (lote, idx) => (
+                                      <tr key={lote.id_lote}>
+                                        <td
+                                          style={{
+                                            padding: "0.4rem 1rem 0.4rem 0",
+                                            color: "#374151",
+                                            fontWeight: 500,
+                                          }}
+                                        >
+                                          #{lote.id_lote}
+                                        </td>
+                                        <td
+                                          style={{
+                                            padding: "0.4rem 1rem 0.4rem 0",
+                                            fontWeight: 700,
+                                            color: "#111827",
+                                          }}
+                                        >
+                                          {lote.cantidad_actual} uds
+                                        </td>
+                                        <td
+                                          style={{
+                                            padding: "0.4rem 1rem 0.4rem 0",
+                                            color: "#047857",
+                                            fontWeight: 600,
+                                          }}
+                                        >
+                                          Q{" "}
+                                          {Number(lote.costo_unitario).toFixed(
+                                            2,
+                                          )}
+                                        </td>
+                                        <td
+                                          style={{
+                                            padding: "0.4rem 1rem 0.4rem 0",
+                                            color: "#374151",
+                                          }}
+                                        >
+                                          {formatearFechaLote(
+                                            lote.fecha_ingreso as unknown as string,
+                                          )}
+                                        </td>
+                                        <td
+                                          style={{
+                                            padding: "0.4rem 0 0.4rem 0",
+                                          }}
+                                        >
+                                          {idx === 0 ? (
+                                            // El primer lote (más antiguo) es el siguiente en consumirse
+                                            <span
+                                              style={{
+                                                display: "inline-flex",
+                                                alignItems: "center",
+                                                gap: "0.25rem",
+                                                background: "#fef3c7",
+                                                color: "#92400e",
+                                                padding: "0.15rem 0.5rem",
+                                                borderRadius: "9999px",
+                                                fontSize: "0.7rem",
+                                                fontWeight: 700,
+                                                whiteSpace: "nowrap",
+                                              }}
+                                            >
+                                              ⬆ Siguiente a salir
+                                            </span>
+                                          ) : (
+                                            <span
+                                              style={{
+                                                color: "#9ca3af",
+                                                fontSize: "0.75rem",
+                                              }}
+                                            >
+                                              En espera
+                                            </span>
+                                          )}
+                                        </td>
+                                      </tr>
+                                    ),
+                                  )}
+                                </tbody>
+                              </table>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
                   ))}
                 </tbody>
               </table>
@@ -524,7 +769,7 @@ export default function BodegaPage() {
         </div>
       )}
 
-      {/* TAB 2: EMITIR TRASLADO */}
+      {/* TAB 2: EMITIR TRASLADO — sin cambios */}
       {tabActual === "emitir" && (
         <div className={styles.card}>
           <h2 className={styles.sectionTitle}>
@@ -702,7 +947,7 @@ export default function BodegaPage() {
         </div>
       )}
 
-      {/* TAB 3: RECIBIR TRASLADO */}
+      {/* TAB 3: RECIBIR TRASLADO — sin cambios */}
       {tabActual === "recibir" && !cargando && (
         <div>
           {recepciones.length === 0 ? (
@@ -751,7 +996,7 @@ export default function BodegaPage() {
         </div>
       )}
 
-      {/* TAB 4: AJUSTES */}
+      {/* TAB 4: AJUSTES — sin cambios */}
       {tabActual === "ajustes" && (
         <div className={styles.card}>
           <h2 className={styles.sectionTitle}>
@@ -907,7 +1152,7 @@ export default function BodegaPage() {
         </div>
       )}
 
-      {/* TAB 5: REACONDICIONADOS */}
+      {/* TAB 5: REACONDICIONADOS — sin cambios */}
       {tabActual === "reacondicionados" && (
         <div className={styles.card}>
           <h2 className={styles.sectionTitle}>
@@ -970,7 +1215,7 @@ export default function BodegaPage() {
         </div>
       )}
 
-      {/* MODAL DETALLE COMPATIBILIDAD VEHÍCULOS */}
+      {/* MODAL DETALLE COMPATIBILIDAD VEHÍCULOS — sin cambios */}
       {modalCompatAbierto && productoCompatSelect && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalContent}>
@@ -1019,7 +1264,7 @@ export default function BodegaPage() {
         </div>
       )}
 
-      {/* MODAL DETALLE OTRAS SUCURSALES */}
+      {/* MODAL DETALLE OTRAS SUCURSALES — sin cambios */}
       {modalDetalleAbierto && productoDetalle && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalContent}>

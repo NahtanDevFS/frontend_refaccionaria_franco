@@ -1,4 +1,13 @@
 // src/types/bodega.types.ts
+
+export interface LoteInventario {
+  id_lote: number;
+  cantidad_actual: number;
+  costo_unitario: number;
+  fecha_ingreso: string; // ISO string desde la API
+  es_apertura: boolean; // true = lote de stock inicial (fecha 2000-01-01)
+}
+
 export interface InventarioBodega {
   id_inventario: number;
   id_producto: number;
@@ -13,7 +22,8 @@ export interface InventarioBodega {
   categoria?: string;
   marca_repuesto?: string;
   precio_venta: number;
-  costo: number;
+  costo: number; // costo promedio ponderado de lotes activos
+  total_lotes: number; // cantidad de lotes activos (para el indicador expandible)
 
   compatibilidades: {
     marca: string | null;

@@ -1,6 +1,7 @@
 // src/services/bodega.service.ts
 import {
   InventarioBodega,
+  LoteInventario,
   RecepcionPendiente,
   EmitirDespachoDTO,
   AjusteInventarioDTO,
@@ -16,7 +17,6 @@ function obtenerToken(): string {
 }
 
 export const BodegaService = {
-  // Acepta parámetros de filtro y los adjunta a la URL
   async obtenerInventario(filtros?: any): Promise<InventarioBodega[]> {
     let queryParams = "";
     if (filtros) {
@@ -31,6 +31,17 @@ export const BodegaService = {
     }
 
     const res = await fetch(`${API_URL}/bodega/inventario${queryParams}`, {
+      headers: { Authorization: `Bearer ${obtenerToken()}` },
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) throw new Error(data.message);
+    return data.data;
+  },
+
+  // Llamada lazy: solo se ejecuta cuando el usuario expande el panel de lotes
+  // de un producto concreto en la tab de Stock.
+  async obtenerLotes(id_producto: number): Promise<LoteInventario[]> {
+    const res = await fetch(`${API_URL}/bodega/lotes/${id_producto}`, {
       headers: { Authorization: `Bearer ${obtenerToken()}` },
     });
     const data = await res.json();
