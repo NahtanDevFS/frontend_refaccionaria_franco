@@ -87,11 +87,7 @@
 
 /* ─── Card consolidado ─────────────────────────────────── */
 .consolidadoCard {
-  background: linear-gradient(
-    135deg,
-    var(--primary-blue),
-    var(--secondary-blue)
-  );
+  background: var(--primary-blue);
   color: var(--white);
   border-radius: 8px;
   padding: 1.5rem;
