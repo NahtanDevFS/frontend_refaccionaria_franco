@@ -18,6 +18,13 @@ interface ProductoInventario {
   stock_otras_sucursales?: { sucursal: string; cantidad: number }[];
   marca_repuesto?: string;
   is_reacondicionado?: boolean;
+  compatibilidades?: {
+    marca: string | null;
+    modelo: string | null;
+    anio_desde: number | null;
+    anio_hasta: number | null;
+    es_universal: boolean;
+  }[];
 }
 
 interface ItemCarrito extends ProductoInventario {
@@ -130,6 +137,29 @@ export default function NuevaVentaPage() {
     { id_municipio: number; nombre: string }[]
   >([]);
 
+  // Modal de compatibilidad
+  const [modalCompatVentaAbierto, setModalCompatVentaAbierto] = useState(false);
+  const [productoCompatVenta, setProductoCompatVenta] =
+    useState<ProductoInventario | null>(null);
+
+  const abrirCompatVenta = async (prod: ProductoInventario) => {
+    try {
+      const data = await InventarioService.obtenerCompatibilidades(
+        prod.id_producto,
+      );
+      const compatibilidades = data.map((c: any) => ({
+        marca: c.marca_vehiculo,
+        modelo: c.modelo_vehiculo,
+        anio_desde: c.anio_desde,
+        anio_hasta: c.anio_hasta,
+        es_universal: c.es_universal,
+      }));
+      setProductoCompatVenta({ ...prod, compatibilidades });
+      setModalCompatVentaAbierto(true);
+    } catch {
+      alert("No se pudo cargar la compatibilidad.");
+    }
+  };
   // ── Efectos iniciales ────────────────────────────────────────────────────────
   useEffect(() => {
     const userString = localStorage.getItem("usuario");
@@ -657,9 +687,11 @@ export default function NuevaVentaPage() {
             <table className={styles.table}>
               <thead>
                 <tr>
+                  <th>SKU</th>
                   <th>Producto</th>
                   <th>Precio</th>
                   <th>Stock Local</th>
+                  <th>Compat.</th>
                   <th>Agregar</th>
                 </tr>
               </thead>
@@ -672,6 +704,7 @@ export default function NuevaVentaPage() {
                         : `P_${p.id_producto}`
                     }
                   >
+                    <td className={styles.textBold}>{p.sku}</td>
                     <td>
                       {p.is_reacondicionado && (
                         <span className={styles.badgeReacTable}>REAC</span>
@@ -708,6 +741,18 @@ export default function NuevaVentaPage() {
                       }
                     >
                       {p.stock_local}
+                    </td>
+                    <td>
+                      <button
+                        className={styles.btnSecondary}
+                        style={{
+                          padding: "0.2rem 0.5rem",
+                          fontSize: "0.75rem",
+                        }}
+                        onClick={() => abrirCompatVenta(p)}
+                      >
+                        Ver
+                      </button>
                     </td>
                     <td>
                       <button
@@ -1292,6 +1337,56 @@ export default function NuevaVentaPage() {
                 disabled={guardandoCliente || !nuevoCliente.nombre.trim()}
               >
                 {guardandoCliente ? "Guardando..." : "Confirmar cliente"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL COMPATIBILIDAD — NUEVA VENTA */}
+      {modalCompatVentaAbierto && productoCompatVenta && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalContent}>
+            <h2 className={styles.modalTitle}>Vehículos Compatibles</h2>
+            <p>
+              <strong className={styles.textBold}>Producto:</strong>{" "}
+              {productoCompatVenta.nombre}{" "}
+              <span className={styles.textMuted}>
+                ({productoCompatVenta.sku})
+              </span>
+            </p>
+            <div className={styles.compatBox}>
+              {!productoCompatVenta.compatibilidades ||
+              productoCompatVenta.compatibilidades.length === 0 ? (
+                <p style={{ textAlign: "center", margin: 0 }}>
+                  Sin información.
+                </p>
+              ) : productoCompatVenta.compatibilidades.some(
+                  (c) => c.es_universal,
+                ) ? (
+                <div className={styles.compatUniversal}>🌐 Pieza Universal</div>
+              ) : (
+                <ul className={styles.compatList}>
+                  {productoCompatVenta.compatibilidades.map((comp, idx) => (
+                    <li key={idx}>
+                      <strong className={styles.textBold}>{comp.marca}</strong>{" "}
+                      - {comp.modelo}{" "}
+                      {comp.anio_desde && (
+                        <span>
+                          ({comp.anio_desde} - {comp.anio_hasta})
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div className={styles.modalActions}>
+              <button
+                className={styles.btnSecondary}
+                onClick={() => setModalCompatVentaAbierto(false)}
+              >
+                Cerrar
               </button>
             </div>
           </div>
