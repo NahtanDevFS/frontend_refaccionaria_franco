@@ -1483,22 +1483,16 @@ export default function NuevaVentaPage() {
               <div className={styles.confirmSeccion}>
                 <p className={styles.confirmLabel}>TIPO DE ENTREGA</p>
                 <p className={styles.confirmValor}>
-                  {esDomicilio
-                    ? "🚚 Envío a Domicilio"
-                    : "🏪 Retiro en Mostrador"}
+                  {esDomicilio ? "Envío a domicilio" : "Retiro en mostrador"}
                 </p>
                 {esDomicilio && (
                   <div className={styles.confirmSubvalor}>
-                    <p className={styles.confirmDetalle}>
-                      📍 {direccionEntrega}
-                    </p>
+                    <p className={styles.confirmDetalle}>{direccionEntrega}</p>
                     <p className={styles.confirmDetalle}>👤 {nombreContacto}</p>
-                    <p className={styles.confirmDetalle}>
-                      📞 {telefonoContacto}
-                    </p>
+                    <p className={styles.confirmDetalle}>{telefonoContacto}</p>
                     {pagoContraEntrega && (
                       <p className={styles.confirmContraEntrega}>
-                        ⚠ Pago Contra Entrega
+                        Pago Contra Entrega
                       </p>
                     )}
                   </div>
@@ -1554,7 +1548,7 @@ export default function NuevaVentaPage() {
 
               {descuentoPorcentaje > 5 && (
                 <p className={styles.confirmAvisoDescuento}>
-                  ⚠ Descuento mayor al 5% — requiere autorización de supervisor
+                  Descuento mayor al 5% — requiere autorización de supervisor
                 </p>
               )}
             </div>
@@ -1572,7 +1566,7 @@ export default function NuevaVentaPage() {
                 onClick={ejecutarOrden}
                 disabled={procesandoOrden}
               >
-                {procesandoOrden ? "Procesando..." : "✓ Confirmar Orden"}
+                {procesandoOrden ? "Procesando..." : "Confirmar Orden"}
               </button>
             </div>
           </div>
