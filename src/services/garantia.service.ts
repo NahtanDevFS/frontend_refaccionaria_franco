@@ -90,15 +90,34 @@ export const GarantiaService = {
   },
 
   // Historial completo
-  async obtenerHistorial(id_sucursal: number) {
-    const res = await fetch(
-      `${API_URL}/garantias/sucursal/${id_sucursal}/historial`,
-      { headers: getHeaders() },
-    );
+  async obtenerHistorial(
+    id_sucursal: number,
+    filtros?: {
+      search?: string;
+      estado?: string;
+      fechaInicio?: string;
+      fechaFin?: string;
+      page?: number;
+      limit?: number;
+    },
+  ) {
+    const params = new URLSearchParams();
+    if (filtros?.search) params.append("search", filtros.search);
+    if (filtros?.estado) params.append("estado", filtros.estado);
+    if (filtros?.fechaInicio) params.append("fechaInicio", filtros.fechaInicio);
+    if (filtros?.fechaFin) params.append("fechaFin", filtros.fechaFin);
+    if (filtros?.page) params.append("page", filtros.page.toString());
+    if (filtros?.limit) params.append("limit", filtros.limit.toString());
+
+    const queryStr = params.toString();
+    const url = `${API_URL}/garantias/sucursal/${id_sucursal}/historial${
+      queryStr ? `?${queryStr}` : ""
+    }`;
+
+    const res = await fetch(url, { headers: getHeaders() });
     if (!res.ok) throw new Error("Error obteniendo el historial de garantías");
     return res.json();
   },
-
   async obtenerReacondicionadosDisponibles(id_sucursal: number) {
     const res = await fetch(
       `${API_URL}/garantias/sucursal/${id_sucursal}/reacondicionados`,
