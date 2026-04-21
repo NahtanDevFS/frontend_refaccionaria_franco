@@ -27,6 +27,7 @@ export default function BodegaPage() {
   >("stock");
   const [reacondicionados, setReacondicionados] = useState<any[]>([]);
   const [cargandoReac, setCargandoReac] = useState(false);
+  const [filtroReac, setFiltroReac] = useState("");
   const [cargando, setCargando] = useState(false);
 
   // --- TAB 1: Stock local ---
@@ -365,6 +366,16 @@ export default function BodegaPage() {
       alert("Error: " + err.message);
     }
   };
+
+  const reacondicionadosFiltrados = filtroReac.trim()
+    ? reacondicionados.filter((r) => {
+        const term = filtroReac.toLowerCase().trim();
+        return (
+          r.sku?.toLowerCase().includes(term) ||
+          r.nombre?.toLowerCase().includes(term)
+        );
+      })
+    : reacondicionados;
 
   return (
     <div className={styles.container}>
@@ -1158,17 +1169,35 @@ export default function BodegaPage() {
           <h2 className={styles.sectionTitle}>
             Inventario de Productos Reacondicionados
           </h2>
-          <p className={styles.textMuted} style={{ marginBottom: "1.5rem" }}>
+          <p className={styles.textMuted} style={{ marginBottom: "1.0rem" }}>
             Piezas recuperadas de garantías, inspeccionadas y disponibles para
             venta como "segunda". El precio ya fue calculado al 50% del valor
             original.
           </p>
+
+          <div
+            className={styles.formGroup}
+            style={{ maxWidth: "360px", marginBottom: "1.5rem" }}
+          >
+            <label className={styles.label}>Buscar por SKU o Nombre</label>
+            <input
+              type="text"
+              className={styles.input}
+              placeholder="Ej. FRIC-001 o pastillas de freno..."
+              value={filtroReac}
+              onChange={(e) => setFiltroReac(e.target.value)}
+            />
+          </div>
 
           {cargandoReac ? (
             <p className={styles.textMuted}>Cargando...</p>
           ) : reacondicionados.length === 0 ? (
             <div className={styles.emptyState}>
               No hay productos reacondicionados disponibles en esta sucursal.
+            </div>
+          ) : reacondicionadosFiltrados.length === 0 ? (
+            <div className={styles.emptyState}>
+              No se encontraron resultados para &quot;{filtroReac}&quot;.
             </div>
           ) : (
             <div className={styles.tableContainer}>
@@ -1184,7 +1213,7 @@ export default function BodegaPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {reacondicionados.map((r) => (
+                  {reacondicionadosFiltrados.map((r) => (
                     <tr key={r.id_producto_reacondicionado}>
                       <td className={styles.textMuted}>
                         #{r.id_producto_reacondicionado}

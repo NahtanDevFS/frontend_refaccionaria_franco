@@ -1165,11 +1165,11 @@ export default function NuevaVentaPage() {
 
                     let etiqueta = "";
                     if (noDisponible) {
-                      etiqueta = " 🔴 No disponible";
+                      etiqueta = "No disponible";
                     } else if (enRuta) {
-                      etiqueta = ` 🟡 En ruta (${rep.pedidos_activos} pedido${rep.pedidos_activos > 1 ? "s" : ""})`;
+                      etiqueta = `En ruta (${rep.pedidos_activos} pedido${rep.pedidos_activos > 1 ? "s" : ""})`;
                     } else {
-                      etiqueta = " 🟢 Disponible";
+                      etiqueta = "Disponible";
                     }
 
                     return (
@@ -1189,8 +1189,7 @@ export default function NuevaVentaPage() {
                       lineHeight: 1.4,
                     }}
                   >
-                    🟢 Disponible &nbsp;·&nbsp; 🟡 En ruta &nbsp;·&nbsp; 🔴 No
-                    disponible
+                    Disponible &nbsp;·&nbsp; En ruta &nbsp;·&nbsp; No disponible
                   </p>
                 )}
               </div>
@@ -1418,7 +1417,7 @@ export default function NuevaVentaPage() {
               ) : productoCompatVenta.compatibilidades.some(
                   (c) => c.es_universal,
                 ) ? (
-                <div className={styles.compatUniversal}>🌐 Pieza Universal</div>
+                <div className={styles.compatUniversal}>Pieza Universal</div>
               ) : (
                 <ul className={styles.compatList}>
                   {productoCompatVenta.compatibilidades.map((comp, idx) => (
