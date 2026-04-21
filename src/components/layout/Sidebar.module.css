@@ -78,15 +78,17 @@
   text-overflow: ellipsis;
 }
 
-/* ── Navegación ─────────────────────────────────────────────────────────────── */
-/* ── Navegación ─────────────────────────────────────────────────────────────── */
-
 .nav {
   flex: 1;
-  padding: 1.5rem 0; /* Un poco más de espacio superior e inferior */
+  padding: 1.5rem 0;
   overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
+.nav::-webkit-scrollbar {
+  display: none;
+}
 .menuSection {
   margin-bottom: 2rem; /* Más espacio para separar claramente los bloques de módulos */
 }
@@ -141,7 +143,6 @@
 .active:hover {
   background-color: rgba(255, 255, 255, 0.12);
 }
-/* ── Botón logout ───────────────────────────────────────────────────────────── */
 
 .logoutBtn {
   margin: 1rem;

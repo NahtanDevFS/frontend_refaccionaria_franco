@@ -15,7 +15,6 @@
   margin: 0;
 }
 
-/* ─── Selector de sucursal ─────────────────────────────── */
 .sucursalSelector {
   display: flex;
   align-items: center;
@@ -43,7 +42,7 @@
   color: var(--primary-blue);
   min-width: 220px;
   cursor: pointer;
-  width: 100%; /* Ajuste para móvil */
+  width: 100%;
   max-width: 300px;
 }
 
@@ -52,14 +51,19 @@
   border-color: var(--secondary-blue);
 }
 
-/* ─── Tabs ─────────────────────────────────────────────── */
 .tabs {
   display: flex;
   gap: 0.25rem;
   margin-bottom: 1.5rem;
   border-bottom: 2px solid var(--border-color);
-  overflow-x: auto; /* Permitir scroll si hay muchas tabs */
+  overflow-x: auto;
   white-space: nowrap;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.nav::-webkit-scrollbar {
+  display: none;
 }
 
 .tab {
@@ -85,7 +89,6 @@
   border-bottom: 3px solid var(--secondary-blue);
 }
 
-/* ─── Card consolidado ─────────────────────────────────── */
 .consolidadoCard {
   background: var(--primary-blue);
   color: var(--white);
