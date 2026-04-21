@@ -121,6 +121,7 @@ export default function NuevaVentaPage() {
   const [pagoContraEntrega, setPagoContraEntrega] = useState(false);
   const [nombreContacto, setNombreContacto] = useState("");
   const [telefonoContacto, setTelefonoContacto] = useState("");
+  const [direccionEntrega, setDireccionEntrega] = useState("");
   const [descuentoPorcentaje, setDescuentoPorcentaje] = useState<number>(0);
   const [listaRepartidores, setListaRepartidores] = useState<
     {
@@ -131,6 +132,10 @@ export default function NuevaVentaPage() {
       pedidos_activos: number;
     }[]
   >([]);
+
+  // ── Modal confirmación ───────────────────────────────────────────────────────
+  const [modalConfirmacion, setModalConfirmacion] = useState(false);
+  const [procesandoOrden, setProcesandoOrden] = useState(false);
 
   // ── Ubicación ────────────────────────────────────────────────────────────────
   const [departamentos, setDepartamentos] = useState<
@@ -166,6 +171,7 @@ export default function NuevaVentaPage() {
       alert("No se pudo cargar la compatibilidad.");
     }
   };
+
   // ── Efectos iniciales ────────────────────────────────────────────────────────
   useEffect(() => {
     const userString = localStorage.getItem("usuario");
@@ -252,6 +258,23 @@ export default function NuevaVentaPage() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // ── Autorellenado de domicilio con datos del cliente ─────────────────────────
+  useEffect(() => {
+    if (esDomicilio && clienteSeleccionado) {
+      setNombreContacto(clienteSeleccionado.nombre_razon_social ?? "");
+      setTelefonoContacto(clienteSeleccionado.telefono ?? "");
+      setDireccionEntrega(clienteSeleccionado.direccion ?? "");
+    }
+    if (!esDomicilio) {
+      setNombreContacto("");
+      setTelefonoContacto("");
+      setDireccionEntrega("");
+      setDeptoEntrega("");
+      setMunicipioEntrega("");
+      setMunicipiosEntrega([]);
+    }
+  }, [esDomicilio, clienteSeleccionado]);
 
   const cargarRepartidores = async () => {
     try {
@@ -452,11 +475,19 @@ export default function NuevaVentaPage() {
   const descuentoMonto = subtotalCarrito * (descuentoPorcentaje / 100);
   const totalVentaConIva = subtotalCarrito - descuentoMonto;
 
-  const procesarOrden = async () => {
+  // Abre el modal de confirmación
+  const procesarOrden = () => {
+    setModalConfirmacion(true);
+  };
+
+  // Ejecuta la orden tras confirmar en el modal
+  const ejecutarOrden = async () => {
     if (!usuarioSesion) {
       alert("No se detectó una sesión activa.");
       return;
     }
+
+    setProcesandoOrden(true);
 
     const esCF = modoCliente === "cf";
     const nitFinal = esCF ? "CF" : clienteSeleccionado?.nit || "CF";
@@ -484,9 +515,7 @@ export default function NuevaVentaPage() {
       descuento_porcentaje: descuentoPorcentaje,
       id_repartidor:
         esDomicilio && idRepartidor ? parseInt(idRepartidor) : null,
-      direccion_entrega: esDomicilio
-        ? clienteSeleccionado?.direccion || null
-        : null,
+      direccion_entrega: esDomicilio ? direccionEntrega || null : null,
       nombre_contacto: esDomicilio ? nombreContacto : null,
       telefono_contacto: esDomicilio ? telefonoContacto : null,
       id_municipio_entrega:
@@ -507,8 +536,8 @@ export default function NuevaVentaPage() {
       else mensajeEstado = "Pendiente de Pago";
 
       await VentaService.crearOrdenVenta(payload);
-      alert(`Orden enviada exitosamente.\nEstado: ${mensajeEstado}`);
 
+      // Reset completo
       setCarrito([]);
       setModoCliente("cf");
       setClienteSeleccionado(null);
@@ -521,7 +550,13 @@ export default function NuevaVentaPage() {
       setMunicipiosEntrega([]);
       setNombreContacto("");
       setTelefonoContacto("");
+      setDireccionEntrega("");
+      setModalConfirmacion(false);
+      setProcesandoOrden(false);
+
+      alert(`Orden enviada exitosamente.\nEstado: ${mensajeEstado}`);
     } catch (error: any) {
+      setProcesandoOrden(false);
       alert(`Error al procesar: ${error.message}`);
     }
   };
@@ -794,7 +829,6 @@ export default function NuevaVentaPage() {
             <tbody>
               {carrito.length === 0 ? (
                 <tr>
-                  {/* Actualizamos colSpan a 5 */}
                   <td colSpan={5} className={styles.textCenter}>
                     El carrito está vacío
                   </td>
@@ -1080,24 +1114,9 @@ export default function NuevaVentaPage() {
                 <input
                   type="text"
                   className={styles.input}
-                  value={clienteSeleccionado?.direccion || ""}
-                  onChange={(e) =>
-                    setClienteSeleccionado((prev) =>
-                      prev
-                        ? { ...prev, direccion: e.target.value }
-                        : {
-                            nombre_razon_social: "Consumidor Final",
-                            nit: "CF",
-                            tipo_cliente: "particular",
-                            telefono: null,
-                            email: null,
-                            direccion: e.target.value,
-                            id_municipio: null,
-                            notas_internas: null,
-                          },
-                    )
-                  }
-                  placeholder="Dirección exacta, referencias..."
+                  value={direccionEntrega}
+                  onChange={(e) => setDireccionEntrega(e.target.value)}
+                  placeholder="Ej. 3a calle 5-20 zona 1, colonia Las Flores..."
                 />
               </div>
               <div className={styles.formGroup}>
@@ -1141,7 +1160,6 @@ export default function NuevaVentaPage() {
                 >
                   <option value="">Seleccione un repartidor...</option>
                   {listaRepartidores.map((rep) => {
-                    // Derivar estado visual en tiempo de render
                     const enRuta = rep.disponible && rep.pedidos_activos > 0;
                     const noDisponible = !rep.disponible;
 
@@ -1162,7 +1180,6 @@ export default function NuevaVentaPage() {
                   })}
                 </select>
 
-                {/* Leyenda de estados justo debajo del selector */}
                 {listaRepartidores.length > 0 && (
                   <p
                     style={{
@@ -1204,7 +1221,7 @@ export default function NuevaVentaPage() {
             modoCliente === "buscando" ||
             modoCliente === "nuevo" ||
             (esDomicilio &&
-              (!clienteSeleccionado?.direccion ||
+              (!direccionEntrega ||
                 !idRepartidor ||
                 !nombreContacto ||
                 !telefonoContacto))
@@ -1214,6 +1231,7 @@ export default function NuevaVentaPage() {
         </button>
       </div>
 
+      {/* ── MODAL: Registrar cliente nuevo ──────────────────────────────────── */}
       {modoCliente === "nuevo" && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalNuevoCliente}>
@@ -1379,7 +1397,7 @@ export default function NuevaVentaPage() {
         </div>
       )}
 
-      {/* MODAL COMPATIBILIDAD — NUEVA VENTA */}
+      {/* ── MODAL: Compatibilidad de vehículos ──────────────────────────────── */}
       {modalCompatVentaAbierto && productoCompatVenta && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalContent}>
@@ -1423,6 +1441,138 @@ export default function NuevaVentaPage() {
                 onClick={() => setModalCompatVentaAbierto(false)}
               >
                 Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL: Confirmación de orden ────────────────────────────────────── */}
+      {modalConfirmacion && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalConfirmacion}>
+            <div className={styles.modalHeader}>
+              <h3>Confirmar Orden de Venta</h3>
+              <button
+                className={styles.btnCerrarModal}
+                onClick={() => !procesandoOrden && setModalConfirmacion(false)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className={styles.modalBody}>
+              {/* Cliente */}
+              <div className={styles.confirmSeccion}>
+                <p className={styles.confirmLabel}>CLIENTE</p>
+                <p className={styles.confirmValor}>
+                  {modoCliente === "cf"
+                    ? "Consumidor Final"
+                    : clienteSeleccionado?.nombre_razon_social || "—"}
+                </p>
+                {modoCliente !== "cf" && (
+                  <p className={styles.confirmSubvalor}>
+                    NIT: {clienteSeleccionado?.nit || "CF"}
+                    {clienteSeleccionado?.telefono &&
+                      ` • Tel: ${clienteSeleccionado.telefono}`}
+                  </p>
+                )}
+              </div>
+
+              {/* Entrega */}
+              <div className={styles.confirmSeccion}>
+                <p className={styles.confirmLabel}>TIPO DE ENTREGA</p>
+                <p className={styles.confirmValor}>
+                  {esDomicilio
+                    ? "🚚 Envío a Domicilio"
+                    : "🏪 Retiro en Mostrador"}
+                </p>
+                {esDomicilio && (
+                  <div className={styles.confirmSubvalor}>
+                    <p className={styles.confirmDetalle}>
+                      📍 {direccionEntrega}
+                    </p>
+                    <p className={styles.confirmDetalle}>👤 {nombreContacto}</p>
+                    <p className={styles.confirmDetalle}>
+                      📞 {telefonoContacto}
+                    </p>
+                    {pagoContraEntrega && (
+                      <p className={styles.confirmContraEntrega}>
+                        ⚠ Pago Contra Entrega
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Productos */}
+              <div className={styles.confirmSeccion}>
+                <p className={styles.confirmLabel}>
+                  PRODUCTOS ({carrito.length}{" "}
+                  {carrito.length === 1 ? "artículo" : "artículos"})
+                </p>
+                <div className={styles.confirmProductosBox}>
+                  {carrito.map((item) => (
+                    <div key={item.uid} className={styles.confirmProductoFila}>
+                      <span>
+                        {item.es_reacondicionado && (
+                          <span className={styles.confirmBadgeReac}>REAC</span>
+                        )}
+                        {item.nombre} × {item.cantidad}
+                      </span>
+                      <span className={styles.confirmProductoMonto}>
+                        Q {item.subtotal.toFixed(2)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Totales */}
+              <div className={styles.confirmTotalesBox}>
+                {descuentoPorcentaje > 0 && (
+                  <>
+                    <div className={styles.confirmTotalFila}>
+                      <span>Subtotal</span>
+                      <span>Q {subtotalCarrito.toFixed(2)}</span>
+                    </div>
+                    <div
+                      className={`${styles.confirmTotalFila} ${styles.confirmDescuento}`}
+                    >
+                      <span>Descuento ({descuentoPorcentaje}%)</span>
+                      <span>− Q {descuentoMonto.toFixed(2)}</span>
+                    </div>
+                  </>
+                )}
+                <div
+                  className={`${styles.confirmTotalFila} ${styles.confirmTotalFinal}`}
+                >
+                  <span>Total</span>
+                  <span>Q {totalVentaConIva.toFixed(2)}</span>
+                </div>
+              </div>
+
+              {descuentoPorcentaje > 5 && (
+                <p className={styles.confirmAvisoDescuento}>
+                  ⚠ Descuento mayor al 5% — requiere autorización de supervisor
+                </p>
+              )}
+            </div>
+
+            <div className={styles.modalFooter}>
+              <button
+                className={styles.btnModalCancelar}
+                onClick={() => setModalConfirmacion(false)}
+                disabled={procesandoOrden}
+              >
+                Revisar
+              </button>
+              <button
+                className={styles.btnModalGuardar}
+                onClick={ejecutarOrden}
+                disabled={procesandoOrden}
+              >
+                {procesandoOrden ? "Procesando..." : "✓ Confirmar Orden"}
               </button>
             </div>
           </div>

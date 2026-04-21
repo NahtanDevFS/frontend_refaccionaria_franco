@@ -14,13 +14,11 @@
   border-radius: 8px;
   padding: 1.5rem;
   box-shadow: 0 2px 4px rgba(0, 51, 102, 0.05);
-  /* ── CLAVE PARA RESPONSIVE EN GRID ── */
   min-width: 0;
   box-sizing: border-box;
   width: 100%;
 }
 
-/* ── Estilos extraídos de estilos en línea ── */
 .headerFlex {
   display: flex;
   justify-content: space-between;
@@ -74,7 +72,7 @@
   overflow-x: auto;
   margin-bottom: 1.5rem;
   width: 100%;
-  -webkit-overflow-scrolling: touch; /* Suaviza el scroll en iOS */
+  -webkit-overflow-scrolling: touch;
 }
 
 .stockGreen {
@@ -463,7 +461,7 @@
   border: 1px solid #e5e7eb;
   border-radius: 6px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  z-index: 50; /* Aumentado para evitar solapamientos */
+  z-index: 50;
   max-height: 220px;
   overflow-y: auto;
 }
@@ -576,7 +574,7 @@
   font-weight: 600;
 }
 
-/* Modal cliente nuevo */
+/* ── Modal base ─────────────────────────────────────────────────────────────── */
 .modalOverlay {
   position: fixed;
   inset: 0;
@@ -597,7 +595,7 @@
   display: flex;
   flex-direction: column;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-  margin: 1rem; /* Margen de seguridad en móviles */
+  margin: 1rem;
 }
 
 .modalHeader {
@@ -730,7 +728,7 @@
 .compatUniversal {
   text-align: center;
   font-weight: bold;
-  color: #047857; /* Verde para destacar que es universal */
+  color: #047857;
   padding: 1rem 0;
 }
 
@@ -754,7 +752,6 @@
   padding-top: 1rem;
 }
 
-/* Opcional: Reutilizar clases existentes para los botones u otros textos */
 .textBold {
   font-weight: 700;
 }
@@ -779,9 +776,145 @@
   background-color: #f3f4f6;
 }
 
-/* ═══════════════════════════════════════════════════════════════════════
-   MEDIA QUERIES (RESPONSIVE)
-   ═══════════════════════════════════════════════════════════════════════ */
+/* ── Modal de confirmación de orden ─────────────────────────────────────────── */
+.modalConfirmacion {
+  background: white;
+  border-radius: 10px;
+  width: 100%;
+  max-width: 460px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.confirmSeccion {
+  padding-bottom: 0.875rem;
+  margin-bottom: 0.875rem;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.confirmSeccion:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.confirmLabel {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #9ca3af;
+  letter-spacing: 0.05em;
+  margin: 0 0 0.3rem;
+  text-transform: uppercase;
+}
+
+.confirmValor {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 0.15rem;
+}
+
+.confirmSubvalor {
+  font-size: 0.82rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+.confirmDetalle {
+  margin: 0.15rem 0 0;
+  font-size: 0.82rem;
+  color: #374151;
+}
+
+.confirmContraEntrega {
+  margin: 0.35rem 0 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #d97706;
+}
+
+.confirmProductosBox {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  margin-top: 0.4rem;
+}
+
+.confirmProductoFila {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.875rem;
+  padding: 0.25rem 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.confirmProductoFila:last-child {
+  border-bottom: none;
+}
+
+.confirmProductoMonto {
+  font-weight: 600;
+  white-space: nowrap;
+  margin-left: 0.5rem;
+}
+
+.confirmBadgeReac {
+  background: #fef3c7;
+  color: #d97706;
+  font-size: 0.65rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: 10px;
+  font-weight: 700;
+  border: 1px solid #fcd34d;
+  margin-right: 0.35rem;
+  white-space: nowrap;
+}
+
+.confirmTotalesBox {
+  background: #eff6ff;
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  margin-top: 0.5rem;
+}
+
+.confirmTotalFila {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.875rem;
+  margin-bottom: 0.3rem;
+  color: #374151;
+}
+
+.confirmTotalFila:last-child {
+  margin-bottom: 0;
+}
+
+.confirmDescuento {
+  color: #dc2626;
+}
+
+.confirmTotalFinal {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--primary-blue);
+  padding-top: 0.4rem;
+  margin-top: 0.2rem;
+  border-top: 1px solid #bfdbfe;
+}
+
+.confirmAvisoDescuento {
+  margin: 0.6rem 0 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #d97706;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 5px;
+  padding: 0.4rem 0.6rem;
+}
 
 @media (max-width: 1024px) {
   .container {
