@@ -123,7 +123,13 @@ export default function NuevaVentaPage() {
   const [telefonoContacto, setTelefonoContacto] = useState("");
   const [descuentoPorcentaje, setDescuentoPorcentaje] = useState<number>(0);
   const [listaRepartidores, setListaRepartidores] = useState<
-    { id_empleado: number; nombre: string; apellido: string }[]
+    {
+      id_empleado: number;
+      nombre: string;
+      apellido: string;
+      disponible: boolean;
+      pedidos_activos: number;
+    }[]
   >([]);
 
   // ── Ubicación ────────────────────────────────────────────────────────────────
@@ -1134,12 +1140,42 @@ export default function NuevaVentaPage() {
                   onChange={(e) => setIdRepartidor(e.target.value)}
                 >
                   <option value="">Seleccione un repartidor...</option>
-                  {listaRepartidores.map((rep) => (
-                    <option key={rep.id_empleado} value={rep.id_empleado}>
-                      {rep.nombre} {rep.apellido}
-                    </option>
-                  ))}
+                  {listaRepartidores.map((rep) => {
+                    // Derivar estado visual en tiempo de render
+                    const enRuta = rep.disponible && rep.pedidos_activos > 0;
+                    const noDisponible = !rep.disponible;
+
+                    let etiqueta = "";
+                    if (noDisponible) {
+                      etiqueta = " 🔴 No disponible";
+                    } else if (enRuta) {
+                      etiqueta = ` 🟡 En ruta (${rep.pedidos_activos} pedido${rep.pedidos_activos > 1 ? "s" : ""})`;
+                    } else {
+                      etiqueta = " 🟢 Disponible";
+                    }
+
+                    return (
+                      <option key={rep.id_empleado} value={rep.id_empleado}>
+                        {rep.nombre} {rep.apellido} —{etiqueta}
+                      </option>
+                    );
+                  })}
                 </select>
+
+                {/* Leyenda de estados justo debajo del selector */}
+                {listaRepartidores.length > 0 && (
+                  <p
+                    style={{
+                      fontSize: "0.72rem",
+                      color: "var(--text-secondary, #6b7280)",
+                      marginTop: "0.25rem",
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    🟢 Disponible &nbsp;·&nbsp; 🟡 En ruta &nbsp;·&nbsp; 🔴 No
+                    disponible
+                  </p>
+                )}
               </div>
               <div className={styles.checkboxGroup}>
                 <input

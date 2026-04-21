@@ -91,7 +91,13 @@ export const VentaService = {
   },
 
   async obtenerRepartidores(): Promise<
-    { id_empleado: number; nombre: string; apellido: string }[]
+    {
+      id_empleado: number;
+      nombre: string;
+      apellido: string;
+      disponible: boolean;
+      pedidos_activos: number;
+    }[]
   > {
     const token =
       document.cookie.match(new RegExp("(^| )token=([^;]+)"))?.[2] ?? "";
