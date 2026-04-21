@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import styles from "./Ventas.module.css";
 import { VentaService } from "@/services/venta.service";
 import {
@@ -32,6 +34,7 @@ export default function ListadoVentas() {
   const [ventas, setVentas] = useState<VentaResumen[]>([]);
   const [meta, setMeta] = useState<MetaPaginacion | null>(null);
   const [loading, setLoading] = useState(true);
+  const [generandoPdf, setGenerandoPdf] = useState(false);
   const [error, setError] = useState("");
 
   const [vendedores, setVendedores] = useState<
@@ -125,6 +128,123 @@ export default function ListadoVentas() {
     }
   };
 
+  // --- NUEVA FUNCIÓN PARA EXPORTAR A PDF ---
+  const exportarPDF = async () => {
+    setGenerandoPdf(true);
+    try {
+      // Obtenemos todos los registros para el reporte usando un límite alto (ignorando la paginación de la UI)
+      const filtrosReporte = { ...filtros, page: 1, limit: 10000 };
+      const respuesta = await VentaService.obtenerVentas(filtrosReporte);
+      const ventasReporte = respuesta.data || [];
+
+      if (ventasReporte.length === 0) {
+        alert("No hay ventas con los filtros actuales para exportar.");
+        return;
+      }
+
+      const doc = new jsPDF("landscape"); // Formato horizontal para que quepan bien las columnas
+
+      // Encabezados del Documento
+      doc.setFontSize(20);
+      doc.setTextColor(40);
+      doc.text("Refaccionaria Franco", 14, 22);
+
+      doc.setFontSize(14);
+      doc.setTextColor(100);
+      doc.text("Reporte de Ventas", 14, 30);
+
+      // Imprimir filtros aplicados si existen
+      doc.setFontSize(10);
+      let infoFiltros = `Generado el: ${new Date().toLocaleDateString("es-GT")} ${new Date().toLocaleTimeString("es-GT")}`;
+      if (filtros.fechaInicio || filtros.fechaFin) {
+        infoFiltros += ` | Período: ${filtros.fechaInicio || "Inicio"} a ${filtros.fechaFin || "Fin"}`;
+      }
+      doc.text(infoFiltros, 14, 38);
+
+      // Variables para los totales
+      let sumaSubtotal = 0;
+      let sumaDescuento = 0;
+      let sumaIVA = 0;
+      let sumaTotal = 0;
+
+      // Estructurar el cuerpo de la tabla
+      const tableBody = ventasReporte.map((v) => {
+        const subtotal = v.subtotal || v.total;
+        const descuento = v.descuento || 0;
+        const total = v.total;
+
+        // Cálculo del IVA asumiendo que el 12% ya viene incluido en el total (Guatemala)
+        const iva = total - total / 1.12;
+
+        sumaSubtotal += subtotal;
+        sumaDescuento += descuento;
+        sumaIVA += iva;
+        sumaTotal += total;
+
+        return [
+          `#${v.id_venta}`,
+          new Date(v.fecha).toLocaleDateString("es-GT"),
+          v.cliente,
+          v.vendedor || "No asignado",
+          LABELS_ESTADO[v.estado] ?? v.estado,
+          `Q ${subtotal.toFixed(2)}`,
+          `Q ${descuento.toFixed(2)}`,
+          `Q ${iva.toFixed(2)}`,
+          `Q ${total.toFixed(2)}`,
+        ];
+      });
+
+      // Añadir la fila de totales al final
+      const totalsRow = [
+        {
+          content: "TOTALES GLOBALES",
+          colSpan: 5,
+          styles: { halign: "right" as const, fontStyle: "bold" as const },
+        },
+        `Q ${sumaSubtotal.toFixed(2)}`,
+        `Q ${sumaDescuento.toFixed(2)}`,
+        `Q ${sumaIVA.toFixed(2)}`,
+        `Q ${sumaTotal.toFixed(2)}`,
+      ];
+
+      autoTable(doc, {
+        startY: 45,
+        head: [
+          [
+            "ID",
+            "Fecha",
+            "Cliente",
+            "Vendedor",
+            "Estado",
+            "Subtotal",
+            "Descto",
+            "IVA",
+            "Total",
+          ],
+        ],
+        body: tableBody,
+        foot: [totalsRow],
+        theme: "grid",
+        headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+        footStyles: {
+          fillColor: [240, 240, 240],
+          textColor: 0,
+          fontStyle: "bold",
+        },
+        styles: { fontSize: 9 },
+      });
+
+      doc.save(
+        `Reporte_Ventas_Refaccionaria_Franco_${new Date().getTime()}.pdf`,
+      );
+    } catch (error) {
+      console.error("Error al generar el PDF:", error);
+      alert("Ocurrió un error al intentar generar el reporte.");
+    } finally {
+      setGenerandoPdf(false);
+    }
+  };
+
   return (
     <div className={styles.container}>
       <h1 className={styles.title}>Historial de Ventas</h1>
@@ -134,6 +254,7 @@ export default function ListadoVentas() {
       {/* Filtros */}
       <div className={styles.card}>
         <form className={styles.filtrosGrid} onSubmit={manejarFiltros}>
+          {/* ... [Los mismos inputs de filtros del código original se mantienen igual] ... */}
           <div className={styles.filterGroup}>
             <label>ID de Venta</label>
             <input
@@ -222,11 +343,32 @@ export default function ListadoVentas() {
             >
               Limpiar
             </button>
+
+            {/* BOTÓN DE EXPORTAR A PDF CORREGIDO */}
+            <button
+              type="button"
+              className={styles.btnPrimary}
+              style={{
+                backgroundColor: "#e74c3c",
+                borderColor: "#c0392b",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "0.5rem", // Espacio entre el ícono y el texto
+                paddingTop: "0.5rem", // Ajuste fino opcional para balancear verticalmente
+                paddingBottom: "0.5rem",
+              }}
+              onClick={exportarPDF}
+              disabled={generandoPdf}
+            >
+              {generandoPdf ? "Generando..." : "Exportar PDF"}
+            </button>
           </div>
         </form>
       </div>
 
       {/* Tabla */}
+      {/* ... [El resto de la tabla se mantiene exactamente igual] ... */}
       <div className={styles.card}>
         {loading ? (
           <p className={styles.textMuted}>Cargando datos...</p>
