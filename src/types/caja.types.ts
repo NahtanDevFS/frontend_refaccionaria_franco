@@ -11,6 +11,7 @@ export interface OrdenPendienteCaja {
   cliente: string;
   total: number;
   estado: string;
+  canal: "mostrador" | "domicilio"; // ← campo nuevo
   pago_contra_entrega: boolean;
   created_at: string;
 }

@@ -169,10 +169,12 @@ export default function EntregasPage() {
     try {
       setCargandoHistorial(true);
       const data = await EntregaService.obtenerMiHistorial(desde, hasta);
-      setHistorial(data.entregas);
-      setResumen(data.resumen);
+      setHistorial(Array.isArray(data?.entregas) ? data.entregas : []);
+      setResumen(data?.resumen ?? null);
     } catch (error: any) {
-      alert("Error: " + error.message);
+      setHistorial([]);
+      setResumen(null);
+      alert("Error al cargar historial: " + error.message);
     } finally {
       setCargandoHistorial(false);
     }

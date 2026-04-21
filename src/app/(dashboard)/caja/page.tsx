@@ -391,10 +391,13 @@ export default function CajaPage() {
                           <td>{p.cliente}</td>
                           <td>{new Date(p.created_at).toLocaleString()}</td>
                           <td>
-                            {p.pago_contra_entrega ? (
+                            {p.canal === "domicilio" &&
+                            p.pago_contra_entrega ? (
                               <span className={styles.badgeCE}>
                                 Contra Entrega
                               </span>
+                            ) : p.canal === "domicilio" ? (
+                              <span className={styles.badgeCE}>Domicilio</span>
                             ) : (
                               <span className={styles.badgeNormal}>
                                 Mostrador
