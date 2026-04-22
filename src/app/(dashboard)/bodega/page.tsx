@@ -372,7 +372,7 @@ export default function BodegaPage() {
         const term = filtroReac.toLowerCase().trim();
         return (
           r.sku?.toLowerCase().includes(term) ||
-          r.nombre?.toLowerCase().includes(term)
+          r.producto?.toLowerCase().includes(term)
         );
       })
     : reacondicionados;
@@ -1214,12 +1214,10 @@ export default function BodegaPage() {
                 </thead>
                 <tbody>
                   {reacondicionadosFiltrados.map((r) => (
-                    <tr key={r.id_producto_reacondicionado}>
-                      <td className={styles.textMuted}>
-                        #{r.id_producto_reacondicionado}
-                      </td>
+                    <tr key={r.id_lote}>
+                      <td className={styles.textMuted}>#{r.id_lote}</td>
                       <td className={styles.textBold}>{r.sku}</td>
-                      <td>{r.nombre}</td>
+                      <td>{r.producto}</td>
                       <td className={styles.textBold}>{Number(r.cantidad)}</td>
                       <td className={styles.textSuccess}>
                         Q {Number(r.precio_venta_reac).toFixed(2)}
