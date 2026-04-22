@@ -251,7 +251,6 @@ export default function DetalleVentaPage() {
       {/* ── Bloque informativo de anulación (solo si está anulada) ──────────── */}
       {estaAnulada && (
         <div className={styles.bloqueAnulacion}>
-          <div className={styles.bloqueAnulacionIcono}>🔴</div>
           <div className={styles.bloqueAnulacionTexto}>
             <p className={styles.bloqueAnulacionTitulo}>Venta anulada</p>
             <p>
