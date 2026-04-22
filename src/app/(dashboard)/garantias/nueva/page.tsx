@@ -25,6 +25,16 @@ export default function NuevaGarantiaPage() {
       setDetalles([]);
 
       const data = await VentaService.obtenerVentaPorId(Number(idVenta));
+
+      // Solo ventas pagadas pueden tener reclamo de garantía
+      if (data.venta.estado !== "pagada") {
+        setError(
+          `Esta venta tiene estado "${data.venta.estado.replace(/_/g, " ")}". ` +
+            `Solo se puede reclamar garantía sobre ventas pagadas.`,
+        );
+        return;
+      }
+
       setVenta(data.venta);
       setDetalles(data.detalles);
     } catch (err: any) {
@@ -170,10 +180,10 @@ export default function NuevaGarantiaPage() {
                       {/* Caso 1: ya tiene un reclamo (cualquier estado) */}
                       {det.tiene_garantia ? (
                         <button className={styles.btnReclamado} disabled>
-                          ✓ Reclamado
+                          Reclamado
                         </button>
-                      ) : /* Caso 2: sin garantía o vencida */ sinGarantia ||
-                        !garantiaVigente ? (
+                      ) : sinGarantia || !garantiaVigente ? (
+                        /* Caso 2: sin garantía o vencida */
                         <button className={styles.btnDisabled} disabled>
                           No aplica
                         </button>
