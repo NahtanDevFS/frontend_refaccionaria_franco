@@ -108,6 +108,20 @@ export default function DetalleVentaPage() {
       setErrorAnulacion("El motivo debe tener al menos 5 caracteres.");
       return;
     }
+
+    const montoNum = montoDevolucion ? Number(montoDevolucion) : 0;
+
+    if (montoNum < 0) {
+      setErrorAnulacion("El monto a devolver no puede ser negativo.");
+      return;
+    }
+
+    if (montoNum > Number(venta.total)) {
+      setErrorAnulacion(
+        `El monto a devolver no puede superar el total de la venta (${fmtQ(venta.total)}).`,
+      );
+      return;
+    }
     setAnulando(true);
     setErrorAnulacion("");
     try {
@@ -329,8 +343,7 @@ export default function DetalleVentaPage() {
             </div>
 
             {/* Solo mostrar si la venta ya estaba pagada */}
-            {(venta.estado === "pagada" ||
-              venta.estado === "pendiente_cobro_contra_entrega") && (
+            {venta.estado === "pagada" && (
               <div className={styles.inputGroup}>
                 <label className={styles.label}>
                   Monto a devolver al cliente (Q){" "}
@@ -339,6 +352,7 @@ export default function DetalleVentaPage() {
                 <input
                   type="number"
                   min="0"
+                  max={venta.total}
                   step="0.01"
                   className={styles.input}
                   placeholder={`Máx. ${fmtQ(venta.total)}`}

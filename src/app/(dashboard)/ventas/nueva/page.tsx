@@ -1489,7 +1489,7 @@ export default function NuevaVentaPage() {
                 {esDomicilio && (
                   <div className={styles.confirmSubvalor}>
                     <p className={styles.confirmDetalle}>{direccionEntrega}</p>
-                    <p className={styles.confirmDetalle}>👤 {nombreContacto}</p>
+                    <p className={styles.confirmDetalle}>{nombreContacto}</p>
                     <p className={styles.confirmDetalle}>{telefonoContacto}</p>
                     {pagoContraEntrega && (
                       <p className={styles.confirmContraEntrega}>
