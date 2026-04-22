@@ -506,11 +506,13 @@ export default function NuevaVentaPage() {
               telefono: clienteSeleccionado.telefono,
               email: clienteSeleccionado.email,
               direccion: clienteSeleccionado.direccion,
-              id_municipio: clienteSeleccionado.id_municipio ?? undefined,
+              id_municipio: clienteSeleccionado.id_municipio,
               notas_internas: clienteSeleccionado.notas_internas,
             }
           : null,
-      canal: esDomicilio ? "domicilio" : "mostrador",
+      canal: (esDomicilio ? "domicilio" : "mostrador") as
+        | "domicilio"
+        | "mostrador",
       pago_contra_entrega: esDomicilio ? pagoContraEntrega : false,
       descuento_porcentaje: descuentoPorcentaje,
       id_repartidor:

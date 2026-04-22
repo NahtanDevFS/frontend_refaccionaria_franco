@@ -126,3 +126,203 @@
   padding-top: 0.75rem;
   margin-top: 0.75rem;
 }
+.headerActions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* ── Botón de anulación (rojo) ───────────────────────────────────────────── */
+.btnDanger {
+  background-color: #dc2626;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  font-size: 0.875rem;
+}
+
+.btnDanger:hover {
+  background-color: #b91c1c;
+}
+
+.btnDanger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Badge rojo para estado anulada ─────────────────────────────────────── */
+.badgeDanger {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.badgeDefault {
+  background-color: #e6f0fa;
+  color: #003366;
+}
+
+/* ── Bloque informativo de anulación ─────────────────────────────────────── */
+.bloqueAnulacion {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  background-color: #fff5f5;
+  border: 1px solid #fecaca;
+  border-left: 4px solid #dc2626;
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.bloqueAnulacionIcono {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.bloqueAnulacionTexto {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.bloqueAnulacionTexto p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #374151;
+}
+
+.bloqueAnulacionTitulo {
+  font-size: 1rem !important;
+  font-weight: 700;
+  color: #991b1b !important;
+}
+
+.textDevolucion {
+  font-weight: 700;
+  color: #dc2626;
+}
+
+/* ── Utilidades ──────────────────────────────────────────────────────────── */
+.textBold {
+  font-weight: 700;
+}
+
+.textMuted {
+  color: #9ca3af;
+  font-size: 0.875em;
+}
+
+/* ── Modal de anulación ──────────────────────────────────────────────────── */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 1rem;
+}
+
+.modalContent {
+  background: white;
+  border-radius: 10px;
+  width: 100%;
+  max-width: 480px;
+  padding: 1.5rem;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.modalTitle {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 0.5rem 0;
+}
+
+.modalAviso {
+  font-size: 0.825rem;
+  color: #6b7280;
+  background-color: #fef3c7;
+  border: 1px solid #fde68a;
+  border-radius: 6px;
+  padding: 0.6rem 0.875rem;
+  margin-bottom: 1.25rem;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+}
+
+.label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #374151;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.required {
+  color: #dc2626;
+}
+
+.textarea {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-family: inherit;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.errorMsg {
+  font-size: 0.8rem;
+  color: #dc2626;
+  background-color: #fee2e2;
+  border-radius: 4px;
+  padding: 0.4rem 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+}

@@ -102,12 +102,12 @@ export default function AprobacionesPage() {
   };
 
   const resolver = async (id_venta: number, aprobado: boolean) => {
-    if (
-      !confirm(
-        `¿Estás seguro de ${aprobado ? "APROBAR" : "RECHAZAR"} este descuento?`,
-      )
-    )
-      return;
+    const mensaje = aprobado
+      ? "¿Aprobar el descuento solicitado para esta venta?"
+      : "¿Rechazar el descuento solicitado? Se aplicará automáticamente un descuento base del 5% y la venta continuará.";
+
+    if (!confirm(mensaje)) return;
+
     try {
       const res = await fetch(`${API_URL}/ventas/autorizaciones/resolver`, {
         method: "POST",
@@ -257,9 +257,10 @@ export default function AprobacionesPage() {
                             </button>
                             <button
                               className={apStyles.btnRechazar}
+                              title="Rechaza el descuento solicitado y aplica un 5% automáticamente"
                               onClick={() => resolver(v.id_venta, false)}
                             >
-                              Rechazar
+                              Rechazar y aplicar un 5%
                             </button>
                           </div>
                         </td>

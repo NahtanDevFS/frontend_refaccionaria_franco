@@ -8,10 +8,15 @@ import {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
 
+/**
+ * Función ÚNICA para obtener el token.
+ * Usarla en todos los métodos del servicio evita el bug de
+ * "Bearer undefined" que ocurría cuando se duplicaba la lógica inline.
+ */
 function obtenerToken(): string {
+  if (typeof document === "undefined") return "";
   const match = document.cookie.match(new RegExp("(^| )token=([^;]+)"));
-  if (match) return match[2];
-  return "";
+  return match ? match[2] : "";
 }
 
 export const VentaService = {
@@ -24,7 +29,7 @@ export const VentaService = {
     if (filtros) {
       const params = new URLSearchParams();
       if (filtros.id_venta)
-        params.append("id_venta", filtros.id_venta.toString()); // NUEVO
+        params.append("id_venta", filtros.id_venta.toString());
       if (filtros.fechaInicio)
         params.append("fechaInicio", filtros.fechaInicio);
       if (filtros.fechaFin) params.append("fechaFin", filtros.fechaFin);
@@ -58,24 +63,17 @@ export const VentaService = {
     return data.data || data;
   },
 
-  async crearVenta(data: CrearVentaDTO): Promise<void> {
+  /**
+   * Crea una orden de venta.
+   * Llama a POST /api/ventas/orden (único endpoint de creación de ventas).
+   *
+   * Retorna el id_venta creado para poder redirigir o mostrar confirmación.
+   *
+   * ELIMINADO: crearVenta() que apuntaba a /ventas/mostrador (ruta inexistente →
+   * siempre devolvía 404). Toda creación de venta usa este método.
+   */
+  async crearOrdenVenta(payload: CrearVentaDTO): Promise<number> {
     const token = obtenerToken();
-    const response = await fetch(`${API_URL}/ventas/mostrador`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    });
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || "Error al procesar la venta");
-    }
-  },
-
-  async crearOrdenVenta(payload: any): Promise<void> {
-    const token = document.cookie.match(new RegExp("(^| )token=([^;]+)"))?.[2];
     const response = await fetch(`${API_URL}/ventas/orden`, {
       method: "POST",
       headers: {
@@ -88,6 +86,9 @@ export const VentaService = {
       const errorData = await response.json();
       throw new Error(errorData.message || "Error al crear la orden");
     }
+    const data = await response.json();
+    // El backend responde: { success: true, data: { id_venta } }
+    return data.data.id_venta as number;
   },
 
   async obtenerRepartidores(): Promise<
@@ -99,8 +100,7 @@ export const VentaService = {
       pedidos_activos: number;
     }[]
   > {
-    const token =
-      document.cookie.match(new RegExp("(^| )token=([^;]+)"))?.[2] ?? "";
+    const token = obtenerToken();
     const response = await fetch(`${API_URL}/ventas/repartidores/activos`, {
       headers: { Authorization: `Bearer ${token}` },
     });

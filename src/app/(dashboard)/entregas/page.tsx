@@ -59,11 +59,15 @@ export default function EntregasPage() {
     useState<PedidoDomicilio | null>(null);
 
   const [modalExito, setModalExito] = useState(false);
-  //const [montoCobrado, setMontoCobrado] = useState<string>("");
   const [procesando, setProcesando] = useState(false);
 
   const [modalFallo, setModalFallo] = useState(false);
   const [motivoFallo, setMotivoFallo] = useState("");
+
+  // ── Cancelaciones ───────────────────────────────────────────────────────────
+  const [confirmandoCancelacion, setConfirmandoCancelacion] = useState<
+    number | null
+  >(null);
 
   // ── Tab Historial ───────────────────────────────────────────────────────────
   const [desde, setDesde] = useState(fechaHaceNDias(6));
@@ -100,10 +104,17 @@ export default function EntregasPage() {
     }
   };
 
+  // Separar pedidos por estado
+  const pedidosPendientes = pedidos.filter(
+    (p) => p.estado_pedido === "pendiente",
+  );
+  const pedidosCancelados = pedidos.filter(
+    (p) => p.estado_pedido === "cancelado",
+  );
+
   const iniciarEntrega = (pedido: PedidoDomicilio) => {
     if (pedido.pago_contra_entrega) {
       setPedidoSeleccionado(pedido);
-      //setMontoCobrado(pedido.total.toString());
       setModalExito(true);
     } else {
       if (confirm(`¿Confirmar entrega del Pedido #${pedido.id_pedido}?`)) {
@@ -161,6 +172,18 @@ export default function EntregasPage() {
       cargarPedidos();
     } catch (error: any) {
       alert("Error: " + error.message);
+    }
+  };
+
+  const confirmarCancelacion = async (id_pedido: number) => {
+    setConfirmandoCancelacion(id_pedido);
+    try {
+      await EntregaService.confirmarCancelacion(id_pedido);
+      await cargarPedidos();
+    } catch (error: any) {
+      alert("Error: " + error.message);
+    } finally {
+      setConfirmandoCancelacion(null);
     }
   };
 
@@ -249,6 +272,12 @@ export default function EntregasPage() {
           onClick={() => setTabActual("ruta")}
         >
           Mi Ruta
+          {/* Indicador de cancelados pendientes de confirmar */}
+          {pedidosCancelados.length > 0 && (
+            <span className={styles.tabBadgeAlerta}>
+              {pedidosCancelados.length}
+            </span>
+          )}
         </button>
         <button
           className={`${styles.tabBtn} ${tabActual === "historial" ? styles.tabActive : ""}`}
@@ -265,68 +294,128 @@ export default function EntregasPage() {
         <>
           {cargandoRuta ? (
             <div className={styles.emptyState}>Cargando tu ruta...</div>
-          ) : pedidos.length === 0 ? (
-            <div className={styles.emptyState}>
-              ¡Excelente trabajo! No tienes entregas pendientes en este momento.
-            </div>
           ) : (
-            <div className={styles.grid}>
-              {pedidos.map((pedido) => (
-                <div key={pedido.id_pedido} className={styles.card}>
-                  <div className={styles.cardHeader}>
-                    <span className={styles.orderId}>
-                      Pedido #{pedido.id_pedido}
-                    </span>
-                    {pedido.pago_contra_entrega ? (
-                      <span className={styles.badgeCobrar}>
-                        COBRAR Q{pedido.total.toFixed(2)}
-                      </span>
-                    ) : (
-                      <span className={styles.badgePagado}>YA PAGADO</span>
-                    )}
-                  </div>
+            <>
+              {/* ── Sección: pedidos cancelados (aparece primero si existen) ── */}
+              {pedidosCancelados.length > 0 && (
+                <div className={styles.seccionCancelados}>
+                  <h3 className={styles.seccionCanceladosTitulo}>
+                    Pedidos cancelados — confirma que los viste
+                  </h3>
+                  <div className={styles.grid}>
+                    {pedidosCancelados.map((pedido) => (
+                      <div
+                        key={pedido.id_pedido}
+                        className={`${styles.card} ${styles.cardCancelado}`}
+                      >
+                        <div className={styles.cardHeader}>
+                          <span className={styles.orderId}>
+                            Pedido #{pedido.id_pedido}
+                          </span>
+                          <span className={styles.badgeCancelado}>
+                            CANCELADO
+                          </span>
+                        </div>
 
-                  <div className={styles.infoRow}>
-                    <strong>Recibe:</strong>{" "}
-                    {pedido.nombre_contacto || "No especificado"}
-                  </div>
-                  <div className={styles.infoRow}>
-                    <strong>Teléfono:</strong>{" "}
-                    <a href={`tel:${pedido.telefono_contacto}`}>
-                      {pedido.telefono_contacto}
-                    </a>
-                  </div>
-                  <div className={styles.infoRow}>
-                    <strong>Dirección:</strong> {pedido.direccion_entrega}
-                  </div>
+                        <div className={styles.infoRow}>
+                          <strong>Dirección:</strong> {pedido.direccion_entrega}
+                        </div>
 
-                  <div className={styles.productList}>
-                    <strong>Entregar:</strong>
-                    {pedido.productos?.map((p, i) => (
-                      <div key={i} className={styles.productItem}>
-                        <span>{p.producto}</span>
-                        <strong>x{p.cantidad}</strong>
+                        <div className={styles.productList}>
+                          <strong>Productos:</strong>
+                          {pedido.productos?.map((p, i) => (
+                            <div key={i} className={styles.productItem}>
+                              <span>{p.producto}</span>
+                              <strong>x{p.cantidad}</strong>
+                            </div>
+                          ))}
+                        </div>
+
+                        <p className={styles.canceladoAviso}>
+                          Este pedido fue cancelado por un supervisor. No
+                          realizar la entrega.
+                        </p>
+
+                        <button
+                          className={styles.btnVisto}
+                          disabled={confirmandoCancelacion === pedido.id_pedido}
+                          onClick={() => confirmarCancelacion(pedido.id_pedido)}
+                        >
+                          {confirmandoCancelacion === pedido.id_pedido
+                            ? "Confirmando..."
+                            : "Entendido, ya lo vi"}
+                        </button>
                       </div>
                     ))}
                   </div>
-
-                  <div className={styles.actionButtons}>
-                    <button
-                      className={styles.btnSuccess}
-                      onClick={() => iniciarEntrega(pedido)}
-                    >
-                      Entregado
-                    </button>
-                    <button
-                      className={styles.btnDanger}
-                      onClick={() => iniciarFallo(pedido)}
-                    >
-                      Fallida
-                    </button>
-                  </div>
                 </div>
-              ))}
-            </div>
+              )}
+
+              {/* ── Sección: pedidos activos en ruta ────────────────────── */}
+              {pedidosPendientes.length === 0 ? (
+                <div className={styles.emptyState}>
+                  No tienes entregas pendientes en este momento.
+                </div>
+              ) : (
+                <div className={styles.grid}>
+                  {pedidosPendientes.map((pedido) => (
+                    <div key={pedido.id_pedido} className={styles.card}>
+                      <div className={styles.cardHeader}>
+                        <span className={styles.orderId}>
+                          Pedido #{pedido.id_pedido}
+                        </span>
+                        {pedido.pago_contra_entrega ? (
+                          <span className={styles.badgeCobrar}>
+                            COBRAR Q{pedido.total.toFixed(2)}
+                          </span>
+                        ) : (
+                          <span className={styles.badgePagado}>YA PAGADO</span>
+                        )}
+                      </div>
+
+                      <div className={styles.infoRow}>
+                        <strong>Recibe:</strong>{" "}
+                        {pedido.nombre_contacto || "No especificado"}
+                      </div>
+                      <div className={styles.infoRow}>
+                        <strong>Teléfono:</strong>{" "}
+                        <a href={`tel:${pedido.telefono_contacto}`}>
+                          {pedido.telefono_contacto}
+                        </a>
+                      </div>
+                      <div className={styles.infoRow}>
+                        <strong>Dirección:</strong> {pedido.direccion_entrega}
+                      </div>
+
+                      <div className={styles.productList}>
+                        <strong>Entregar:</strong>
+                        {pedido.productos?.map((p, i) => (
+                          <div key={i} className={styles.productItem}>
+                            <span>{p.producto}</span>
+                            <strong>x{p.cantidad}</strong>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className={styles.actionButtons}>
+                        <button
+                          className={styles.btnSuccess}
+                          onClick={() => iniciarEntrega(pedido)}
+                        >
+                          Entregado
+                        </button>
+                        <button
+                          className={styles.btnDanger}
+                          onClick={() => iniciarFallo(pedido)}
+                        >
+                          Fallida
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </>
       )}
@@ -336,7 +425,6 @@ export default function EntregasPage() {
          ══════════════════════════════════════════════════════════════════════ */}
       {tabActual === "historial" && (
         <div className={styles.historialContainer}>
-          {/* Filtro de fechas */}
           <div className={styles.historialFiltros}>
             <div className={styles.filtroGroup}>
               <label className={styles.filtroLabel}>Desde</label>
@@ -372,7 +460,6 @@ export default function EntregasPage() {
             <div className={styles.emptyState}>Cargando historial...</div>
           ) : (
             <>
-              {/* Resumen estadístico */}
               {resumen && (
                 <div className={styles.resumenGrid}>
                   <div
@@ -402,7 +489,6 @@ export default function EntregasPage() {
                 </div>
               )}
 
-              {/* Lista de entregas */}
               {historial.length === 0 ? (
                 <div className={styles.emptyState}>
                   No hay entregas registradas en este período.
@@ -478,7 +564,7 @@ export default function EntregasPage() {
       )}
 
       {/* ══════════════════════════════════════════════════════════════════════
-          MODALES (compartidos entre tabs)
+          MODALES
          ══════════════════════════════════════════════════════════════════════ */}
 
       {/* ── Modal Cobro ──────────────────────────────────────────────────── */}
@@ -490,7 +576,6 @@ export default function EntregasPage() {
               El cliente debe pagar{" "}
               <strong>Q{pedidoSeleccionado.total.toFixed(2)}</strong>.
             </p>
-
             <div className={styles.modalActions}>
               <button
                 className={styles.btnCancelGray}
@@ -588,12 +673,10 @@ export default function EntregasPage() {
                 <div className="imp-empresa">
                   <h2>Refaccionaria Franco</h2>
                 </div>
-
                 <div className="imp-numero">
                   Comprobante No.{" "}
                   {String(modalComprobante.id_pago).padStart(8, "0")}
                 </div>
-
                 <div className="imp-seccion">
                   <h3>Datos del cobro</h3>
                   <div className="imp-fila">
@@ -633,7 +716,6 @@ export default function EntregasPage() {
                     </div>
                   )}
                 </div>
-
                 <div className="imp-seccion">
                   <h3>Productos</h3>
                   <table>
@@ -664,7 +746,6 @@ export default function EntregasPage() {
                     </tbody>
                   </table>
                 </div>
-
                 <div className="imp-seccion">
                   <h3>Resumen</h3>
                   <div className="imp-fila">
@@ -684,7 +765,6 @@ export default function EntregasPage() {
                     <span>Q{modalComprobante.total.toFixed(2)}</span>
                   </div>
                 </div>
-
                 <div className="imp-footer">
                   Gracias por su compra — Refaccionaria Franco
                 </div>

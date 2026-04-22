@@ -13,13 +13,14 @@ export interface ProductoPedido {
 export interface PedidoDomicilio {
   id_pedido: number;
   id_venta: number;
-  direccion_entrega: string; // viene de destinatario.direccion_texto
-  estado_pedido: string;
-  nombre_contacto: string; // viene de destinatario.nombre
-  telefono_contacto: string; // viene de destinatario.telefono
+  estado_pedido: string; // 'pendiente' | 'cancelado'
+  fecha_visto_cancelacion: string | null;
+  direccion_entrega: string;
+  nombre_contacto: string;
+  telefono_contacto: string;
   total: number;
   pago_contra_entrega: boolean;
-  productos: ProductoPedido[];
+  productos: { producto: string; cantidad: number }[];
 }
 
 export interface MarcarEntregaExitosaDTO {

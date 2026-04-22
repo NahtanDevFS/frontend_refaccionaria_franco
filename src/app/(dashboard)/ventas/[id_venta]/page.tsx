@@ -5,36 +5,88 @@ import { useParams, useRouter } from "next/navigation";
 import styles from "./VentaDetalle.module.css";
 import { VentaService } from "@/services/venta.service";
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function fmtFecha(iso: string) {
+  return new Date(iso).toLocaleString("es-GT", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function fmtQ(n: number | string) {
+  return `Q ${Number(n).toFixed(2)}`;
+}
+
+function getToken(): string {
+  if (typeof document === "undefined") return "";
+  return document.cookie.match(new RegExp("(^| )token=([^;]+)"))?.[2] ?? "";
+}
+
+function getRol(): string {
+  if (typeof window === "undefined") return "";
+  try {
+    return JSON.parse(localStorage.getItem("usuario") ?? "{}").rol ?? "";
+  } catch {
+    return "";
+  }
+}
+
+const ROLES_SUPERVISOR = [
+  "ADMINISTRADOR",
+  "GERENTE_REGIONAL",
+  "SUPERVISOR_SUCURSAL",
+];
+
+const LABELS_ESTADO: Record<string, string> = {
+  pagada: "Pagada",
+  pendiente_pago: "Pendiente de Pago",
+  pendiente_autorizacion: "Pendiente Autorización",
+  pendiente_cobro_contra_entrega: "Contra Entrega",
+  anulada: "Anulada",
+  rechazada: "Rechazada",
+};
+
+// ── Componente ────────────────────────────────────────────────────────────────
 export default function DetalleVentaPage() {
   const params = useParams();
   const router = useRouter();
+  const id_venta = Number(params?.id_venta);
 
-  // ── Lectura segura del parámetro ────────────────────────────────────────────
-  // useParams() puede devolver string | string[] | undefined en el primer render.
-  // Convertimos a número solo cuando tengamos un string válido y no vacío.
-  const rawId = Array.isArray(params?.id_venta)
-    ? params.id_venta[0]
-    : params?.id_venta;
-  const id_venta = rawId && rawId !== "" ? Number(rawId) : null;
+  const API_URL =
+    process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
 
+  // ── Datos de la venta
   const [data, setData] = useState<{ venta: any; detalles: any[] } | null>(
     null,
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // ── Sesión
+  const [esSupervisor, setEsSupervisor] = useState(false);
+
+  // ── Modal de anulación
+  const [modalAnulacion, setModalAnulacion] = useState(false);
+  const [motivoAnulacion, setMotivoAnulacion] = useState("");
+  const [montoDevolucion, setMontoDevolucion] = useState("");
+  const [anulando, setAnulando] = useState(false);
+  const [errorAnulacion, setErrorAnulacion] = useState("");
+
+  // ── Carga inicial ─────────────────────────────────────────────────────────
   useEffect(() => {
-    // Solo ejecutar cuando id_venta sea un número entero válido
-    if (!id_venta || !Number.isInteger(id_venta) || id_venta <= 0) return;
-    cargarDetalleVenta();
+    setEsSupervisor(ROLES_SUPERVISOR.includes(getRol()));
+    if (id_venta > 0) cargarVenta();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id_venta]);
 
-  const cargarDetalleVenta = async () => {
+  const cargarVenta = async () => {
+    setLoading(true);
+    setError("");
     try {
-      setLoading(true);
-      setError("");
-      const respuesta = await VentaService.obtenerVentaPorId(id_venta!);
+      const respuesta = await VentaService.obtenerVentaPorId(id_venta);
       setData(respuesta);
     } catch (err: any) {
       setError(err.message);
@@ -43,7 +95,46 @@ export default function DetalleVentaPage() {
     }
   };
 
-  // ── Estados de carga / error ────────────────────────────────────────────────
+  // ── Anulación ─────────────────────────────────────────────────────────────
+  const abrirModalAnulacion = () => {
+    setMotivoAnulacion("");
+    setMontoDevolucion("");
+    setErrorAnulacion("");
+    setModalAnulacion(true);
+  };
+
+  const confirmarAnulacion = async () => {
+    if (motivoAnulacion.trim().length < 5) {
+      setErrorAnulacion("El motivo debe tener al menos 5 caracteres.");
+      return;
+    }
+    setAnulando(true);
+    setErrorAnulacion("");
+    try {
+      const res = await fetch(`${API_URL}/ventas/${id_venta}/anular`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${getToken()}`,
+        },
+        body: JSON.stringify({
+          motivo_anulacion: motivoAnulacion.trim(),
+          monto_devolucion: montoDevolucion ? Number(montoDevolucion) : 0,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success)
+        throw new Error(json.message || "Error al anular");
+      setModalAnulacion(false);
+      await cargarVenta(); // recargar para mostrar el bloque informativo
+    } catch (err: any) {
+      setErrorAnulacion(err.message);
+    } finally {
+      setAnulando(false);
+    }
+  };
+
+  // ── Guardas de renderizado ────────────────────────────────────────────────
   if (!id_venta || id_venta <= 0)
     return (
       <div className={styles.container}>
@@ -73,35 +164,77 @@ export default function DetalleVentaPage() {
     );
 
   const { venta, detalles } = data;
+  const estaAnulada = venta.estado === "anulada";
+  const puedeAnular = esSupervisor && !estaAnulada;
 
   return (
     <div className={styles.container}>
+      {/* ── Encabezado ──────────────────────────────────────────────────────── */}
       <div className={styles.header}>
         <h1 className={styles.title}>Detalle de Venta #{venta.id_venta}</h1>
-        <button onClick={() => router.back()} className={styles.btnSecondary}>
-          &larr; Volver al Historial
-        </button>
+        <div className={styles.headerActions}>
+          {puedeAnular && (
+            <button onClick={abrirModalAnulacion} className={styles.btnDanger}>
+              Anular venta
+            </button>
+          )}
+          <button onClick={() => router.back()} className={styles.btnSecondary}>
+            ← Volver al Historial
+          </button>
+        </div>
       </div>
 
+      {/* ── Bloque informativo de anulación (solo si está anulada) ──────────── */}
+      {estaAnulada && (
+        <div className={styles.bloqueAnulacion}>
+          <div className={styles.bloqueAnulacionIcono}>🔴</div>
+          <div className={styles.bloqueAnulacionTexto}>
+            <p className={styles.bloqueAnulacionTitulo}>Venta anulada</p>
+            <p>
+              <strong>Anulada por:</strong>{" "}
+              {venta.anulado_por ?? "No registrado"}{" "}
+              <span className={styles.textMuted}>·</span>{" "}
+              {venta.updated_at ? fmtFecha(venta.updated_at) : "—"}
+            </p>
+            <p>
+              <strong>Motivo:</strong>{" "}
+              <em>{venta.motivo_anulacion ?? "Sin motivo registrado"}</em>
+            </p>
+            {Number(venta.monto_devolucion) > 0 && (
+              <p>
+                <strong>Monto a devolver al cliente:</strong>{" "}
+                <span className={styles.textDevolucion}>
+                  {fmtQ(venta.monto_devolucion)}
+                </span>
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Cards de información ─────────────────────────────────────────────── */}
       <div className={styles.gridContainer}>
         {/* Información General */}
         <div className={styles.card}>
           <h3>Información General</h3>
           <p>
-            <strong>Fecha:</strong>{" "}
-            {new Date(venta.created_at || venta.fecha).toLocaleString()}
+            <strong>Fecha:</strong> {fmtFecha(venta.created_at || venta.fecha)}
           </p>
           <p>
             <strong>Estado:</strong>{" "}
-            <span className={styles.badge}>
-              {venta.estado?.replace(/_/g, " ").toUpperCase()}
+            <span
+              className={`${styles.badge} ${estaAnulada ? styles.badgeDanger : styles.badgeDefault}`}
+            >
+              {LABELS_ESTADO[venta.estado] ??
+                venta.estado?.replace(/_/g, " ").toUpperCase()}
             </span>
           </p>
           <p>
-            <strong>Canal:</strong> {venta.canal || "Mostrador"}
+            <strong>Canal:</strong>{" "}
+            {venta.canal === "domicilio" ? "Domicilio" : "Mostrador"}
           </p>
           <p>
-            <strong>Vendedor (ID):</strong>{" "}
+            <strong>Vendedor:</strong>{" "}
             {venta.vendedor || venta.id_vendedor || "No registrado"}
           </p>
         </div>
@@ -113,9 +246,29 @@ export default function DetalleVentaPage() {
             <strong>Nombre:</strong> {venta.cliente || "Consumidor Final"}
           </p>
         </div>
+
+        {/* Totales */}
+        <div className={styles.card}>
+          <h3>Totales</h3>
+          <p>
+            <strong>Subtotal:</strong> {fmtQ(venta.subtotal)}
+          </p>
+          {Number(venta.descuento_monto) > 0 && (
+            <p>
+              <strong>Descuento:</strong> - {fmtQ(venta.descuento_monto)}
+            </p>
+          )}
+          <p>
+            <strong>IVA (12%):</strong> {fmtQ(venta.monto_iva)}
+          </p>
+          <p>
+            <strong>Total:</strong>{" "}
+            <span className={styles.textBold}>{fmtQ(venta.total)}</span>
+          </p>
+        </div>
       </div>
 
-      {/* Tabla de Productos */}
+      {/* ── Tabla de productos ───────────────────────────────────────────────── */}
       <div className={styles.card} style={{ marginTop: "2rem" }}>
         <h3>Productos</h3>
         <div style={{ overflowX: "auto" }}>
@@ -131,25 +284,19 @@ export default function DetalleVentaPage() {
             </thead>
             <tbody>
               {detalles && detalles.length > 0 ? (
-                detalles.map((d: any, index: number) => (
-                  <tr key={index}>
-                    <td>
-                      {d.producto ||
-                        d.nombre_producto ||
-                        `Producto #${d.id_producto}`}
-                    </td>
-                    <td>{d.sku || "—"}</td>
-                    <td>{Number(d.cantidad).toFixed(0)}</td>
-                    <td>Q {Number(d.precio_unitario).toFixed(2)}</td>
-                    <td>
-                      <strong>Q {Number(d.subtotal_linea).toFixed(2)}</strong>
-                    </td>
+                detalles.map((d: any) => (
+                  <tr key={d.id_detalle}>
+                    <td>{d.producto}</td>
+                    <td>{d.sku}</td>
+                    <td>{d.cantidad}</td>
+                    <td>{fmtQ(d.precio_unitario)}</td>
+                    <td>{fmtQ(d.subtotal_linea)}</td>
                   </tr>
                 ))
               ) : (
                 <tr>
                   <td colSpan={5} style={{ textAlign: "center" }}>
-                    No hay detalles registrados.
+                    Sin productos registrados.
                   </td>
                 </tr>
               )}
@@ -158,38 +305,72 @@ export default function DetalleVentaPage() {
         </div>
       </div>
 
-      {/* Resumen de Totales */}
-      <div className={styles.totalsContainer}>
-        <div className={styles.totalsCard}>
-          <div className={styles.totalRow}>
-            <span>Subtotal (Sin IVA):</span>
-            <span>
-              Q{" "}
-              {(
-                Number(venta.total) +
-                Number(venta.descuento_monto || 0) -
-                Number(venta.monto_iva || 0)
-              ).toFixed(2)}
-            </span>
-          </div>
-          {Number(venta.descuento_monto) > 0 && (
-            <div className={styles.totalRow}>
-              <span>Descuento:</span>
-              <span>- Q {Number(venta.descuento_monto).toFixed(2)}</span>
+      {/* ── Modal de anulación ───────────────────────────────────────────────── */}
+      {modalAnulacion && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalContent}>
+            <h2 className={styles.modalTitle}>Anular Venta #{id_venta}</h2>
+            <p className={styles.modalAviso}>
+              Esta acción es irreversible. El stock de todos los productos será
+              reintegrado automáticamente.
+            </p>
+
+            <div className={styles.inputGroup}>
+              <label className={styles.label}>
+                Motivo de anulación <span className={styles.required}>*</span>
+              </label>
+              <textarea
+                className={styles.textarea}
+                rows={3}
+                placeholder="Ej. El cliente devolvió los productos, precio registrado incorrectamente..."
+                value={motivoAnulacion}
+                onChange={(e) => setMotivoAnulacion(e.target.value)}
+              />
             </div>
-          )}
-          {Number(venta.monto_iva) > 0 && (
-            <div className={styles.totalRow}>
-              <span>IVA:</span>
-              <span>Q {Number(venta.monto_iva).toFixed(2)}</span>
+
+            {/* Solo mostrar si la venta ya estaba pagada */}
+            {(venta.estado === "pagada" ||
+              venta.estado === "pendiente_cobro_contra_entrega") && (
+              <div className={styles.inputGroup}>
+                <label className={styles.label}>
+                  Monto a devolver al cliente (Q){" "}
+                  <span className={styles.textMuted}>— opcional</span>
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className={styles.input}
+                  placeholder={`Máx. ${fmtQ(venta.total)}`}
+                  value={montoDevolucion}
+                  onChange={(e) => setMontoDevolucion(e.target.value)}
+                />
+              </div>
+            )}
+
+            {errorAnulacion && (
+              <p className={styles.errorMsg}>{errorAnulacion}</p>
+            )}
+
+            <div className={styles.modalActions}>
+              <button
+                className={styles.btnDanger}
+                onClick={confirmarAnulacion}
+                disabled={anulando}
+              >
+                {anulando ? "Anulando..." : "Confirmar anulación"}
+              </button>
+              <button
+                className={styles.btnSecondary}
+                onClick={() => setModalAnulacion(false)}
+                disabled={anulando}
+              >
+                Cancelar
+              </button>
             </div>
-          )}
-          <div className={`${styles.totalRow} ${styles.granTotal}`}>
-            <span>Total:</span>
-            <span>Q {Number(venta.total).toFixed(2)}</span>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

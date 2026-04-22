@@ -635,6 +635,74 @@
   border-top: 1px dashed #e5e7eb;
 }
 
+/* ── Sección de pedidos cancelados ───────────────────────────────────────── */
+.seccionCancelados {
+  margin-bottom: 2rem;
+}
+
+.seccionCanceladosTitulo {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #92400e;
+  background-color: #fef3c7;
+  border: 1px solid #fde68a;
+  border-left: 4px solid #f59e0b;
+  border-radius: 6px;
+  padding: 0.6rem 1rem;
+  margin-bottom: 1rem;
+}
+
+/* ── Tarjeta de pedido cancelado ─────────────────────────────────────────── */
+.cardCancelado {
+  border: 1px solid #fecaca !important;
+  border-left: 4px solid #dc2626 !important;
+  background-color: #fff5f5 !important;
+  opacity: 0.95;
+}
+
+.badgeCancelado {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  background-color: #fee2e2;
+  color: #991b1b;
+  border-radius: 9999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.canceladoAviso {
+  font-size: 0.8rem;
+  color: #b91c1c;
+  background-color: #fee2e2;
+  border-radius: 4px;
+  padding: 0.4rem 0.6rem;
+  margin: 0.5rem 0 0.75rem 0;
+}
+
+/* ── Botón "Visto" ───────────────────────────────────────────────────────── */
+.btnVisto {
+  width: 100%;
+  padding: 0.6rem;
+  background-color: #1d4ed8;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btnVisto:hover {
+  background-color: #1e40af;
+}
+
+.btnVisto:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* ── Estado vacío ────────────────────────────────────────────────────────────── */
 
 .emptyState {

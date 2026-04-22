@@ -92,4 +92,18 @@ export const EntregaService = {
       throw new Error(data.message || "Error al obtener historial");
     return data.data as RespuestaHistorial;
   },
+
+  async confirmarCancelacion(id_pedido: number): Promise<void> {
+    const token = obtenerToken();
+    const res = await fetch(
+      `${API_URL}/entregas/${id_pedido}/confirmar-cancelacion`,
+      {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    );
+    const data = await res.json();
+    if (!res.ok || !data.success)
+      throw new Error(data.message || "Error al confirmar cancelación");
+  },
 };
