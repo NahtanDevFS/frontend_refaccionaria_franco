@@ -52,8 +52,8 @@ const MENU_CONFIG: MenuSection[] = [
         path: "/ventas/historial",
         rolesAllowed: [
           "ADMINISTRADOR",
-          "GERENTE_REGIONAL",
           "SUPERVISOR_SUCURSAL",
+          // GERENTE_REGIONAL ya NO tiene acceso al historial de ventas
         ],
       },
       {
@@ -73,7 +73,7 @@ const MENU_CONFIG: MenuSection[] = [
           "ADMINISTRADOR",
           "SUPERVISOR_SUCURSAL",
           "VENDEDOR",
-          "CAJERO",
+          // CAJERO ya NO puede reclamar garantías
         ],
       },
       {
@@ -86,8 +86,8 @@ const MENU_CONFIG: MenuSection[] = [
         path: "/garantias/historial",
         rolesAllowed: [
           "ADMINISTRADOR",
-          "GERENTE_REGIONAL",
           "SUPERVISOR_SUCURSAL",
+          // GERENTE_REGIONAL ya NO tiene acceso al historial de garantías
         ],
       },
     ],
@@ -98,12 +98,20 @@ const MENU_CONFIG: MenuSection[] = [
       {
         title: "Caja y Arqueos",
         path: "/caja",
-        rolesAllowed: ["ADMINISTRADOR", "CAJERO", "SUPERVISOR_SUCURSAL"],
+        rolesAllowed: [
+          "ADMINISTRADOR",
+          "CAJERO",
+          // SUPERVISOR_SUCURSAL ya NO tiene acceso a caja
+        ],
       },
       {
         title: "Bodega e Inventario",
         path: "/bodega",
-        rolesAllowed: ["ADMINISTRADOR", "BODEGUERO", "SUPERVISOR_SUCURSAL"],
+        rolesAllowed: [
+          "ADMINISTRADOR",
+          "BODEGUERO",
+          // SUPERVISOR_SUCURSAL ya NO tiene acceso a bodega
+        ],
       },
       {
         title: "Entregas a Domicilio",
@@ -198,45 +206,43 @@ export default function Sidebar() {
         {/* Bloque de usuario */}
         <div className={styles.userInfo}>
           <div className={styles.userRow}>
-            <span className={styles.userIcon}></span>
             <span className={styles.userName}>{usuario.username}</span>
           </div>
           <div className={styles.userRow}>
-            <span className={styles.userIcon}></span>
             <span className={styles.userRole}>
               {usuario.rol.replace(/_/g, " ")}
             </span>
           </div>
           <div className={styles.userRow}>
-            <span className={styles.userIcon}></span>
             <span className={styles.userSucursal}>
               {usuario.nombre_sucursal}
             </span>
           </div>
         </div>
 
+        {/* Navegación filtrada por rol */}
         <nav className={styles.nav}>
           {MENU_CONFIG.map((group, index) => {
-            const allowedItems = group.items.filter((item) =>
+            const itemsPermitidos = group.items.filter((item) =>
               item.rolesAllowed.includes(usuario.rol),
             );
-            if (allowedItems.length === 0) return null;
+            // Si el rol no tiene ningún ítem en esta sección, no renderizar
+            if (itemsPermitidos.length === 0) return null;
 
             return (
               <div key={index} className={styles.menuSection}>
                 <div className={styles.sectionTitle}>{group.section}</div>
-                {allowedItems.map((item) => {
-                  const isActive = pathname.startsWith(item.path);
-                  return (
-                    <Link
-                      key={item.path}
-                      href={item.path}
-                      className={`${styles.navItem} ${isActive ? styles.active : ""}`}
-                    >
-                      {item.title}
-                    </Link>
-                  );
-                })}
+                {itemsPermitidos.map((item) => (
+                  <Link
+                    key={item.path}
+                    href={item.path}
+                    className={`${styles.navItem} ${
+                      pathname.startsWith(item.path) ? styles.active : ""
+                    }`}
+                  >
+                    {item.title}
+                  </Link>
+                ))}
               </div>
             );
           })}
