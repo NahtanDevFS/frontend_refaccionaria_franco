@@ -9,6 +9,8 @@ export interface ResolverGarantiaDTO {
   id_garantia: number;
   aprobado: boolean;
   resolucion: string;
+  condicion_recibido?: string;
+  notas_inspeccion?: string;
 }
 
 export interface GarantiaPendiente {
