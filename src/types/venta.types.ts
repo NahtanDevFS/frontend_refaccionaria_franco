@@ -71,6 +71,8 @@ export interface VentaResumen {
   subtotal: number;
   descuento: number;
   monto_iva: number;
+  estado_pedido: string | null;
+  motivo_fallido: string | null;
 }
 
 export interface FiltrosHistorialVentas {

@@ -235,3 +235,15 @@
   color: #9ca3af;
   margin-left: 0.25rem;
 }
+
+.badgeEntregaFallida {
+  display: inline-block;
+  padding: 0.15rem 0.45rem;
+  border-radius: 9999px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  background-color: #fff7ed;
+  color: #c2410c;
+  border: 1px solid #fed7aa;
+  white-space: nowrap;
+}

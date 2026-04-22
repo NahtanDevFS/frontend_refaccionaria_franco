@@ -416,11 +416,26 @@ export default function ListadoVentas() {
                           Q {v.total.toFixed(2)}
                         </td>
                         <td>
-                          <span
-                            className={`${styles.badge} ${styles[ESTILOS_ESTADO[v.estado] ?? ""] || ""}`}
+                          <div
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: "0.25rem",
+                            }}
                           >
-                            {LABELS_ESTADO[v.estado] ?? v.estado}
-                          </span>
+                            <span
+                              className={
+                                styles[ESTILOS_ESTADO[v.estado] ?? "badge"]
+                              }
+                            >
+                              {LABELS_ESTADO[v.estado] ?? v.estado}
+                            </span>
+                            {v.estado_pedido === "fallido" && (
+                              <span className={styles.badgeEntregaFallida}>
+                                ⚠ Entrega fallida
+                              </span>
+                            )}
+                          </div>
                         </td>
                         <td>
                           <Link

@@ -65,6 +65,53 @@ export default function DetalleVentaPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const [reagendando, setReagendando] = useState(false);
+  const [idRepartidorNuevo, setIdRepartidorNuevo] = useState("");
+  const [repartidores, setRepartidores] = useState<any[]>([]);
+  const [errorReagenda, setErrorReagenda] = useState("");
+
+  const cargarRepartidores = async () => {
+    try {
+      const res = await fetch(`${API_URL}/ventas/repartidores/activos`, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      const json = await res.json();
+      if (json.success) setRepartidores(json.data ?? []);
+    } catch {
+      /* silencioso */
+    }
+  };
+
+  const reagendarEntrega = async () => {
+    if (!idRepartidorNuevo) {
+      setErrorReagenda("Selecciona un repartidor.");
+      return;
+    }
+    setReagendando(true);
+    setErrorReagenda("");
+    try {
+      const res = await fetch(
+        `${API_URL}/ventas/${id_venta}/reagendar-entrega`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${getToken()}`,
+          },
+          body: JSON.stringify({ id_repartidor: Number(idRepartidorNuevo) }),
+        },
+      );
+      const json = await res.json();
+      if (!res.ok || !json.success) throw new Error(json.message);
+      setIdRepartidorNuevo("");
+      await cargarVenta(); // recarga para limpiar el card
+    } catch (err: any) {
+      setErrorReagenda(err.message);
+    } finally {
+      setReagendando(false);
+    }
+  };
+
   // ── Sesión
   const [esSupervisor, setEsSupervisor] = useState(false);
 
@@ -77,9 +124,12 @@ export default function DetalleVentaPage() {
 
   // ── Carga inicial ─────────────────────────────────────────────────────────
   useEffect(() => {
-    setEsSupervisor(ROLES_SUPERVISOR.includes(getRol()));
-    if (id_venta > 0) cargarVenta();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const esSup = ROLES_SUPERVISOR.includes(getRol());
+    setEsSupervisor(esSup);
+    if (id_venta > 0) {
+      cargarVenta();
+      if (esSup) cargarRepartidores(); // ← agregar
+    }
   }, [id_venta]);
 
   const cargarVenta = async () => {
@@ -385,6 +435,44 @@ export default function DetalleVentaPage() {
           </div>
         </div>
       )}
+      {esSupervisor &&
+        venta.canal === "domicilio" &&
+        venta.estado_pedido === "fallido" && (
+          <div className={styles.bloqueReagenda}>
+            <div className={styles.bloqueReagendaIcono}>⚠️</div>
+            <div className={styles.bloqueReagendaTexto}>
+              <p className={styles.bloqueReagendaTitulo}>Entrega fallida</p>
+              <p>
+                <strong>Motivo:</strong> <em>{venta.motivo_fallido}</em>
+              </p>
+              <div className={styles.reagendaForm}>
+                <select
+                  className={styles.input}
+                  value={idRepartidorNuevo}
+                  onChange={(e) => setIdRepartidorNuevo(e.target.value)}
+                >
+                  <option value="">— Seleccionar repartidor —</option>
+                  {repartidores.map((r: any) => (
+                    <option key={r.id_empleado} value={r.id_empleado}>
+                      {r.nombre} {r.apellido}
+                      {!r.disponible ? " (no disponible)" : ""}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  className={styles.btnPrimary}
+                  onClick={reagendarEntrega}
+                  disabled={reagendando}
+                >
+                  {reagendando ? "Reagendando..." : "Reagendar entrega"}
+                </button>
+              </div>
+              {errorReagenda && (
+                <p className={styles.errorMsg}>{errorReagenda}</p>
+              )}
+            </div>
+          </div>
+        )}
     </div>
   );
 }
