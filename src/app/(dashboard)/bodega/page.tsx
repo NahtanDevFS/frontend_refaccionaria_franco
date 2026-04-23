@@ -524,7 +524,7 @@ export default function BodegaPage() {
                 </thead>
                 <tbody>
                   {inventario.map((item) => (
-                    <React.Fragment key={item.id_inventario}>
+                    <React.Fragment key={item.id_producto_sucursal}>
                       {/* ── Fila principal del producto ── */}
                       <tr
                         className={item.requiere_reorden ? styles.rowAlert : ""}

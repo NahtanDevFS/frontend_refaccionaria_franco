@@ -10,7 +10,7 @@ export interface LoteInventario {
 }
 
 export interface InventarioBodega {
-  id_inventario: number;
+  id_producto_sucursal: number;
   id_producto: number;
   sku: string;
   nombre: string;
