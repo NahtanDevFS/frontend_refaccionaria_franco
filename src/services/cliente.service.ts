@@ -31,4 +31,9 @@ export const ClienteService = {
     // El controller devuelve { success: true, data: [...] }
     return Array.isArray(data) ? data : (data.data ?? []);
   },
+
+  async buscarPorTelefono(telefono: string): Promise<boolean> {
+    const resultados = await ClienteService.buscarClientes(telefono);
+    return resultados.some((c: any) => c.telefono === telefono);
+  },
 };

@@ -370,10 +370,8 @@ export default function HistorialGarantiasPage() {
                     <div className={styles.timelineContent}>
                       <h3>4. Reacondicionamiento</h3>
                       <p>
-                        Pieza enviada a inventario de segunda. Estado:{" "}
-                        <span style={{ textTransform: "capitalize" }}>
-                          {selectedGarantia.estado_lote?.replace("_", " ")}
-                        </span>
+                        Pieza enviada a inventario de segunda y disponible para
+                        reventa.
                       </p>
                     </div>
                   </div>

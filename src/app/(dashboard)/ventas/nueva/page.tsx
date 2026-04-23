@@ -46,15 +46,19 @@ interface ClienteDB {
   notas_internas: string | null;
 }
 
-// ─── Componente ───────────────────────────────────────────────────────────────
 export default function NuevaVentaPage() {
-  // ── Sesión ──────────────────────────────────────────────────────────────────
   const [usuarioSesion, setUsuarioSesion] = useState<{
     id_empleado: number;
     id_sucursal: number;
   } | null>(null);
 
-  // ── Búsqueda de productos ────────────────────────────────────────────────────
+  // ── Errores del modal de nuevo cliente ───────────────────────────────────────
+  const [erroresCliente, setErroresCliente] = useState<{
+    nit?: string;
+    telefono?: string;
+    email?: string;
+  }>({});
+
   const [tipoBusqueda, setTipoBusqueda] = useState<"texto" | "vehiculo">(
     "texto",
   );
@@ -83,20 +87,17 @@ export default function NuevaVentaPage() {
   >([]);
   const [carrito, setCarrito] = useState<ItemCarrito[]>([]);
 
-  // ── Estado del cliente ────────────────────────────────────────
   type ModoCliente = "cf" | "buscando" | "seleccionado" | "nuevo";
   const [modoCliente, setModoCliente] = useState<ModoCliente>("cf");
   const [clienteSeleccionado, setClienteSeleccionado] =
     useState<ClienteDB | null>(null);
 
-  // Buscador con autocomplete
   const [termBusqCliente, setTermBusqCliente] = useState("");
   const [sugerencias, setSugerencias] = useState<ClienteDB[]>([]);
   const [buscandoCliente, setBuscandoCliente] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Formulario cliente nuevo (modal)
   const [nuevoCliente, setNuevoCliente] = useState({
     nit: "",
     nombre: "",
@@ -110,7 +111,9 @@ export default function NuevaVentaPage() {
   });
   const [guardandoCliente, setGuardandoCliente] = useState(false);
 
-  // ── Logística ────────────────────────────────────────────────────────────────
+  // ── Error del teléfono de entrega a domicilio ────────────────────────────────
+  const [errorTelContacto, setErrorTelContacto] = useState("");
+
   const [esDomicilio, setEsDomicilio] = useState(false);
   const [idRepartidor, setIdRepartidor] = useState("");
   const [deptoEntrega, setDeptoEntrega] = useState("");
@@ -133,11 +136,9 @@ export default function NuevaVentaPage() {
     }[]
   >([]);
 
-  // ── Modal confirmación ───────────────────────────────────────────────────────
   const [modalConfirmacion, setModalConfirmacion] = useState(false);
   const [procesandoOrden, setProcesandoOrden] = useState(false);
 
-  // ── Ubicación ────────────────────────────────────────────────────────────────
   const [departamentos, setDepartamentos] = useState<
     { id_departamento: number; nombre: string }[]
   >([]);
@@ -148,7 +149,6 @@ export default function NuevaVentaPage() {
     { id_municipio: number; nombre: string }[]
   >([]);
 
-  // Modal de compatibilidad
   const [modalCompatVentaAbierto, setModalCompatVentaAbierto] = useState(false);
   const [productoCompatVenta, setProductoCompatVenta] =
     useState<ProductoInventario | null>(null);
@@ -172,7 +172,6 @@ export default function NuevaVentaPage() {
     }
   };
 
-  // ── Efectos iniciales ────────────────────────────────────────────────────────
   useEffect(() => {
     const userString = localStorage.getItem("usuario");
     if (userString) {
@@ -263,12 +262,20 @@ export default function NuevaVentaPage() {
   useEffect(() => {
     if (esDomicilio && clienteSeleccionado) {
       setNombreContacto(clienteSeleccionado.nombre_razon_social ?? "");
-      setTelefonoContacto(clienteSeleccionado.telefono ?? "");
+      // Al autorellenar desde el cliente, limpiar error si el tel ya tiene 8 dígitos
+      const telCliente = clienteSeleccionado.telefono ?? "";
+      setTelefonoContacto(telCliente);
+      setErrorTelContacto(
+        telCliente.length > 0 && !/^\d{8}$/.test(telCliente)
+          ? "El teléfono debe tener exactamente 8 dígitos."
+          : "",
+      );
       setDireccionEntrega(clienteSeleccionado.direccion ?? "");
     }
     if (!esDomicilio) {
       setNombreContacto("");
       setTelefonoContacto("");
+      setErrorTelContacto("");
       setDireccionEntrega("");
       setDeptoEntrega("");
       setMunicipioEntrega("");
@@ -441,20 +448,86 @@ export default function NuevaVentaPage() {
       id_municipio: "",
       notas_internas: "",
     });
+    setErroresCliente({}); // limpiar errores al abrir
     setModoCliente("nuevo");
     setSugerencias([]);
   };
 
+  // ── Validación y guardado del nuevo cliente ──────────────────────────────────
   const guardarNuevoCliente = async () => {
+    const errores: { nit?: string; telefono?: string; email?: string } = {};
+
+    // Validar NIT: exactamente 9 dígitos si se ingresó
+    const nitLimpio = nuevoCliente.nit.trim();
+    if (nitLimpio !== "" && nitLimpio.toUpperCase() !== "CF") {
+      if (nitLimpio.length !== 9) {
+        errores.nit = "El NIT debe tener exactamente 9 dígitos.";
+      }
+    }
+
+    // Validar teléfono: obligatorio, exactamente 8 dígitos
+    const telLimpio = nuevoCliente.telefono.trim();
+    if (!telLimpio) {
+      errores.telefono = "El teléfono es obligatorio.";
+    } else if (!/^\d{8}$/.test(telLimpio)) {
+      errores.telefono = "El teléfono debe tener exactamente 8 dígitos.";
+    }
+
+    // Validar email: formato válido si se ingresó
+    if (nuevoCliente.email.trim() !== "") {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(nuevoCliente.email.trim())) {
+        errores.email = "El correo electrónico no es válido.";
+      }
+    }
+
+    // Mostrar errores de formato antes de hacer llamadas a la BD
+    if (Object.keys(errores).length > 0) {
+      setErroresCliente(errores);
+      return;
+    }
+
+    // Verificar NIT duplicado en BD
+    if (nitLimpio && nitLimpio.toUpperCase() !== "CF") {
+      try {
+        const existe = await ClienteService.buscarPorNit(nitLimpio);
+        if (existe) {
+          setErroresCliente({
+            nit: `Ya existe un cliente con NIT ${nitLimpio}.`,
+          });
+          return;
+        }
+      } catch {
+        // 404 = no existe, continuar
+      }
+    }
+
+    // Verificar teléfono duplicado en BD
+    try {
+      const resultados = await ClienteService.buscarClientes(telLimpio);
+      const telExiste = resultados.some((c: any) => c.telefono === telLimpio);
+      if (telExiste) {
+        setErroresCliente({
+          telefono: `Ya existe un cliente registrado con el teléfono ${telLimpio}.`,
+        });
+        return;
+      }
+    } catch {
+      // Si falla la búsqueda, el backend lo rechazará de todas formas
+    }
+
+    setErroresCliente({});
+
     if (!nuevoCliente.nombre.trim()) {
       alert("El nombre es obligatorio.");
       return;
     }
+
     setGuardandoCliente(true);
     try {
       const clienteLocal: ClienteDB = {
         nombre_razon_social: nuevoCliente.nombre.trim(),
-        nit: nuevoCliente.nit.trim() || "CF",
+        nit: nitLimpio || "CF",
         tipo_cliente: nuevoCliente.tipo,
         telefono: nuevoCliente.telefono || null,
         email: nuevoCliente.email || null,
@@ -475,12 +548,10 @@ export default function NuevaVentaPage() {
   const descuentoMonto = subtotalCarrito * (descuentoPorcentaje / 100);
   const totalVentaConIva = subtotalCarrito - descuentoMonto;
 
-  // Abre el modal de confirmación
   const procesarOrden = () => {
     setModalConfirmacion(true);
   };
 
-  // Ejecuta la orden tras confirmar en el modal
   const ejecutarOrden = async () => {
     if (!usuarioSesion) {
       alert("No se detectó una sesión activa.");
@@ -552,6 +623,7 @@ export default function NuevaVentaPage() {
       setMunicipiosEntrega([]);
       setNombreContacto("");
       setTelefonoContacto("");
+      setErrorTelContacto("");
       setDireccionEntrega("");
       setModalConfirmacion(false);
       setProcesandoOrden(false);
@@ -562,6 +634,16 @@ export default function NuevaVentaPage() {
       alert(`Error al procesar: ${error.message}`);
     }
   };
+
+  // ── Helper: determina si el formulario de entrega es válido ─────────────────
+  const entregaValida =
+    !esDomicilio ||
+    (!!direccionEntrega.trim() &&
+      !!idRepartidor &&
+      !!nombreContacto.trim() &&
+      /^\d{8}$/.test(telefonoContacto) &&
+      !!deptoEntrega &&
+      !!municipioEntrega);
 
   return (
     <div className={styles.container}>
@@ -1090,8 +1172,12 @@ export default function NuevaVentaPage() {
 
           {esDomicilio && (
             <>
+              {/* Nombre de contacto */}
               <div className={styles.formGroup}>
-                <label className={styles.label}>Nombre de quien recibe</label>
+                <label className={styles.label}>
+                  Nombre de quien recibe{" "}
+                  <span style={{ color: "#ef4444" }}>*</span>
+                </label>
                 <input
                   type="text"
                   className={styles.input}
@@ -1100,19 +1186,48 @@ export default function NuevaVentaPage() {
                   placeholder="Ej. Juan Pérez o Taller Los Motores"
                 />
               </div>
+
+              {/* Teléfono de contacto — solo dígitos, exactamente 8 */}
               <div className={styles.formGroup}>
-                <label className={styles.label}>Teléfono de contacto</label>
+                <label className={styles.label}>
+                  Teléfono de contacto{" "}
+                  <span style={{ color: "#ef4444" }}>*</span>
+                </label>
                 <input
                   type="text"
                   className={styles.input}
                   value={telefonoContacto}
                   maxLength={8}
-                  onChange={(e) => setTelefonoContacto(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, "");
+                    setTelefonoContacto(val);
+                    setErrorTelContacto(
+                      val.length > 0 && val.length !== 8
+                        ? "El teléfono debe tener exactamente 8 dígitos."
+                        : "",
+                    );
+                  }}
                   placeholder="Teléfono para el repartidor"
                 />
+                {errorTelContacto && (
+                  <p
+                    style={{
+                      color: "#ef4444",
+                      fontSize: "0.75rem",
+                      marginTop: "0.25rem",
+                    }}
+                  >
+                    {errorTelContacto}
+                  </p>
+                )}
               </div>
+
+              {/* Dirección de entrega */}
               <div className={styles.formGroup}>
-                <label className={styles.label}>Dirección de Entrega</label>
+                <label className={styles.label}>
+                  Dirección de Entrega{" "}
+                  <span style={{ color: "#ef4444" }}>*</span>
+                </label>
                 <input
                   type="text"
                   className={styles.input}
@@ -1121,8 +1236,13 @@ export default function NuevaVentaPage() {
                   placeholder="Ej. 3a calle 5-20 zona 1, colonia Las Flores..."
                 />
               </div>
+
+              {/* Departamento */}
               <div className={styles.formGroup}>
-                <label className={styles.label}>Departamento de Entrega</label>
+                <label className={styles.label}>
+                  Departamento de Entrega{" "}
+                  <span style={{ color: "#ef4444" }}>*</span>
+                </label>
                 <select
                   className={styles.select}
                   value={deptoEntrega}
@@ -1137,8 +1257,12 @@ export default function NuevaVentaPage() {
                 </select>
               </div>
 
+              {/* Municipio */}
               <div className={styles.formGroup}>
-                <label className={styles.label}>Municipio de Entrega</label>
+                <label className={styles.label}>
+                  Municipio de Entrega{" "}
+                  <span style={{ color: "#ef4444" }}>*</span>
+                </label>
                 <select
                   className={styles.select}
                   value={municipioEntrega}
@@ -1153,8 +1277,12 @@ export default function NuevaVentaPage() {
                   ))}
                 </select>
               </div>
+
+              {/* Repartidor */}
               <div className={styles.formGroup}>
-                <label className={styles.label}>Asignar Repartidor</label>
+                <label className={styles.label}>
+                  Asignar Repartidor <span style={{ color: "#ef4444" }}>*</span>
+                </label>
                 <select
                   className={styles.select}
                   value={idRepartidor}
@@ -1164,7 +1292,6 @@ export default function NuevaVentaPage() {
                   {listaRepartidores.map((rep) => {
                     const enRuta = rep.disponible && rep.pedidos_activos > 0;
                     const noDisponible = !rep.disponible;
-
                     let etiqueta = "";
                     if (noDisponible) {
                       etiqueta = "No disponible";
@@ -1173,7 +1300,6 @@ export default function NuevaVentaPage() {
                     } else {
                       etiqueta = "Disponible";
                     }
-
                     return (
                       <option key={rep.id_empleado} value={rep.id_empleado}>
                         {rep.nombre} {rep.apellido} —{etiqueta}
@@ -1181,7 +1307,6 @@ export default function NuevaVentaPage() {
                     );
                   })}
                 </select>
-
                 {listaRepartidores.length > 0 && (
                   <p
                     style={{
@@ -1195,6 +1320,8 @@ export default function NuevaVentaPage() {
                   </p>
                 )}
               </div>
+
+              {/* Contra entrega */}
               <div className={styles.checkboxGroup}>
                 <input
                   type="checkbox"
@@ -1214,6 +1341,7 @@ export default function NuevaVentaPage() {
           )}
         </div>
 
+        {/* ── Botón generar orden — usa entregaValida para el blindaje completo */}
         <button
           className={styles.btnAction}
           onClick={procesarOrden}
@@ -1221,11 +1349,7 @@ export default function NuevaVentaPage() {
             carrito.length === 0 ||
             modoCliente === "buscando" ||
             modoCliente === "nuevo" ||
-            (esDomicilio &&
-              (!direccionEntrega ||
-                !idRepartidor ||
-                !nombreContacto ||
-                !telefonoContacto))
+            !entregaValida
           }
         >
           Generar Orden de Venta
@@ -1247,6 +1371,7 @@ export default function NuevaVentaPage() {
             </div>
 
             <div className={styles.modalBody}>
+              {/* NIT */}
               <div className={styles.formGroup}>
                 <label className={styles.label}>
                   NIT{" "}
@@ -1259,14 +1384,32 @@ export default function NuevaVentaPage() {
                   className={styles.input}
                   maxLength={9}
                   value={nuevoCliente.nit}
-                  onChange={(e) =>
-                    setNuevoCliente({ ...nuevoCliente, nit: e.target.value })
-                  }
-                  placeholder="Ej. 12345678"
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, ""); // solo dígitos
+                    setNuevoCliente({ ...nuevoCliente, nit: val });
+                    setErroresCliente((prev) => ({ ...prev, nit: undefined }));
+                  }}
+                  placeholder="Ej. 123456789"
                 />
+                {erroresCliente.nit && (
+                  <p
+                    style={{
+                      color: "#ef4444",
+                      fontSize: "0.75rem",
+                      marginTop: "0.25rem",
+                    }}
+                  >
+                    {erroresCliente.nit}
+                  </p>
+                )}
               </div>
+
+              {/* Nombre */}
               <div className={styles.formGroup}>
-                <label className={styles.label}>Nombre / Razón Social *</label>
+                <label className={styles.label}>
+                  Nombre / Razón Social{" "}
+                  <span style={{ color: "#ef4444" }}>*</span>
+                </label>
                 <input
                   type="text"
                   className={styles.input}
@@ -1277,6 +1420,8 @@ export default function NuevaVentaPage() {
                   placeholder="Ej. Taller López"
                 />
               </div>
+
+              {/* Tipo */}
               <div className={styles.formGroup}>
                 <label className={styles.label}>Tipo de Cliente</label>
                 <select
@@ -1291,21 +1436,70 @@ export default function NuevaVentaPage() {
                   <option value="refaccionaria">Refaccionaria</option>
                 </select>
               </div>
+
+              {/* Teléfono — obligatorio, solo dígitos, 8 caracteres */}
               <div className={styles.formGroup}>
-                <label className={styles.label}>Teléfono</label>
+                <label className={styles.label}>
+                  Teléfono <span style={{ color: "#ef4444" }}>*</span>
+                </label>
                 <input
                   type="text"
                   className={styles.input}
                   maxLength={8}
                   value={nuevoCliente.telefono}
-                  onChange={(e) =>
-                    setNuevoCliente({
-                      ...nuevoCliente,
-                      telefono: e.target.value,
-                    })
-                  }
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, ""); // solo dígitos
+                    setNuevoCliente({ ...nuevoCliente, telefono: val });
+                    setErroresCliente((prev) => ({
+                      ...prev,
+                      telefono: undefined,
+                    }));
+                  }}
+                  placeholder="Ej. 55551234"
                 />
+                {erroresCliente.telefono && (
+                  <p
+                    style={{
+                      color: "#ef4444",
+                      fontSize: "0.75rem",
+                      marginTop: "0.25rem",
+                    }}
+                  >
+                    {erroresCliente.telefono}
+                  </p>
+                )}
               </div>
+
+              {/* Email */}
+              <div className={styles.formGroup}>
+                <label className={styles.label}>Correo electrónico</label>
+                <input
+                  type="email"
+                  className={styles.input}
+                  value={nuevoCliente.email}
+                  onChange={(e) => {
+                    setNuevoCliente({ ...nuevoCliente, email: e.target.value });
+                    setErroresCliente((prev) => ({
+                      ...prev,
+                      email: undefined,
+                    }));
+                  }}
+                  placeholder="Ej. taller@ejemplo.com"
+                />
+                {erroresCliente.email && (
+                  <p
+                    style={{
+                      color: "#ef4444",
+                      fontSize: "0.75rem",
+                      marginTop: "0.25rem",
+                    }}
+                  >
+                    {erroresCliente.email}
+                  </p>
+                )}
+              </div>
+
+              {/* Dirección */}
               <div className={styles.formGroup}>
                 <label className={styles.label}>Dirección</label>
                 <input
@@ -1320,6 +1514,8 @@ export default function NuevaVentaPage() {
                   }
                 />
               </div>
+
+              {/* Departamento */}
               <div className={styles.formGroup}>
                 <label className={styles.label}>Departamento</label>
                 <select
@@ -1341,6 +1537,8 @@ export default function NuevaVentaPage() {
                   ))}
                 </select>
               </div>
+
+              {/* Municipio */}
               <div className={styles.formGroup}>
                 <label className={styles.label}>Municipio</label>
                 <select
@@ -1362,6 +1560,8 @@ export default function NuevaVentaPage() {
                   ))}
                 </select>
               </div>
+
+              {/* Notas */}
               <div className={styles.formGroup}>
                 <label className={styles.label}>Notas internas</label>
                 <textarea
