@@ -37,17 +37,10 @@ export const GarantiaService = {
     return res.json();
   },
 
-  /**
-   * Resuelve una garantía.
-   * Si aprobado=true, se deben enviar condicion_recibido y opcionalmente notas_inspeccion.
-   * Si aprobado=false, solo se necesita resolucion.
-   */
   async resolverGarantia(payload: {
     id_garantia: number;
     aprobado: boolean;
     resolucion: string;
-    condicion_recibido?: string;
-    notas_inspeccion?: string;
   }) {
     const res = await fetch(`${API_URL}/garantias/resolver`, {
       method: "POST",
@@ -72,7 +65,7 @@ export const GarantiaService = {
   },
 
   async inspeccionarRetorno(payload: {
-    id_retorno: number;
+    id_garantia: number;
     resultado: string;
     observaciones?: string;
     destino: string;
@@ -118,6 +111,7 @@ export const GarantiaService = {
     if (!res.ok) throw new Error("Error obteniendo el historial de garantías");
     return res.json();
   },
+
   async obtenerReacondicionadosDisponibles(id_sucursal: number) {
     const res = await fetch(
       `${API_URL}/garantias/sucursal/${id_sucursal}/reacondicionados`,

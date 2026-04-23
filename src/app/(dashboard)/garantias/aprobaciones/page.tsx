@@ -4,15 +4,6 @@ import { useEffect, useState } from "react";
 import styles from "./Garantias.module.css";
 import { GarantiaService } from "@/services/garantia.service";
 
-// ── ERROR 4 CORREGIDO: catálogo sincronizado con el CHECK constraint de la BD
-//    y con el enum del schema Zod. Se eliminó "dañada" y se agregó "dañado_leve".
-const CONDICION_OPTIONS = [
-  { value: "buena", label: "Buena — visible pero funcional" },
-  { value: "dañado_leve", label: "Dañado leve — defecto claro" },
-  { value: "dañado_grave", label: "Dañado grave — daño severo" },
-  { value: "muy_dañada", label: "Muy dañada — inutilizable" },
-];
-
 const DESTINO_POR_RESULTADO: Record<string, string> = {
   descarte: "baja_inventario",
   devolver_proveedor: "retorno_proveedor",
@@ -28,20 +19,15 @@ export default function CentroGarantiasPage() {
 
   // Modal de aprobación/rechazo
   const [modalResolver, setModalResolver] = useState<{
-    visible: boolean;
     id: number;
     resolucion: string;
-    condicion: string;
-    notas: string;
-    // stock para advertencia visual (Error 2)
     stock_disponible: number;
     cantidad_reclamada: number;
   } | null>(null);
 
   // Modal de inspección técnica
   const [modalInspeccion, setModalInspeccion] = useState<{
-    visible: boolean;
-    id: number;
+    id: number; // id_garantia
     notas: string;
   } | null>(null);
 
@@ -84,26 +70,17 @@ export default function CentroGarantiasPage() {
     if (!modalResolver.resolucion.trim())
       return alert("Debe ingresar una resolución.");
 
-    if (aprobado && !modalResolver.condicion)
-      return alert("Debe indicar la condición de la pieza recibida.");
-
     try {
       await GarantiaService.resolverGarantia({
         id_garantia: modalResolver.id,
         aprobado,
         resolucion: modalResolver.resolucion,
-        // Solo se envía condicion al aprobar — el supervisor tiene la pieza
-        // en mano: si aprueba la recibe, si rechaza se la devuelve al cliente.
-        ...(aprobado && {
-          condicion_recibido: modalResolver.condicion,
-          notas_inspeccion: modalResolver.notas,
-        }),
       });
 
       alert(
         aprobado
-          ? "Garantía aprobada. Pieza recibida e inventario actualizado. Se puede entregar el repuesto al cliente."
-          : "Reclamo rechazado. La pieza fue devuelta al cliente.",
+          ? "Garantía aprobada. Inventario actualizado. Se puede entregar el repuesto al cliente."
+          : "Reclamo rechazado.",
       );
       setModalResolver(null);
       cargarDatosTab();
@@ -117,7 +94,7 @@ export default function CentroGarantiasPage() {
     if (!modalInspeccion) return;
     try {
       await GarantiaService.inspeccionarRetorno({
-        id_retorno: modalInspeccion.id,
+        id_garantia: modalInspeccion.id,
         resultado,
         destino: DESTINO_POR_RESULTADO[resultado],
         observaciones: modalInspeccion.notas,
@@ -190,29 +167,21 @@ export default function CentroGarantiasPage() {
                         <strong>Motivo:</strong> {g.motivo_reclamo}
                       </p>
 
-                      {/* ERROR 2: advertencia visual de stock antes de abrir el modal */}
                       {g.stock_disponible < g.cantidad ? (
                         <p className={styles.alertaSinStock}>
                           ⚠️ Sin stock suficiente ({g.stock_disponible}{" "}
                           disponibles). La aprobación quedará bloqueada hasta
                           que ingrese mercadería.
                         </p>
-                      ) : (
-                        <p className={styles.stockOk}>
-                          ✓ Stock disponible: {g.stock_disponible} unidades
-                        </p>
-                      )}
+                      ) : null}
                     </div>
                     <div className={styles.cardActions}>
                       <button
                         className={styles.btnReview}
                         onClick={() =>
                           setModalResolver({
-                            visible: true,
                             id: g.id_garantia,
                             resolucion: "",
-                            condicion: "",
-                            notas: "",
                             stock_disponible: g.stock_disponible,
                             cantidad_reclamada: g.cantidad,
                           })
@@ -227,7 +196,7 @@ export default function CentroGarantiasPage() {
             </div>
           )}
 
-          {/* ── TAB 2: Inspección técnica ── */}
+          {/* ── TAB 2: Pendientes de inspección ── */}
           {activeTab === 1 && (
             <div className={styles.tabContent}>
               {pendientesInspeccion.length === 0 ? (
@@ -235,28 +204,24 @@ export default function CentroGarantiasPage() {
                   No hay piezas pendientes de inspección.
                 </p>
               ) : (
-                pendientesInspeccion.map((rg) => (
-                  <div key={rg.id_retorno} className={styles.card}>
+                pendientesInspeccion.map((g) => (
+                  <div key={g.id_garantia} className={styles.card}>
                     <div className={styles.cardHeader}>
-                      <span className={styles.cardTitle}>{rg.producto}</span>
-                      <span className={styles.cardSku}>{rg.sku}</span>
+                      <span className={styles.cardTitle}>{g.producto}</span>
+                      <span className={styles.cardSku}>{g.sku}</span>
                     </div>
                     <div className={styles.cardBody}>
                       <p>
-                        <strong>Recibida el:</strong>{" "}
-                        {new Date(rg.fecha_ingreso).toLocaleDateString("es-GT")}
+                        <strong>Garantía #:</strong> {g.id_garantia}
                       </p>
                       <p>
-                        <strong>Condición al recibir:</strong>{" "}
-                        {rg.condicion_recibido?.replace(/_/g, " ")}
+                        <strong>Fecha solicitud:</strong>{" "}
+                        {new Date(g.fecha_solicitud).toLocaleDateString(
+                          "es-GT",
+                        )}
                       </p>
-                      {rg.notas_inspeccion && (
-                        <p>
-                          <strong>Notas:</strong> {rg.notas_inspeccion}
-                        </p>
-                      )}
                       <p>
-                        <strong>Recibió:</strong> {rg.recibio_nombre}
+                        <strong>Cantidad:</strong> {g.cantidad}
                       </p>
                     </div>
                     <div className={styles.cardActions}>
@@ -264,8 +229,7 @@ export default function CentroGarantiasPage() {
                         className={styles.btnReview}
                         onClick={() =>
                           setModalInspeccion({
-                            visible: true,
-                            id: rg.id_retorno,
+                            id: g.id_garantia,
                             notas: "",
                           })
                         }
@@ -287,13 +251,11 @@ export default function CentroGarantiasPage() {
           <div className={styles.modalContent}>
             <h2 className={styles.modalTitle}>Resolución de Garantía</h2>
 
-            {/* ERROR 2: aviso de sin stock dentro del modal también */}
             {modalResolver.stock_disponible <
               modalResolver.cantidad_reclamada && (
               <div className={styles.alertaBanner}>
-                ⚠️ No hay stock suficiente para aprobar esta garantía en este
-                momento. Solo puedes rechazarla o esperar a que ingrese
-                mercadería.
+                ⚠️ No hay stock suficiente para aprobar esta garantía. Solo
+                puedes rechazarla o esperar a que ingrese mercadería.
               </div>
             )}
 
@@ -312,51 +274,6 @@ export default function CentroGarantiasPage() {
               />
             </div>
 
-            {/* ── Sección de aprobación ── */}
-            <div className={styles.sectionDivider}>
-              <span>Al APROBAR, complete la recepción de la pieza</span>
-            </div>
-
-            <div className={styles.formGroup}>
-              <label className={styles.label}>
-                Condición de la pieza recibida{" "}
-                <span className={styles.requiredIfApprove}>
-                  (requerido al aprobar)
-                </span>
-              </label>
-              <select
-                className={styles.select}
-                value={modalResolver.condicion}
-                onChange={(e) =>
-                  setModalResolver(
-                    (p) => p && { ...p, condicion: e.target.value },
-                  )
-                }
-              >
-                <option value="">— Seleccionar —</option>
-                {CONDICION_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className={styles.formGroup}>
-              <label className={styles.label}>
-                Notas de recepción (opcional)
-              </label>
-              <textarea
-                className={styles.textarea}
-                rows={2}
-                placeholder="Observaciones adicionales sobre el estado físico..."
-                value={modalResolver.notas}
-                onChange={(e) =>
-                  setModalResolver((p) => p && { ...p, notas: e.target.value })
-                }
-              />
-            </div>
-
             <div className={styles.modalActions}>
               <button
                 className={styles.btnCancel}
@@ -370,7 +287,6 @@ export default function CentroGarantiasPage() {
               >
                 Rechazar Reclamo
               </button>
-              {/* ERROR 2: botón deshabilitado visualmente si no hay stock */}
               <button
                 className={styles.btnApprove}
                 disabled={
@@ -385,7 +301,7 @@ export default function CentroGarantiasPage() {
                 }
                 onClick={() => handleResolver(true)}
               >
-                Aprobar y Recibir Pieza
+                Aprobar Garantía
               </button>
             </div>
           </div>
