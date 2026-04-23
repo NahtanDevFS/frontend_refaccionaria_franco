@@ -54,15 +54,12 @@ const generarReporteArqueo = (a: ArqueoHistorial) => {
     minute: "2-digit",
   });
 
-  // ── Lógica correcta de verificación ─────────────────────────────────────
-  // Solo los arqueos CON DIFERENCIA requieren verificación de supervisor.
-  // Si está cuadrado, el campo no aplica.
   const textoVerificacion =
     a.estado === "cuadrado"
       ? "No requerida (arqueo cuadrado)"
       : a.supervisor_verifica?.trim()
         ? a.supervisor_verifica
-        : "⚠ Pendiente de verificación";
+        : "Pendiente de verificación";
 
   //tabla de información general
   autoTable(doc, {
@@ -169,7 +166,7 @@ export default function CajaPage() {
   const [tabActual, setTabActual] = useState<Tab>("cobros");
   const [cargando, setCargando] = useState(false);
 
-  // ── Tab 1: Cobros pendientes
+  //tab 1: Cobros pendientes
   const [pendientes, setPendientes] = useState<OrdenPendienteCaja[]>([]);
   const [modalCobro, setModalCobro] = useState(false);
   const [ordenSeleccionada, setOrdenSeleccionada] =
@@ -599,7 +596,7 @@ export default function CajaPage() {
                         <div className={styles.repartidorHeader}>
                           <div>
                             <strong className={styles.repartidorName}>
-                              🛵 {grupo.nombre}
+                              {grupo.nombre}
                             </strong>
                             <span className={styles.repartidorMeta}>
                               {grupo.cobros.length} cobro(s) — Total:{" "}
