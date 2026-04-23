@@ -98,11 +98,7 @@ const MENU_CONFIG: MenuSection[] = [
       {
         title: "Caja y Arqueos",
         path: "/caja",
-        rolesAllowed: [
-          "ADMINISTRADOR",
-          "CAJERO",
-          // SUPERVISOR_SUCURSAL ya NO tiene acceso a caja
-        ],
+        rolesAllowed: ["ADMINISTRADOR", "CAJERO", "SUPERVISOR_SUCURSAL"],
       },
       {
         title: "Bodega e Inventario",

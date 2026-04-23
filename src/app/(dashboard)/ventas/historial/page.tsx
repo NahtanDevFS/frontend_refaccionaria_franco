@@ -128,7 +128,6 @@ export default function ListadoVentas() {
     }
   };
 
-  // --- NUEVA FUNCIÓN PARA EXPORTAR A PDF ---
   const exportarPDF = async () => {
     setGenerandoPdf(true);
     try {

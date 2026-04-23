@@ -11,9 +11,152 @@ import {
   ResumenArqueos,
   CajeroOpcion,
 } from "@/types/caja.types";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import styles from "./Caja.module.css";
 
 type Tab = "cobros" | "arqueo" | "historial" | "arqueos";
+
+// ── Generar reporte PDF de un arqueo ─────────────────────────────────────
+const generarReporteArqueo = (a: ArqueoHistorial) => {
+  const doc = new jsPDF();
+
+  // ── Encabezado (mismo estilo que reporte de ventas) ──────────────────────
+  doc.setFontSize(20);
+  doc.setTextColor(40);
+  doc.text("Refaccionaria Franco", 14, 22);
+
+  doc.setFontSize(14);
+  doc.setTextColor(100);
+  doc.text("Reporte de Arqueo de Caja", 14, 30);
+
+  doc.setFontSize(10);
+  doc.setTextColor(100);
+  doc.text(
+    `Generado el: ${new Date().toLocaleDateString("es-GT")} ${new Date().toLocaleTimeString("es-GT")}`,
+    14,
+    38,
+  );
+
+  // ── Parseo seguro de fecha (evita "Invalid Date") ────────────────────────
+  // fecha_cierre llega como "2026-04-04" — se parte manualmente
+  const [anio, mes, dia] = String(a.fecha_cierre)
+    .split("T")[0]
+    .split("-")
+    .map(Number);
+  const fechaCierre = new Date(anio, mes - 1, dia).toLocaleDateString("es-GT", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+  const horaRegistro = new Date(a.created_at).toLocaleTimeString("es-GT", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  // ── Lógica correcta de verificación ─────────────────────────────────────
+  // Solo los arqueos CON DIFERENCIA requieren verificación de supervisor.
+  // Si está cuadrado, el campo no aplica.
+  const textoVerificacion =
+    a.estado === "cuadrado"
+      ? "No requerida (arqueo cuadrado)"
+      : a.supervisor_verifica?.trim()
+        ? a.supervisor_verifica
+        : "⚠ Pendiente de verificación";
+
+  //tabla de información general
+  autoTable(doc, {
+    startY: 45,
+    head: [["Campo", "Valor"]],
+    body: [
+      ["N° de Arqueo", `#${String(a.id_arqueo).padStart(6, "0")}`],
+      ["Fecha de Cierre", fechaCierre],
+      ["Hora de Registro", horaRegistro],
+      ["Cajero", a.cajero],
+      ["Verificación de Supervisor", textoVerificacion],
+      ["Estado", a.estado === "cuadrado" ? "Cuadrado" : "Con diferencia"],
+    ],
+    theme: "grid",
+    headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+    styles: { fontSize: 9 },
+    columnStyles: { 0: { fontStyle: "bold", cellWidth: 70 } },
+    margin: { left: 14, right: 14 },
+  });
+
+  //tabla financiera
+  const infoY = (doc as any).lastAutoTable?.finalY ?? 90;
+
+  doc.setFontSize(12);
+  doc.setTextColor(40);
+  doc.text("Resumen Financiero", 14, infoY + 10);
+
+  const diff = Number(a.diferencia);
+
+  autoTable(doc, {
+    startY: infoY + 14,
+    head: [["Concepto", "Monto (Q)"]],
+    body: [
+      [
+        "Efectivo según sistema",
+        `Q ${Number(a.efectivo_segun_sistema).toFixed(2)}`,
+      ],
+      ["Efectivo físico contado", `Q ${Number(a.efectivo_contado).toFixed(2)}`],
+    ],
+    foot: [
+      [
+        { content: `Diferencia`, styles: { fontStyle: "bold" as const } },
+        {
+          content: `${diff >= 0 ? "+" : ""}Q ${diff.toFixed(2)}`,
+          styles: { fontStyle: "bold" as const },
+        },
+      ],
+    ],
+    theme: "grid",
+    headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+    footStyles: {
+      fillColor: diff === 0 ? [220, 252, 231] : [254, 226, 226], // verde o rojo según cuadre
+      textColor: diff === 0 ? [6, 95, 70] : [153, 27, 27],
+      fontStyle: "bold",
+    },
+    styles: { fontSize: 9 },
+    columnStyles: { 1: { halign: "right" } },
+    margin: { left: 14, right: 14 },
+  });
+
+  //observaciones (si existen)
+  const finY = (doc as any).lastAutoTable?.finalY ?? infoY + 50;
+  if (a.observaciones?.trim()) {
+    doc.setFontSize(12);
+    doc.setTextColor(40);
+    doc.text("Observaciones", 14, finY + 10);
+
+    autoTable(doc, {
+      startY: finY + 14,
+      body: [[a.observaciones.trim()]],
+      theme: "grid",
+      styles: { fontSize: 9, textColor: [75, 85, 99] },
+      margin: { left: 14, right: 14 },
+    });
+  }
+
+  //pie de página
+  const pageH = doc.internal.pageSize.height;
+  doc.setFontSize(8);
+  doc.setTextColor(156, 163, 175);
+  doc.text(
+    "Refaccionaria Franco — Documento generado automáticamente",
+    14,
+    pageH - 10,
+  );
+  doc.text(`Arqueo #${String(a.id_arqueo).padStart(6, "0")}`, 196, pageH - 10, {
+    align: "right",
+  });
+
+  //descargar
+  doc.save(
+    `Arqueo_${String(a.id_arqueo).padStart(6, "0")}_${String(anio)}${String(mes).padStart(2, "0")}${String(dia).padStart(2, "0")}.pdf`,
+  );
+};
 
 function hoy() {
   return new Date().toISOString().split("T")[0];
@@ -862,6 +1005,7 @@ export default function CajaPage() {
                         <th>Estado</th>
                         <th>Verificado por</th>
                         <th>Observaciones</th>
+                        <th>Reporte</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -927,6 +1071,15 @@ export default function CajaPage() {
                             title={a.observaciones ?? ""}
                           >
                             {a.observaciones ?? "—"}
+                          </td>
+                          <td>
+                            <button
+                              className={styles.btnReporte}
+                              onClick={() => generarReporteArqueo(a)}
+                              title="Descargar reporte PDF"
+                            >
+                              PDF
+                            </button>
                           </td>
                         </tr>
                       ))}

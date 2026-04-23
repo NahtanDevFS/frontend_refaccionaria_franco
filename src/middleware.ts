@@ -59,7 +59,7 @@ export function middleware(request: NextRequest) {
       "/garantias/historial": ["ADMINISTRADOR", "SUPERVISOR_SUCURSAL"],
 
       // ── Módulo de Operaciones ─────────────────────────────────────────────
-      "/caja": ["ADMINISTRADOR", "CAJERO"],
+      "/caja": ["ADMINISTRADOR", "SUPERVISOR_SUCURSAL", "CAJERO"],
       "/bodega": ["ADMINISTRADOR", "BODEGUERO"],
       "/entregas": ["ADMINISTRADOR", "REPARTIDOR"],
     };
