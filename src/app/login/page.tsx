@@ -53,6 +53,7 @@ export default function LoginPage() {
   return (
     <div className={styles.wrapper}>
       <div className={styles.card}>
+        <h1 className={styles.title}>Refaccionaria Franco</h1>
         <h1 className={styles.title}>Iniciar Sesión</h1>
 
         {error && <div className={styles.errorBox}>{error}</div>}
@@ -80,7 +81,6 @@ export default function LoginPage() {
             <div className={styles.passwordWrapper}>
               <input
                 id="password"
-                //alternar entre texto y password dinámicamente
                 type={mostrarPassword ? "text" : "password"}
                 className={`${styles.input} ${styles.inputPassword}`}
                 value={password}
@@ -95,10 +95,9 @@ export default function LoginPage() {
                 title={
                   mostrarPassword ? "Ocultar contraseña" : "Mostrar contraseña"
                 }
-                tabIndex={-1} // Evita que el botón interfiera al navegar con la tecla Tab
+                tabIndex={-1}
               >
                 {mostrarPassword ? (
-                  // Ícono de "Ojo tachado" (Ocultar)
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     width="20"
@@ -114,7 +113,6 @@ export default function LoginPage() {
                     <line x1="1" y1="1" x2="23" y2="23"></line>
                   </svg>
                 ) : (
-                  // Ícono de "Ojo" (Mostrar)
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     width="20"
