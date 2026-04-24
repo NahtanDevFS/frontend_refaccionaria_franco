@@ -31,17 +31,6 @@ export interface DetalleOrdenDTO {
   cantidad: number;
 }
 
-/**
- * Payload que se envía a POST /api/ventas/orden
- * Espeja exactamente dtos/CrearVentaDTO.ts del backend.
- *
- * NOTA: id_sucursal e id_vendedor se incluyen en el body porque el backend
- * los valida vía Zod y luego los sobreescribe con los valores del token JWT
- * para mayor seguridad (ver VentaController.crearOrden).
- *
- * Los campos subtotal/total/precio_unitario NO se envían: los calcula el
- * trigger de PostgreSQL sobre detalle_venta.
- */
 export interface CrearVentaDTO {
   id_sucursal: number;
   id_vendedor: number;

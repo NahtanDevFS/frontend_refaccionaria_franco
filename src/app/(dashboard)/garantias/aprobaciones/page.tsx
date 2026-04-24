@@ -63,7 +63,7 @@ export default function CentroGarantiasPage() {
     }
   };
 
-  // ── Aprobar o Rechazar garantía
+  //Aprobar o Rechazar garantía
   const handleResolver = async (aprobado: boolean) => {
     if (!modalResolver) return;
 
@@ -89,7 +89,7 @@ export default function CentroGarantiasPage() {
     }
   };
 
-  // ── Inspección técnica
+  //Inspección técnica
   const handleInspeccionar = async (resultado: string) => {
     if (!modalInspeccion) return;
     try {
@@ -135,7 +135,7 @@ export default function CentroGarantiasPage() {
         <p className={styles.loadingText}>Cargando...</p>
       ) : (
         <>
-          {/* ── TAB 1: Solicitudes pendientes ── */}
+          {/*TAB 1: Solicitudes pendientes */}
           {activeTab === 0 && (
             <div className={styles.tabContent}>
               {pendientesAprobar.length === 0 ? (
@@ -169,7 +169,7 @@ export default function CentroGarantiasPage() {
 
                       {g.stock_disponible < g.cantidad ? (
                         <p className={styles.alertaSinStock}>
-                          ⚠️ Sin stock suficiente ({g.stock_disponible}{" "}
+                          Sin stock suficiente ({g.stock_disponible}{" "}
                           disponibles). La aprobación quedará bloqueada hasta
                           que ingrese mercadería.
                         </p>
@@ -196,7 +196,7 @@ export default function CentroGarantiasPage() {
             </div>
           )}
 
-          {/* ── TAB 2: Pendientes de inspección ── */}
+          {/* TAB 2: Pendientes de inspección  */}
           {activeTab === 1 && (
             <div className={styles.tabContent}>
               {pendientesInspeccion.length === 0 ? (
@@ -245,7 +245,7 @@ export default function CentroGarantiasPage() {
         </>
       )}
 
-      {/* ── MODAL RESOLVER (Aprobar / Rechazar) ── */}
+      {/* MODAL RESOLVER (Aprobar / Rechazar)  */}
       {modalResolver && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalContent}>
@@ -254,8 +254,8 @@ export default function CentroGarantiasPage() {
             {modalResolver.stock_disponible <
               modalResolver.cantidad_reclamada && (
               <div className={styles.alertaBanner}>
-                ⚠️ No hay stock suficiente para aprobar esta garantía. Solo
-                puedes rechazarla o esperar a que ingrese mercadería.
+                No hay stock suficiente para aprobar esta garantía. Solo puedes
+                rechazarla o esperar a que ingrese mercadería.
               </div>
             )}
 
@@ -308,7 +308,7 @@ export default function CentroGarantiasPage() {
         </div>
       )}
 
-      {/* ── MODAL INSPECCIÓN TÉCNICA ── */}
+      {/*modal inspección técnica*/}
       {modalInspeccion && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalContent}>

@@ -131,7 +131,7 @@ export default function ListadoVentas() {
   const exportarPDF = async () => {
     setGenerandoPdf(true);
     try {
-      // Obtenemos todos los registros para el reporte usando un límite alto (ignorando la paginación de la UI)
+      // Obtenemos todos los registros para el reporte usando un límite alto
       const filtrosReporte = { ...filtros, page: 1, limit: 10000 };
       const respuesta = await VentaService.obtenerVentas(filtrosReporte);
       const ventasReporte = respuesta.data || [];
@@ -141,7 +141,7 @@ export default function ListadoVentas() {
         return;
       }
 
-      const doc = new jsPDF("landscape"); // Formato horizontal para que quepan bien las columnas
+      const doc = new jsPDF("landscape"); // Formato horizontal
 
       // Encabezados del Documento
       doc.setFontSize(20);
@@ -172,7 +172,7 @@ export default function ListadoVentas() {
         const descuento = v.descuento || 0;
         const total = v.total;
 
-        // Cálculo del IVA asumiendo que el 12% ya viene incluido en el total (Guatemala)
+        // Cálculo del IVA
         const iva = total - total / 1.12;
 
         sumaSubtotal += subtotal;
@@ -253,7 +253,6 @@ export default function ListadoVentas() {
       {/* Filtros */}
       <div className={styles.card}>
         <form className={styles.filtrosGrid} onSubmit={manejarFiltros}>
-          {/* ... [Los mismos inputs de filtros del código original se mantienen igual] ... */}
           <div className={styles.filterGroup}>
             <label>ID de Venta</label>
             <input
@@ -343,7 +342,7 @@ export default function ListadoVentas() {
               Limpiar
             </button>
 
-            {/* BOTÓN DE EXPORTAR A PDF CORREGIDO */}
+            {/* boton exportar PDF */}
             <button
               type="button"
               className={styles.btnPrimary}
@@ -367,7 +366,6 @@ export default function ListadoVentas() {
       </div>
 
       {/* Tabla */}
-      {/* ... [El resto de la tabla se mantiene exactamente igual] ... */}
       <div className={styles.card}>
         {loading ? (
           <p className={styles.textMuted}>Cargando datos...</p>

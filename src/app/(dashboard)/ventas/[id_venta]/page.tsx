@@ -5,7 +5,6 @@ import { useParams, useRouter } from "next/navigation";
 import styles from "./VentaDetalle.module.css";
 import { VentaService } from "@/services/venta.service";
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
 function fmtFecha(iso: string) {
   return new Date(iso).toLocaleString("es-GT", {
     day: "2-digit",
@@ -49,7 +48,7 @@ const LABELS_ESTADO: Record<string, string> = {
   rechazada: "Rechazada",
 };
 
-// ── Componente ────────────────────────────────────────────────────────────────
+//Componente
 export default function DetalleVentaPage() {
   const params = useParams();
   const router = useRouter();
@@ -58,7 +57,7 @@ export default function DetalleVentaPage() {
   const API_URL =
     process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
 
-  // ── Datos de la venta
+  // Datos de la venta
   const [data, setData] = useState<{ venta: any; detalles: any[] } | null>(
     null,
   );
@@ -116,23 +115,23 @@ export default function DetalleVentaPage() {
     }
   };
 
-  // ── Sesión
+  //Sesión
   const [esSupervisor, setEsSupervisor] = useState(false);
 
-  // ── Modal de anulación
+  //Modal de anulación
   const [modalAnulacion, setModalAnulacion] = useState(false);
   const [motivoAnulacion, setMotivoAnulacion] = useState("");
   const [montoDevolucion, setMontoDevolucion] = useState("");
   const [anulando, setAnulando] = useState(false);
   const [errorAnulacion, setErrorAnulacion] = useState("");
 
-  // ── Carga inicial ─────────────────────────────────────────────────────────
+  //Carga inicial
   useEffect(() => {
     const esSup = ROLES_SUPERVISOR.includes(getRol());
     setEsSupervisor(esSup);
     if (id_venta > 0) {
       cargarVenta();
-      if (esSup) cargarRepartidores(); // ← agregar
+      if (esSup) cargarRepartidores();
     }
   }, [id_venta]);
 
@@ -149,7 +148,7 @@ export default function DetalleVentaPage() {
     }
   };
 
-  // ── Anulación ─────────────────────────────────────────────────────────────
+  //Anulación
   const abrirModalAnulacion = () => {
     setMotivoAnulacion("");
     setMontoDevolucion("");
@@ -203,7 +202,7 @@ export default function DetalleVentaPage() {
     }
   };
 
-  // ── Guardas de renderizado ────────────────────────────────────────────────
+  //Guardas de renderizado
   if (!id_venta || id_venta <= 0)
     return (
       <div className={styles.container}>
@@ -238,7 +237,7 @@ export default function DetalleVentaPage() {
 
   return (
     <div className={styles.container}>
-      {/* ── Encabezado ──────────────────────────────────────────────────────── */}
+      {/*Encabezado */}
       <div className={styles.header}>
         <h1 className={styles.title}>Detalle de Venta #{venta.id_venta}</h1>
         <div className={styles.headerActions}>
@@ -280,7 +279,7 @@ export default function DetalleVentaPage() {
         </div>
       )}
 
-      {/* ── Cards de información ─────────────────────────────────────────────── */}
+      {/*Cards de información */}
       <div className={styles.gridContainer}>
         {/* Información General */}
         <div className={styles.card}>
@@ -336,7 +335,7 @@ export default function DetalleVentaPage() {
         </div>
       </div>
 
-      {/* ── Tabla de productos ───────────────────────────────────────────────── */}
+      {/*Tabla de productos */}
       <div className={styles.card} style={{ marginTop: "2rem" }}>
         <h3>Productos</h3>
         <div style={{ overflowX: "auto" }}>
@@ -373,7 +372,7 @@ export default function DetalleVentaPage() {
         </div>
       </div>
 
-      {/* ── Modal de anulación ───────────────────────────────────────────────── */}
+      {/*Modal de anulación */}
       {modalAnulacion && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalContent}>

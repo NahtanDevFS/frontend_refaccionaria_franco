@@ -278,7 +278,7 @@ export default function HistorialGarantiasPage() {
         )}
       </div>
 
-      {/* Modal de Trazabilidad (Sin cambios, se mantiene igual) */}
+      {/* Modal de Trazabilidad */}
       {selectedGarantia && (
         <div
           className={styles.modalOverlay}
@@ -299,7 +299,7 @@ export default function HistorialGarantiasPage() {
             </div>
             <div className={styles.modalBody}>
               <div className={styles.timeline}>
-                {/* Paso 1: Solicitud */}
+                {/*Solicitud */}
                 <div className={styles.timelineItem}>
                   <div className={styles.timelineDate}>
                     {formatearFecha(selectedGarantia.fecha_solicitud, false)}
@@ -321,7 +321,7 @@ export default function HistorialGarantiasPage() {
                     </p>
                   </div>
                 </div>
-                {/* Paso 2: Recepción */}
+                {/*Recepción */}
                 {selectedGarantia.fecha_recepcion && (
                   <div className={styles.timelineItem}>
                     <div className={styles.timelineDate}>
@@ -341,7 +341,7 @@ export default function HistorialGarantiasPage() {
                     </div>
                   </div>
                 )}
-                {/* Paso 3: Inspección Técnica */}
+                {/*Inspección Técnica */}
                 {selectedGarantia.fecha_inspeccion && (
                   <div className={styles.timelineItem}>
                     <div className={styles.timelineDate}>
@@ -361,7 +361,7 @@ export default function HistorialGarantiasPage() {
                     </div>
                   </div>
                 )}
-                {/* Paso 4: Reacondicionamiento */}
+                {/*Reacondicionamiento */}
                 {selectedGarantia.id_lote && (
                   <div className={styles.timelineItem}>
                     <div className={styles.timelineDate}>

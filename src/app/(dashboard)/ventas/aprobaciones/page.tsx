@@ -50,12 +50,12 @@ export default function AprobacionesPage() {
     "pendientes",
   );
 
-  // ── Tab Pendientes ──────────────────────────────────────────────────────────
+  //Tab Pendientes
   const [pendientes, setPendientes] = useState<any[]>([]);
   const [cargandoPendientes, setCargandoPendientes] = useState(true);
   const [errorPendientes, setErrorPendientes] = useState<string | null>(null);
 
-  // ── Tab Historial ───────────────────────────────────────────────────────────
+  //Tab Historial
   const [historial, setHistorial] = useState<any[]>([]);
   const [cargandoHistorial, setCargandoHistorial] = useState(false);
   const [errorHistorial, setErrorHistorial] = useState<string | null>(null);
@@ -68,7 +68,7 @@ export default function AprobacionesPage() {
     return document.cookie.match(new RegExp("(^| )token=([^;]+)"))?.[2] ?? "";
   }
 
-  // ── Carga inicial ────────────────────────────────────────────────────────────
+  // Carga inicial
   useEffect(() => {
     cargarPendientes();
     cargarVendedores();
@@ -81,7 +81,7 @@ export default function AprobacionesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tabActual]);
 
-  // ─── Pendientes ───────────────────────────────────────────────────────────
+  // Pendientes
   const cargarPendientes = async () => {
     try {
       setCargandoPendientes(true);
@@ -127,7 +127,7 @@ export default function AprobacionesPage() {
     }
   };
 
-  // ─── Historial ────────────────────────────────────────────────────────────
+  // Historial
   const cargarVendedores = async () => {
     try {
       const res = await fetch(`${API_URL}/ventas/vendedores/activos`, {
@@ -192,9 +192,7 @@ export default function AprobacionesPage() {
         </button>
       </div>
 
-      {/* ══════════════════════════════════════════════════════════════
-          TAB 1: PENDIENTES
-         ══════════════════════════════════════════════════════════════ */}
+      {/*TAB 1 PENDIENTES*/}
       {tabActual === "pendientes" && (
         <div className={styles.card}>
           {errorPendientes && (
@@ -283,9 +281,7 @@ export default function AprobacionesPage() {
         </div>
       )}
 
-      {/* ══════════════════════════════════════════════════════════════
-          TAB 2: HISTORIAL DE DESCUENTOS
-         ══════════════════════════════════════════════════════════════ */}
+      {/*TAB 2: HISTORIAL DE DESCUENTOS*/}
       {tabActual === "historial" && (
         <>
           {/* Filtros */}

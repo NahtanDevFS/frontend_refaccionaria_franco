@@ -27,7 +27,7 @@ export interface GarantiaPendiente {
   cliente: string;
 }
 
-// NUEVO: Interfaz para el historial de garantías
+//Interfaz para el historial de garantías
 export interface GarantiaHistorial {
   id_garantia: number;
   fecha_solicitud: string;

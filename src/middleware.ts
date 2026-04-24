@@ -2,7 +2,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-// Helper para determinar a dónde mandar a un usuario según su rol
+//Helper para determinar a dónde mandar a un usuario según su rol
 function getRutaPorDefecto(rol?: string) {
   switch (rol) {
     case "VENDEDOR":
@@ -26,21 +26,21 @@ export function middleware(request: NextRequest) {
   const rol = request.cookies.get("rol")?.value;
   const pathname = request.nextUrl.pathname;
 
-  // 1. Si no hay token y no está en el login, lo mandamos al login
+  //Si no hay token y no está en el login, lo mandamos al login
   if (!token && pathname !== "/login") {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // 2. Si hay token y va al login o a la raíz, mandarlo a su módulo correspondiente
+  //Si hay token y va al login o a la raíz, mandarlo a su módulo correspondiente
   if (token && (pathname === "/login" || pathname === "/")) {
     return NextResponse.redirect(new URL(getRutaPorDefecto(rol), request.url));
   }
 
-  // 3. MATRIZ DE PERMISOS PARA PROTEGER RUTAS
-  // Las rutas más específicas deben ir PRIMERO para que el find() las priorice
+  //MATRIZ DE PERMISOS PARA PROTEGER RUTAS
+  //Las rutas más específicas deben ir PRIMERO para que el find() las priorice
   if (token && rol) {
     const accesosPermitidos: Record<string, string[]> = {
-      // ── Módulo de Rendimiento ──────────────────────────────────────────────
+      //Módulo de Rendimiento
       "/inicio": [
         "ADMINISTRADOR",
         "GERENTE_REGIONAL",
@@ -48,17 +48,17 @@ export function middleware(request: NextRequest) {
         "VENDEDOR",
       ],
 
-      // ── Módulo de Ventas (subrutas específicas) ───────────────────────────
+      //  Módulo de Ventas (subrutas específicas)
       "/ventas/nueva": ["ADMINISTRADOR", "SUPERVISOR_SUCURSAL", "VENDEDOR"],
       "/ventas/historial": ["ADMINISTRADOR", "SUPERVISOR_SUCURSAL"],
       "/ventas/aprobaciones": ["ADMINISTRADOR", "SUPERVISOR_SUCURSAL"],
 
-      // ── Módulo de Garantías (subrutas específicas) ────────────────────────
+      //  Módulo de Garantías (subrutas específicas)
       "/garantias/nueva": ["ADMINISTRADOR", "SUPERVISOR_SUCURSAL", "VENDEDOR"],
       "/garantias/aprobaciones": ["ADMINISTRADOR", "SUPERVISOR_SUCURSAL"],
       "/garantias/historial": ["ADMINISTRADOR", "SUPERVISOR_SUCURSAL"],
 
-      // ── Módulo de Operaciones ─────────────────────────────────────────────
+      //  Módulo de Operaciones
       "/caja": ["ADMINISTRADOR", "SUPERVISOR_SUCURSAL", "CAJERO"],
       "/bodega": ["ADMINISTRADOR", "BODEGUERO"],
       "/entregas": ["ADMINISTRADOR", "REPARTIDOR"],

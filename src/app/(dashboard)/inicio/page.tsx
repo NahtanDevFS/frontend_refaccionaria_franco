@@ -75,7 +75,7 @@ export default function InicioPage() {
   const [historial, setHistorial] = useState<HistorialMeta[]>([]);
   const [loadingHist, setLoadingHist] = useState(false);
 
-  // ─── Carga inicial ─────────────────────────────────────────
+  // Carga inicial
   useEffect(() => {
     const userString = localStorage.getItem("usuario");
     if (userString) {
@@ -122,7 +122,7 @@ export default function InicioPage() {
     if (tabActual === "rendimiento") cargarRendimiento();
   }, [tabActual, cargarRendimiento]);
 
-  // ─── Tab Asignar: cargar vendedores ────────────────────────
+  // Tab Asignar: cargar vendedores
   const cargarVendedores = useCallback(async () => {
     if (!usuario || !esRolGlobal(usuario.rol)) return;
     try {
@@ -144,7 +144,7 @@ export default function InicioPage() {
     }
   }, [usuario, sucursalFiltro, anioMeta, mesMeta]);
 
-  // ─── Tab Asignar: seleccionar vendedor y cargar sugerencia
+  //Tab Asignar: seleccionar vendedor y cargar sugerencia
   const seleccionarVendedor = async (v: VendedorParaMeta) => {
     setVendedorSel(v);
     setSugerencia(null);
@@ -234,7 +234,7 @@ export default function InicioPage() {
     }
   };
 
-  // ─── Tab Historial ─────────────────────────────────────────
+  // Tab Historial
   const cargarHistorial = useCallback(async (id_emp: number) => {
     setLoadingHist(true);
     try {
@@ -258,7 +258,6 @@ export default function InicioPage() {
     if (empleadoHist !== "") cargarHistorial(Number(empleadoHist));
   }, [empleadoHist, cargarHistorial]);
 
-  // ─── Renders auxiliares ────────────────────────────────────
   if (!usuario) return null;
 
   const rolGlobal = esRolGlobal(usuario.rol);
@@ -325,7 +324,7 @@ export default function InicioPage() {
         )}
       </div>
 
-      {/* ═══ TAB: RENDIMIENTO ═══════════════════════════════ */}
+      {/* TAB: RENDIMIENTO */}
       {tabActual === "rendimiento" && (
         <>
           {loadingRend ? (
@@ -485,7 +484,7 @@ export default function InicioPage() {
         </>
       )}
 
-      {/* ═══ TAB: ASIGNAR META ════════════════════════════════ */}
+      {/*  TAB: ASIGNAR META  */}
       {tabActual === "asignar" && rolGlobal && (
         <div className={styles.formContainer}>
           {msgExito && <div className={styles.successMsg}>{msgExito}</div>}
@@ -686,7 +685,7 @@ export default function InicioPage() {
         </div>
       )}
 
-      {/* ═══ TAB: HISTORIAL ═══════════════════════════════════ */}
+      {/* TAB: HISTORIAL */}
       {tabActual === "historial" && rolGlobal && (
         <div className={styles.formContainer}>
           <div className={styles.empleadoSelectorRow}>

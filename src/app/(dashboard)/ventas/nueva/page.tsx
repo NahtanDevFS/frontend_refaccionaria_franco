@@ -1361,14 +1361,14 @@ export default function NuevaVentaPage() {
                   htmlFor="contraEntrega"
                   className={`${styles.label} ${styles.checkboxLabel}`}
                 >
-                  El cliente pagará al recibir (Contra Entrega)
+                  Pago contra entrega (solo en efectivo)
                 </label>
               </div>
             </>
           )}
         </div>
 
-        {/* ── Botón generar orden — usa entregaValida para el blindaje completo */}
+        {/*Botón generar orden*/}
         <button
           className={styles.btnAction}
           onClick={procesarOrden}
@@ -1383,7 +1383,7 @@ export default function NuevaVentaPage() {
         </button>
       </div>
 
-      {/* ── MODAL: Registrar cliente nuevo ──────────────────────────────────── */}
+      {/*MODAL: Registrar cliente nuevo  */}
       {modoCliente === "nuevo" && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalNuevoCliente}>
@@ -1479,7 +1479,7 @@ export default function NuevaVentaPage() {
                 </select>
               </div>
 
-              {/* Teléfono — obligatorio, solo dígitos, 8 caracteres */}
+              {/* Teléfono obligatorio, solo dígitos, 8 caracteres */}
               <div className={styles.formGroup}>
                 <label className={styles.label}>
                   Teléfono <span style={{ color: "#ef4444" }}>*</span>
@@ -1691,7 +1691,7 @@ export default function NuevaVentaPage() {
         </div>
       )}
 
-      {/* ── MODAL: Compatibilidad de vehículos ──────────────────────────────── */}
+      {/* modal Compatibilidad de vehículos */}
       {modalCompatVentaAbierto && productoCompatVenta && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalContent}>
@@ -1741,7 +1741,7 @@ export default function NuevaVentaPage() {
         </div>
       )}
 
-      {/* ── MODAL: Confirmación de orden ────────────────────────────────────── */}
+      {/* modal Confirmación de orden  */}
       {modalConfirmacion && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalConfirmacion}>

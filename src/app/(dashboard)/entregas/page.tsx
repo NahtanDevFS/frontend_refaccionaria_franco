@@ -10,7 +10,6 @@ import {
 } from "@/types/entrega.types";
 import styles from "./Entregas.module.css";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 function fmtFecha(iso: string): string {
   return new Date(iso).toLocaleString("es-GT", {
     day: "2-digit",
@@ -47,12 +46,12 @@ function hoy(): string {
   return new Date().toISOString().split("T")[0];
 }
 
-// ─── Componente ───────────────────────────────────────────────────────────────
+//  Componente
 export default function EntregasPage() {
-  // ── Tab activo ──────────────────────────────────────────────────────────────
+  //  Tab activo
   const [tabActual, setTabActual] = useState<"ruta" | "historial">("ruta");
 
-  // ── Tab Ruta ────────────────────────────────────────────────────────────────
+  //  Tab Ruta
   const [pedidos, setPedidos] = useState<PedidoDomicilio[]>([]);
   const [cargandoRuta, setCargandoRuta] = useState(true);
   const [pedidoSeleccionado, setPedidoSeleccionado] =
@@ -64,25 +63,25 @@ export default function EntregasPage() {
   const [modalFallo, setModalFallo] = useState(false);
   const [motivoFallo, setMotivoFallo] = useState("");
 
-  // ── Cancelaciones ───────────────────────────────────────────────────────────
+  //  Cancelaciones
   const [confirmandoCancelacion, setConfirmandoCancelacion] = useState<
     number | null
   >(null);
 
-  // ── Tab Historial ───────────────────────────────────────────────────────────
+  //  Tab Historial
   const [desde, setDesde] = useState(fechaHaceNDias(6));
   const [hasta, setHasta] = useState(hoy());
   const [historial, setHistorial] = useState<EntregaHistorial[]>([]);
   const [resumen, setResumen] = useState<ResumenHistorial | null>(null);
   const [cargandoHistorial, setCargandoHistorial] = useState(false);
 
-  // ── Modal Comprobante ───────────────────────────────────────────────────────
+  //  Modal Comprobante
   const [modalComprobante, setModalComprobante] =
     useState<ComprobanteEntrega | null>(null);
   const [cargandoComprobante, setCargandoComprobante] = useState(false);
   const comprobanteRef = useRef<HTMLDivElement>(null);
 
-  // ── Carga inicial ────────────────────────────────────────────────────────────
+  //  Carga inicial
   useEffect(() => {
     cargarPedidos();
   }, []);
@@ -91,7 +90,7 @@ export default function EntregasPage() {
     if (tabActual === "historial") cargarHistorial();
   }, [tabActual]);
 
-  // ─── Lógica Ruta ──────────────────────────────────────────────────────────
+  //  Lógica Ruta
   const cargarPedidos = async () => {
     try {
       setCargandoRuta(true);
@@ -187,7 +186,7 @@ export default function EntregasPage() {
     }
   };
 
-  // ─── Lógica Historial ─────────────────────────────────────────────────────
+  //  Lógica Historial
   const cargarHistorial = async () => {
     try {
       setCargandoHistorial(true);
@@ -203,7 +202,7 @@ export default function EntregasPage() {
     }
   };
 
-  // ─── Comprobante ──────────────────────────────────────────────────────────
+  //  Comprobante
   const abrirComprobante = async (id_pago: number) => {
     setCargandoComprobante(true);
     setModalComprobante(null);
@@ -260,12 +259,12 @@ export default function EntregasPage() {
     ventana.close();
   };
 
-  // ─── Render ────────────────────────────────────────────────────────────────
+  //  Render
   return (
     <div className={styles.container}>
       <h1 className={styles.title}>Entregas a Domicilio</h1>
 
-      {/* ── Tabs ─────────────────────────────────────────────────────────── */}
+      {/*  Tabs  */}
       <div className={styles.tabs}>
         <button
           className={`${styles.tabBtn} ${tabActual === "ruta" ? styles.tabActive : ""}`}
@@ -287,9 +286,7 @@ export default function EntregasPage() {
         </button>
       </div>
 
-      {/* ══════════════════════════════════════════════════════════════════════
-          TAB 1: MI RUTA
-         ══════════════════════════════════════════════════════════════════════ */}
+      {/* TAB 1: MI RUTA*/}
       {tabActual === "ruta" && (
         <>
           {cargandoRuta ? (
@@ -351,7 +348,7 @@ export default function EntregasPage() {
                 </div>
               )}
 
-              {/* ── Sección: pedidos activos en ruta ────────────────────── */}
+              {/* Sección: pedidos activos en ruta */}
               {pedidosPendientes.length === 0 ? (
                 <div className={styles.emptyState}>
                   No tienes entregas pendientes en este momento.
@@ -420,9 +417,7 @@ export default function EntregasPage() {
         </>
       )}
 
-      {/* ══════════════════════════════════════════════════════════════════════
-          TAB 2: MI HISTORIAL
-         ══════════════════════════════════════════════════════════════════════ */}
+      {/* TAB 2: MI HISTORIAL*/}
       {tabActual === "historial" && (
         <div className={styles.historialContainer}>
           <div className={styles.historialFiltros}>
@@ -563,11 +558,9 @@ export default function EntregasPage() {
         </div>
       )}
 
-      {/* ══════════════════════════════════════════════════════════════════════
-          MODALES
-         ══════════════════════════════════════════════════════════════════════ */}
+      {/* MODALES*/}
 
-      {/* ── Modal Cobro ──────────────────────────────────────────────────── */}
+      {/* Modal Cobro  */}
       {modalExito && pedidoSeleccionado && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalContent}>
@@ -601,7 +594,7 @@ export default function EntregasPage() {
         </div>
       )}
 
-      {/* ── Modal Fallida ─────────────────────────────────────────────────── */}
+      {/*Modal Fallida  */}
       {modalFallo && pedidoSeleccionado && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalContent}>
@@ -632,7 +625,7 @@ export default function EntregasPage() {
         </div>
       )}
 
-      {/* ── Modal Comprobante ─────────────────────────────────────────────── */}
+      {/*Modal Comprobante  */}
       {(cargandoComprobante || modalComprobante) && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalComprobanteContent}>

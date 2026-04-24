@@ -1,12 +1,10 @@
-// src/types/bodega.types.ts
-
 export interface LoteInventario {
-  id_lote: number; // PK de lote_inventario (el lote/compra padre)
-  cantidad_actual: number; // suma de todas las filas de lote_detalle de este lote en esta sucursal
-  costo_unitario: number; // costo promedio ponderado de esas filas
-  fecha_ingreso: string; // fecha de la compra original (ISO string)
-  es_apertura: boolean; // true = stock histórico sin trazabilidad real
-  id_orden_compra: number | null; // null en lotes de apertura o ajustes manuales
+  id_lote: number;
+  cantidad_actual: number;
+  costo_unitario: number;
+  fecha_ingreso: string;
+  es_apertura: boolean;
+  id_orden_compra: number | null;
 }
 
 export interface InventarioBodega {

@@ -1,17 +1,11 @@
 // src/types/caja.types.ts
-// ── PUNTO 5: uuid_factura ya no existe en pago. Si se necesita la
-//    factura FEL, se consulta desde la tabla factura via id_factura.
-//    El comprobante interno del historial no necesita uuid.
-//
-// ── PUNTO 7: direccion_entrega en CobroRepartidorPendiente ahora
-//    proviene de destinatario.direccion_texto — mismo nombre en la respuesta.
 
 export interface OrdenPendienteCaja {
   id_venta: number;
   cliente: string;
   total: number;
   estado: string;
-  canal: "mostrador" | "domicilio"; // ← campo nuevo
+  canal: "mostrador" | "domicilio";
   pago_contra_entrega: boolean;
   created_at: string;
 }
@@ -26,7 +20,6 @@ export interface RegistrarPagoDTO {
   metodo_pago: "efectivo" | "tarjeta" | "transferencia";
   monto: number;
   referencia?: string;
-  // uuid_factura eliminado (PUNTO 5) — si se necesita FEL usar endpoint de factura
 }
 
 export interface RegistrarArqueoDTO {
@@ -34,7 +27,7 @@ export interface RegistrarArqueoDTO {
   observaciones?: string;
 }
 
-// ─── Historial de cobros ──────────────────────────────────────────────────────
+//Historial de cobros
 
 export interface DetalleFactura {
   id_producto: number;
@@ -66,7 +59,7 @@ export interface HistorialCobro {
   detalles: DetalleFactura[];
 }
 
-// ─── Liquidación de repartidores ──────────────────────────────────────────────
+//Liquidación de repartidores
 
 export interface CobroRepartidorPendiente {
   id_pago: number;
@@ -84,7 +77,7 @@ export interface LiquidarRepartidorDTO {
   id_pagos: number[];
 }
 
-// ─── Historial de arqueos ─────────────────────────────────────────────────────
+// Historial de arqueos
 
 export interface ArqueoHistorial {
   id_arqueo: number;
