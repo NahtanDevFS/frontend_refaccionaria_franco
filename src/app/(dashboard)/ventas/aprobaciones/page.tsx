@@ -5,7 +5,6 @@ import Link from "next/link";
 import styles from "../historial/Ventas.module.css";
 import apStyles from "./Aprobaciones.module.css";
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 function fmtFecha(iso: string) {
   return new Date(iso).toLocaleString("es-GT", {
     day: "2-digit",
@@ -42,12 +41,11 @@ const BADGE_ESTADO: Record<string, string> = {
   anulada: "badgeDanger",
 };
 
-// ─── Componente ───────────────────────────────────────────────────────────────
 export default function AprobacionesPage() {
   const API_URL =
     process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
 
-  // ── Tab activo ──────────────────────────────────────────────────────────────
+  // Tab activo
   const [tabActual, setTabActual] = useState<"pendientes" | "historial">(
     "pendientes",
   );
@@ -89,7 +87,10 @@ export default function AprobacionesPage() {
       setCargandoPendientes(true);
       setErrorPendientes(null);
       const res = await fetch(`${API_URL}/ventas/autorizaciones/pendientes`, {
-        headers: { Authorization: `Bearer ${getToken()}` },
+        headers: {
+          Authorization: `Bearer ${getToken()}`,
+          "ngrok-skip-browser-warning": "true",
+        },
       });
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.message || "Error");
@@ -114,6 +115,7 @@ export default function AprobacionesPage() {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${getToken()}`,
+          "ngrok-skip-browser-warning": "true",
         },
         body: JSON.stringify({ id_venta, aprobado }),
       });
@@ -129,7 +131,10 @@ export default function AprobacionesPage() {
   const cargarVendedores = async () => {
     try {
       const res = await fetch(`${API_URL}/ventas/vendedores/activos`, {
-        headers: { Authorization: `Bearer ${getToken()}` },
+        headers: {
+          Authorization: `Bearer ${getToken()}`,
+          "ngrok-skip-browser-warning": "true",
+        },
       });
       const data = await res.json();
       if (res.ok && data.success) setVendedores(data.data ?? []);
@@ -147,7 +152,12 @@ export default function AprobacionesPage() {
 
       const res = await fetch(
         `${API_URL}/ventas/descuentos/historial?${params}`,
-        { headers: { Authorization: `Bearer ${getToken()}` } },
+        {
+          headers: {
+            Authorization: `Bearer ${getToken()}`,
+            "ngrok-skip-browser-warning": "true",
+          },
+        },
       );
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.message || "Error");
@@ -159,7 +169,6 @@ export default function AprobacionesPage() {
     }
   };
 
-  // ─── Render ───────────────────────────────────────────────────────────────
   return (
     <div className={styles.container}>
       <h1 className={styles.title}>Gestión de Descuentos</h1>

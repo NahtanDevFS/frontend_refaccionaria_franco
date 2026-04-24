@@ -73,7 +73,10 @@ export default function DetalleVentaPage() {
   const cargarRepartidores = async () => {
     try {
       const res = await fetch(`${API_URL}/ventas/repartidores/activos`, {
-        headers: { Authorization: `Bearer ${getToken()}` },
+        headers: {
+          Authorization: `Bearer ${getToken()}`,
+          "ngrok-skip-browser-warning": "true",
+        },
       });
       const json = await res.json();
       if (json.success) setRepartidores(json.data ?? []);
@@ -97,6 +100,7 @@ export default function DetalleVentaPage() {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${getToken()}`,
+            "ngrok-skip-browser-warning": "true",
           },
           body: JSON.stringify({ id_repartidor: Number(idRepartidorNuevo) }),
         },
@@ -180,6 +184,7 @@ export default function DetalleVentaPage() {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${getToken()}`,
+          "ngrok-skip-browser-warning": "true",
         },
         body: JSON.stringify({
           motivo_anulacion: motivoAnulacion.trim(),
