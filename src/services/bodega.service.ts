@@ -31,7 +31,10 @@ export const BodegaService = {
     }
 
     const res = await fetch(`${API_URL}/bodega/inventario${queryParams}`, {
-      headers: { Authorization: `Bearer ${obtenerToken()}` },
+      headers: {
+        Authorization: `Bearer ${obtenerToken()}`,
+        "ngrok-skip-browser-warning": "true",
+      },
     });
     const data = await res.json();
     if (!res.ok || !data.success) throw new Error(data.message);
@@ -42,7 +45,10 @@ export const BodegaService = {
   //de un producto concreto en la tab de Stock
   async obtenerLotes(id_producto: number): Promise<LoteInventario[]> {
     const res = await fetch(`${API_URL}/bodega/lotes/${id_producto}`, {
-      headers: { Authorization: `Bearer ${obtenerToken()}` },
+      headers: {
+        Authorization: `Bearer ${obtenerToken()}`,
+        "ngrok-skip-browser-warning": "true",
+      },
     });
     const data = await res.json();
     if (!res.ok || !data.success) throw new Error(data.message);
@@ -55,6 +61,7 @@ export const BodegaService = {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${obtenerToken()}`,
+        "ngrok-skip-browser-warning": "true",
       },
       body: JSON.stringify(payload),
     });
@@ -64,7 +71,10 @@ export const BodegaService = {
 
   async obtenerRecepciones(): Promise<RecepcionPendiente[]> {
     const res = await fetch(`${API_URL}/bodega/recepciones`, {
-      headers: { Authorization: `Bearer ${obtenerToken()}` },
+      headers: {
+        Authorization: `Bearer ${obtenerToken()}`,
+        "ngrok-skip-browser-warning": "true",
+      },
     });
     const data = await res.json();
     if (!res.ok || !data.success) throw new Error(data.message);
@@ -74,7 +84,10 @@ export const BodegaService = {
   async confirmarRecepcion(id_despacho: number): Promise<void> {
     const res = await fetch(`${API_URL}/bodega/recepcion/${id_despacho}`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${obtenerToken()}` },
+      headers: {
+        Authorization: `Bearer ${obtenerToken()}`,
+        "ngrok-skip-browser-warning": "true",
+      },
     });
     const data = await res.json();
     if (!res.ok || !data.success) throw new Error(data.message);
@@ -86,6 +99,7 @@ export const BodegaService = {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${obtenerToken()}`,
+        "ngrok-skip-browser-warning": "true",
       },
       body: JSON.stringify(payload),
     });

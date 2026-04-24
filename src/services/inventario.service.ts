@@ -2,7 +2,10 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
 
 const getHeaders = () => {
   const token = document.cookie.match(new RegExp("(^| )token=([^;]+)"))?.[2];
-  return { Authorization: `Bearer ${token}` };
+  return {
+    Authorization: `Bearer ${token}`,
+    "ngrok-skip-browser-warning": "true",
+  };
 };
 
 export const InventarioService = {

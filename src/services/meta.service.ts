@@ -19,6 +19,7 @@ function getHeaders(): HeadersInit {
   return {
     "Content-Type": "application/json",
     Authorization: `Bearer ${getToken()}`,
+    "ngrok-skip-browser-warning": "true",
   };
 }
 

@@ -6,6 +6,7 @@ export const UbicacionService = {
     const res = await fetch(`${API_URL}/ubicaciones/departamentos`, {
       headers: {
         Authorization: `Bearer ${token}`,
+        "ngrok-skip-browser-warning": "true",
       },
     });
     if (!res.ok) throw new Error("Error al obtener departamentos");
@@ -19,6 +20,7 @@ export const UbicacionService = {
       {
         headers: {
           Authorization: `Bearer ${token}`,
+          "ngrok-skip-browser-warning": "true",
         },
       },
     );

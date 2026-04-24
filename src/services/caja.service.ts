@@ -22,7 +22,10 @@ function obtenerToken(): string {
 export const CajaService = {
   async obtenerPendientes(): Promise<OrdenPendienteCaja[]> {
     const res = await fetch(`${API_URL}/caja/pendientes`, {
-      headers: { Authorization: `Bearer ${obtenerToken()}` },
+      headers: {
+        Authorization: `Bearer ${obtenerToken()}`,
+        "ngrok-skip-browser-warning": "true",
+      },
     });
     const data = await res.json();
     if (!res.ok || !data.success)
@@ -36,6 +39,7 @@ export const CajaService = {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${obtenerToken()}`,
+        "ngrok-skip-browser-warning": "true",
       },
       body: JSON.stringify(payload),
     });
@@ -46,7 +50,10 @@ export const CajaService = {
 
   async obtenerResumen(): Promise<ResumenCaja[]> {
     const res = await fetch(`${API_URL}/caja/resumen`, {
-      headers: { Authorization: `Bearer ${obtenerToken()}` },
+      headers: {
+        Authorization: `Bearer ${obtenerToken()}`,
+        "ngrok-skip-browser-warning": "true",
+      },
     });
     const data = await res.json();
     if (!res.ok || !data.success)
@@ -62,6 +69,7 @@ export const CajaService = {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${obtenerToken()}`,
+        "ngrok-skip-browser-warning": "true",
       },
       body: JSON.stringify(payload),
     });
@@ -79,7 +87,10 @@ export const CajaService = {
     if (fechaDesde) params.append("desde", fechaDesde);
     if (fechaHasta) params.append("hasta", fechaHasta);
     const res = await fetch(`${API_URL}/caja/historial?${params.toString()}`, {
-      headers: { Authorization: `Bearer ${obtenerToken()}` },
+      headers: {
+        Authorization: `Bearer ${obtenerToken()}`,
+        "ngrok-skip-browser-warning": "true",
+      },
     });
     const data = await res.json();
     if (!res.ok || !data.success)
@@ -92,7 +103,10 @@ export const CajaService = {
     CobroRepartidorPendiente[]
   > {
     const res = await fetch(`${API_URL}/caja/repartidores/pendientes`, {
-      headers: { Authorization: `Bearer ${obtenerToken()}` },
+      headers: {
+        Authorization: `Bearer ${obtenerToken()}`,
+        "ngrok-skip-browser-warning": "true",
+      },
     });
     const data = await res.json();
     if (!res.ok || !data.success)
@@ -110,6 +124,7 @@ export const CajaService = {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${obtenerToken()}`,
+        "ngrok-skip-browser-warning": "true",
       },
       body: JSON.stringify(payload),
     });
@@ -130,7 +145,10 @@ export const CajaService = {
     if (fechaHasta) params.append("hasta", fechaHasta);
     if (id_cajero) params.append("id_cajero", String(id_cajero));
     const res = await fetch(`${API_URL}/caja/arqueos?${params.toString()}`, {
-      headers: { Authorization: `Bearer ${obtenerToken()}` },
+      headers: {
+        Authorization: `Bearer ${obtenerToken()}`,
+        "ngrok-skip-browser-warning": "true",
+      },
     });
     const data = await res.json();
     if (!res.ok || !data.success)
@@ -140,7 +158,10 @@ export const CajaService = {
 
   async obtenerCajeros(): Promise<CajeroOpcion[]> {
     const res = await fetch(`${API_URL}/caja/arqueos/cajeros`, {
-      headers: { Authorization: `Bearer ${obtenerToken()}` },
+      headers: {
+        Authorization: `Bearer ${obtenerToken()}`,
+        "ngrok-skip-browser-warning": "true",
+      },
     });
     const data = await res.json();
     if (!res.ok || !data.success)
@@ -151,7 +172,10 @@ export const CajaService = {
   async verificarArqueo(id_arqueo: number): Promise<void> {
     const res = await fetch(`${API_URL}/caja/arqueos/${id_arqueo}/verificar`, {
       method: "PATCH",
-      headers: { Authorization: `Bearer ${obtenerToken()}` },
+      headers: {
+        Authorization: `Bearer ${obtenerToken()}`,
+        "ngrok-skip-browser-warning": "true",
+      },
     });
     const data = await res.json();
     if (!res.ok || !data.success)

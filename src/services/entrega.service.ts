@@ -21,7 +21,10 @@ export const EntregaService = {
   async obtenerMisPedidos(): Promise<PedidoDomicilio[]> {
     const token = obtenerToken();
     const res = await fetch(`${API_URL}/entregas/mis-pedidos`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "ngrok-skip-browser-warning": "true",
+      },
     });
     const data = await res.json();
     if (!res.ok || !data.success)
@@ -39,6 +42,7 @@ export const EntregaService = {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
+        "ngrok-skip-browser-warning": "true",
       },
       body: JSON.stringify(payload),
     });
@@ -58,6 +62,7 @@ export const EntregaService = {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
+        "ngrok-skip-browser-warning": "true",
       },
       body: JSON.stringify(payload),
     });
@@ -69,7 +74,10 @@ export const EntregaService = {
   async obtenerComprobante(id_pago: number): Promise<ComprobanteEntrega> {
     const token = obtenerToken();
     const res = await fetch(`${API_URL}/entregas/comprobante/${id_pago}`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "ngrok-skip-browser-warning": "true",
+      },
     });
     const data = await res.json();
     if (!res.ok || !data.success)
@@ -84,7 +92,12 @@ export const EntregaService = {
     const token = obtenerToken();
     const res = await fetch(
       `${API_URL}/entregas/mi-historial?desde=${desde}&hasta=${hasta}`,
-      { headers: { Authorization: `Bearer ${token}` } },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "ngrok-skip-browser-warning": "true",
+        },
+      },
     );
     const data = await res.json();
     if (!res.ok || !data.success)
@@ -98,7 +111,10 @@ export const EntregaService = {
       `${API_URL}/entregas/${id_pedido}/confirmar-cancelacion`,
       {
         method: "PATCH",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "ngrok-skip-browser-warning": "true",
+        },
       },
     );
     const data = await res.json();

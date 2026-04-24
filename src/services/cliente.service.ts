@@ -11,7 +11,10 @@ export const ClienteService = {
   async buscarPorNit(nit: string) {
     const token = document.cookie.match(new RegExp("(^| )token=([^;]+)"))?.[2];
     const res = await fetch(`${API_URL}/clientes/buscar?nit=${nit}`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "ngrok-skip-browser-warning": "true",
+      },
     });
     if (res.status === 404) return null;
     if (!res.ok) throw new Error("Error buscando cliente");
@@ -23,7 +26,12 @@ export const ClienteService = {
     const token = document.cookie.match(new RegExp("(^| )token=([^;]+)"))?.[2];
     const res = await fetch(
       `${API_URL}/clientes/buscar-general?query=${encodeURIComponent(criterio)}`,
-      { headers: { Authorization: `Bearer ${token}` } },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "ngrok-skip-browser-warning": "true",
+        },
+      },
     );
     if (!res.ok) throw new Error("Error en la búsqueda de clientes");
     const data = await res.json();

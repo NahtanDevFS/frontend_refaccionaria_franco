@@ -9,7 +9,7 @@ import {
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
 
 /**
- * Función única para obtener el token.
+ Función única para obtener el token.
  */
 function obtenerToken(): string {
   if (typeof document === "undefined") return "";
@@ -42,7 +42,10 @@ export const VentaService = {
     }
 
     const response = await fetch(url, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "ngrok-skip-browser-warning": "true",
+      },
     });
 
     if (!response.ok) throw new Error("Error al obtener las ventas");
@@ -54,7 +57,10 @@ export const VentaService = {
   > {
     const token = obtenerToken();
     const response = await fetch(`${API_URL}/ventas/vendedores/activos`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "ngrok-skip-browser-warning": "true",
+      },
     });
     if (!response.ok) throw new Error("Error al obtener vendedores");
     const data = await response.json();
@@ -71,6 +77,7 @@ export const VentaService = {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
+        "ngrok-skip-browser-warning": "true",
       },
       body: JSON.stringify(payload),
     });
@@ -94,7 +101,10 @@ export const VentaService = {
   > {
     const token = obtenerToken();
     const response = await fetch(`${API_URL}/ventas/repartidores/activos`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "ngrok-skip-browser-warning": "true",
+      },
     });
     const data = await response.json();
     if (!response.ok) throw new Error("Error al obtener repartidores");
@@ -106,7 +116,10 @@ export const VentaService = {
   ): Promise<{ venta: any; detalles: any[] }> {
     const token = obtenerToken();
     const response = await fetch(`${API_URL}/ventas/${id_venta}`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "ngrok-skip-browser-warning": "true",
+      },
     });
     const data = await response.json();
     if (!response.ok || !data.success)
