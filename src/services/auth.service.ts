@@ -22,16 +22,14 @@ export const AuthService = {
   },
 
   guardarSesion(token: string, usuario: any) {
-    // Guardamos el token Y el rol en cookies para el Middleware
+    //guardamos el token Y el rol en cookies para el Middleware
     document.cookie = `token=${token}; path=/; max-age=1800; samesite=strict`;
     document.cookie = `rol=${usuario.rol}; path=/; max-age=1800; samesite=strict`;
 
-    // Guardamos todo el usuario en localStorage para la UI
     localStorage.setItem("usuario", JSON.stringify(usuario));
   },
 
   cerrarSesion() {
-    // Limpiamos ambas cookies y el localStorage
     document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
     document.cookie = "rol=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
     localStorage.removeItem("usuario");

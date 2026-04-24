@@ -58,7 +58,7 @@ export interface CrearVentaDTO {
   detalles: DetalleOrdenDTO[];
 }
 
-// ── Tipos de respuesta ──────────────────────────────────────────────────────
+//Tipos de respuesta
 
 export interface VentaResumen {
   id_venta: number;
