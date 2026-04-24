@@ -248,7 +248,7 @@ export default function DetalleVentaPage() {
         </div>
       </div>
 
-      {/* ── Bloque informativo de anulación (solo si está anulada) ──────────── */}
+      {/*Bloque informativo de anulación (solo si está anulada) */}
       {estaAnulada && (
         <div className={styles.bloqueAnulacion}>
           <div className={styles.bloqueAnulacionTexto}>
@@ -261,7 +261,7 @@ export default function DetalleVentaPage() {
             </p>
             <p>
               <strong>Motivo:</strong>{" "}
-              <em>{venta.motivo_anulacion ?? "Sin motivo registrado"}</em>
+              {venta.motivo_anulacion ?? "Sin motivo registrado"}
             </p>
             {Number(venta.monto_devolucion) > 0 && (
               <p>

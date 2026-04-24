@@ -7,7 +7,7 @@ import { ClienteService } from "@/services/cliente.service";
 import { VentaService } from "@/services/venta.service";
 import { UbicacionService } from "@/services/ubicacion.service";
 
-// ─── Tipos ────────────────────────────────────────────────────────────────────
+//Tipos
 interface ProductoInventario {
   id_producto: number;
   id_producto_reacondicionado?: number;
@@ -52,11 +52,15 @@ export default function NuevaVentaPage() {
     id_sucursal: number;
   } | null>(null);
 
-  // ── Errores del modal de nuevo cliente ───────────────────────────────────────
+  //Errores del modal de nuevo cliente
   const [erroresCliente, setErroresCliente] = useState<{
     nit?: string;
+    nombre?: string;
     telefono?: string;
     email?: string;
+    direccion?: string;
+    id_departamento?: string;
+    id_municipio?: string;
   }>({});
 
   const [tipoBusqueda, setTipoBusqueda] = useState<"texto" | "vehiculo">(
@@ -448,24 +452,37 @@ export default function NuevaVentaPage() {
       id_municipio: "",
       notas_internas: "",
     });
-    setErroresCliente({}); // limpiar errores al abrir
+    setErroresCliente({}); //limpiar errores al abrir
     setModoCliente("nuevo");
     setSugerencias([]);
   };
 
-  // ── Validación y guardado del nuevo cliente ──────────────────────────────────
+  //Validación y guardado del nuevo cliente
   const guardarNuevoCliente = async () => {
-    const errores: { nit?: string; telefono?: string; email?: string } = {};
+    const errores: {
+      nit?: string;
+      nombre?: string;
+      telefono?: string;
+      email?: string;
+      direccion?: string;
+      id_departamento?: string;
+      id_municipio?: string;
+    } = {};
 
-    // Validar NIT: exactamente 9 dígitos si se ingresó
+    //NIT obligatorio
     const nitLimpio = nuevoCliente.nit.trim();
-    if (nitLimpio !== "" && nitLimpio.toUpperCase() !== "CF") {
-      if (nitLimpio.length !== 9) {
-        errores.nit = "El NIT debe tener exactamente 9 dígitos.";
-      }
+    if (!nitLimpio) {
+      errores.nit = "El NIT es obligatorio.";
+    } else if (nitLimpio.length !== 9) {
+      errores.nit = "El NIT debe tener exactamente 9 dígitos.";
     }
 
-    // Validar teléfono: obligatorio, exactamente 8 dígitos
+    // Nombre: obligatorio
+    if (!nuevoCliente.nombre.trim()) {
+      errores.nombre = "El nombre o razón social es obligatorio.";
+    }
+
+    // Teléfono: obligatorio, exactamente 8 dígitos
     const telLimpio = nuevoCliente.telefono.trim();
     if (!telLimpio) {
       errores.telefono = "El teléfono es obligatorio.";
@@ -473,7 +490,7 @@ export default function NuevaVentaPage() {
       errores.telefono = "El teléfono debe tener exactamente 8 dígitos.";
     }
 
-    // Validar email: formato válido si se ingresó
+    // Email: formato válido si se ingresó (opcional)
     if (nuevoCliente.email.trim() !== "") {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(nuevoCliente.email.trim())) {
@@ -481,14 +498,29 @@ export default function NuevaVentaPage() {
       }
     }
 
-    // Mostrar errores de formato antes de hacer llamadas a la BD
+    // Dirección: obligatoria
+    if (!nuevoCliente.direccion.trim()) {
+      errores.direccion = "La dirección es obligatoria.";
+    }
+
+    // Departamento: obligatorio
+    if (!nuevoCliente.id_departamento) {
+      errores.id_departamento = "El departamento es obligatorio.";
+    }
+
+    // Municipio: obligatorio
+    if (!nuevoCliente.id_municipio) {
+      errores.id_municipio = "El municipio es obligatorio.";
+    }
+
+    // Mostrar errores de formato antes de llamadas a la BD
     if (Object.keys(errores).length > 0) {
       setErroresCliente(errores);
       return;
     }
 
-    // Verificar NIT duplicado en BD
-    if (nitLimpio && nitLimpio.toUpperCase() !== "CF") {
+    // Verificar NIT duplicado en BD (solo si no es CF)
+    if (nitLimpio) {
       try {
         const existe = await ClienteService.buscarPorNit(nitLimpio);
         if (existe) {
@@ -513,21 +545,16 @@ export default function NuevaVentaPage() {
         return;
       }
     } catch {
-      // Si falla la búsqueda, el backend lo rechazará de todas formas
+      // Si falla la búsqueda, el backend lo rechazará
     }
 
     setErroresCliente({});
-
-    if (!nuevoCliente.nombre.trim()) {
-      alert("El nombre es obligatorio.");
-      return;
-    }
 
     setGuardandoCliente(true);
     try {
       const clienteLocal: ClienteDB = {
         nombre_razon_social: nuevoCliente.nombre.trim(),
-        nit: nitLimpio || "CF",
+        nit: nitLimpio,
         tipo_cliente: nuevoCliente.tipo,
         telefono: nuevoCliente.telefono || null,
         email: nuevoCliente.email || null,
@@ -1374,10 +1401,7 @@ export default function NuevaVentaPage() {
               {/* NIT */}
               <div className={styles.formGroup}>
                 <label className={styles.label}>
-                  NIT{" "}
-                  <span className={styles.hintText}>
-                    (dejar vacío si no tiene)
-                  </span>
+                  NIT <span style={{ color: "#ef4444" }}>*</span>
                 </label>
                 <input
                   type="text"
@@ -1385,7 +1409,7 @@ export default function NuevaVentaPage() {
                   maxLength={9}
                   value={nuevoCliente.nit}
                   onChange={(e) => {
-                    const val = e.target.value.replace(/\D/g, ""); // solo dígitos
+                    const val = e.target.value.replace(/\D/g, "");
                     setNuevoCliente({ ...nuevoCliente, nit: val });
                     setErroresCliente((prev) => ({ ...prev, nit: undefined }));
                   }}
@@ -1414,11 +1438,29 @@ export default function NuevaVentaPage() {
                   type="text"
                   className={styles.input}
                   value={nuevoCliente.nombre}
-                  onChange={(e) =>
-                    setNuevoCliente({ ...nuevoCliente, nombre: e.target.value })
-                  }
+                  onChange={(e) => {
+                    setNuevoCliente({
+                      ...nuevoCliente,
+                      nombre: e.target.value,
+                    });
+                    setErroresCliente((prev) => ({
+                      ...prev,
+                      nombre: undefined,
+                    }));
+                  }}
                   placeholder="Ej. Taller López"
                 />
+                {erroresCliente.nombre && (
+                  <p
+                    style={{
+                      color: "#ef4444",
+                      fontSize: "0.75rem",
+                      marginTop: "0.25rem",
+                    }}
+                  >
+                    {erroresCliente.nombre}
+                  </p>
+                )}
               </div>
 
               {/* Tipo */}
@@ -1501,33 +1543,56 @@ export default function NuevaVentaPage() {
 
               {/* Dirección */}
               <div className={styles.formGroup}>
-                <label className={styles.label}>Dirección</label>
+                <label className={styles.label}>
+                  Dirección <span style={{ color: "#ef4444" }}>*</span>
+                </label>
                 <input
                   type="text"
                   className={styles.input}
                   value={nuevoCliente.direccion}
-                  onChange={(e) =>
+                  onChange={(e) => {
                     setNuevoCliente({
                       ...nuevoCliente,
                       direccion: e.target.value,
-                    })
-                  }
+                    });
+                    setErroresCliente((prev) => ({
+                      ...prev,
+                      direccion: undefined,
+                    }));
+                  }}
                 />
+                {erroresCliente.direccion && (
+                  <p
+                    style={{
+                      color: "#ef4444",
+                      fontSize: "0.75rem",
+                      marginTop: "0.25rem",
+                    }}
+                  >
+                    {erroresCliente.direccion}
+                  </p>
+                )}
               </div>
 
               {/* Departamento */}
               <div className={styles.formGroup}>
-                <label className={styles.label}>Departamento</label>
+                <label className={styles.label}>
+                  Departamento <span style={{ color: "#ef4444" }}>*</span>
+                </label>
                 <select
                   className={styles.select}
                   value={nuevoCliente.id_departamento}
-                  onChange={(e) =>
+                  onChange={(e) => {
                     setNuevoCliente({
                       ...nuevoCliente,
                       id_departamento: e.target.value,
                       id_municipio: "",
-                    })
-                  }
+                    });
+                    setErroresCliente((prev) => ({
+                      ...prev,
+                      id_departamento: undefined,
+                    }));
+                  }}
                 >
                   <option value="">Seleccione...</option>
                   {deptoModal.map((d) => (
@@ -1536,21 +1601,38 @@ export default function NuevaVentaPage() {
                     </option>
                   ))}
                 </select>
+                {erroresCliente.id_departamento && (
+                  <p
+                    style={{
+                      color: "#ef4444",
+                      fontSize: "0.75rem",
+                      marginTop: "0.25rem",
+                    }}
+                  >
+                    {erroresCliente.id_departamento}
+                  </p>
+                )}
               </div>
 
               {/* Municipio */}
               <div className={styles.formGroup}>
-                <label className={styles.label}>Municipio</label>
+                <label className={styles.label}>
+                  Municipio <span style={{ color: "#ef4444" }}>*</span>
+                </label>
                 <select
                   className={styles.select}
                   value={nuevoCliente.id_municipio}
                   disabled={!nuevoCliente.id_departamento}
-                  onChange={(e) =>
+                  onChange={(e) => {
                     setNuevoCliente({
                       ...nuevoCliente,
                       id_municipio: e.target.value,
-                    })
-                  }
+                    });
+                    setErroresCliente((prev) => ({
+                      ...prev,
+                      id_municipio: undefined,
+                    }));
+                  }}
                 >
                   <option value="">Seleccione...</option>
                   {munModal.map((m) => (
@@ -1559,6 +1641,17 @@ export default function NuevaVentaPage() {
                     </option>
                   ))}
                 </select>
+                {erroresCliente.id_municipio && (
+                  <p
+                    style={{
+                      color: "#ef4444",
+                      fontSize: "0.75rem",
+                      marginTop: "0.25rem",
+                    }}
+                  >
+                    {erroresCliente.id_municipio}
+                  </p>
+                )}
               </div>
 
               {/* Notas */}

@@ -77,7 +77,6 @@ export const EntregaService = {
     return data.data as ComprobanteEntrega;
   },
 
-  // ─── NUEVO ────────────────────────────────────────────────────────────────
   async obtenerMiHistorial(
     desde: string,
     hasta: string,

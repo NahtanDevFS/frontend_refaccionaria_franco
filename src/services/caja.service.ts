@@ -87,7 +87,7 @@ export const CajaService = {
     return data.data;
   },
 
-  // ─── Liquidación de repartidores ──────────────────────────────────────────
+  //Liquidación de repartidores
   async obtenerCobrosRepartidoresPendientes(): Promise<
     CobroRepartidorPendiente[]
   > {
@@ -119,7 +119,7 @@ export const CajaService = {
     return data.data;
   },
 
-  // ─── Historial de arqueos ─────────────────────────────────────────────────
+  //Historial de arqueos
   async obtenerHistorialArqueos(
     fechaDesde?: string,
     fechaHasta?: string,

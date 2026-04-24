@@ -30,7 +30,7 @@ export default function BodegaPage() {
   const [filtroReac, setFiltroReac] = useState("");
   const [cargando, setCargando] = useState(false);
 
-  // --- TAB 1: Stock local ---
+  //tab 1 Stock local
   const [inventario, setInventario] = useState<InventarioBodega[]>([]);
   const [categorias, setCategorias] = useState<
     { id_categoria: number; nombre: string }[]
@@ -53,15 +53,15 @@ export default function BodegaPage() {
     id_modelo: "",
   });
 
-  // ── Panel de lotes expandible ──────────────────────────────────────────────
-  // lotesExpandidos: id_producto → array de lotes (se carga lazy al expandir)
-  // cargandoLotes:  Set de id_producto que están en proceso de carga
+  //Panel de lotes expandible
+  //lotesExpandidos, id_producto es array de lotes
+  //cargandoLotes,  set de id_producto que están en proceso de carga
   const [lotesExpandidos, setLotesExpandidos] = useState<
     Record<number, LoteInventario[]>
   >({});
   const [cargandoLotes, setCargandoLotes] = useState<Set<number>>(new Set());
 
-  // --- TAB 2: Emitir Despacho ---
+  //tab 2 emitir Despacho
   const [idSucursalDestino, setIdSucursalDestino] = useState("");
   const [busquedaTraslado, setBusquedaTraslado] = useState("");
   const [resultadosTraslado, setResultadosTraslado] = useState<
@@ -75,10 +75,10 @@ export default function BodegaPage() {
     { producto: InventarioBodega; cantidad: number }[]
   >([]);
 
-  // --- TAB 3: Recepciones ---
+  //tab 3 recepciones
   const [recepciones, setRecepciones] = useState<RecepcionPendiente[]>([]);
 
-  // --- TAB 4: Ajustes (Mermas) ---
+  //tab 4 ajustes (Mermas)
   const [busquedaAjuste, setBusquedaAjuste] = useState("");
   const [resultadosAjuste, setResultadosAjuste] = useState<InventarioBodega[]>(
     [],
@@ -92,7 +92,7 @@ export default function BodegaPage() {
     motivo: "",
   });
 
-  // --- Modales ---
+  //Modales
   const [modalDetalleAbierto, setModalDetalleAbierto] = useState(false);
   const [productoDetalle, setProductoDetalle] =
     useState<InventarioBodega | null>(null);
@@ -146,12 +146,12 @@ export default function BodegaPage() {
     }
   }, [busquedaVehiculo.id_marca]);
 
-  // --- LÓGICA STOCK ---
+  //lógica de stock
   const cargarInventario = async (filtros?: any) => {
     try {
       setCargando(true);
-      // Al recargar el inventario se limpian los lotes expandidos
-      // para evitar mostrar datos obsoletos
+      //Al recargar el inventario se limpian los lotes expandidos
+      //para evitar mostrar datos obsoletos
       setLotesExpandidos({});
       const data = await BodegaService.obtenerInventario(filtros);
       setInventario(data);
@@ -179,9 +179,9 @@ export default function BodegaPage() {
     cargarInventario();
   };
 
-  // ── Lógica del panel de lotes ──────────────────────────────────────────────
+  //Lógica del panel de lotes
   const toggleLotes = async (id_producto: number) => {
-    // Si ya están cargados, colapsar
+    //Si ya están cargados, colapsar
     if (lotesExpandidos[id_producto] !== undefined) {
       setLotesExpandidos((prev) => {
         const siguiente = { ...prev };
@@ -191,10 +191,10 @@ export default function BodegaPage() {
       return;
     }
 
-    // Si están en carga, ignorar el click
+    //Si están en carga, ignorar el click
     if (cargandoLotes.has(id_producto)) return;
 
-    // Cargar desde la API (lazy)
+    //Cargar desde la API
     setCargandoLotes((prev) => new Set(prev).add(id_producto));
     try {
       const lotes = await BodegaService.obtenerLotes(id_producto);
@@ -216,9 +216,8 @@ export default function BodegaPage() {
       month: "short",
       year: "numeric",
     });
-  // ──────────────────────────────────────────────────────────────────────────
 
-  // --- LÓGICA TRASLADOS ---
+  //lógica de traslados
   const buscarParaTraslado = async () => {
     if (!busquedaTraslado.trim()) return alert("Ingrese un SKU o Nombre.");
     try {
@@ -285,7 +284,7 @@ export default function BodegaPage() {
     }
   };
 
-  // --- LÓGICA RECEPCIONES ---
+  //lógica de recepciones
   const cargarRecepciones = async () => {
     try {
       setCargando(true);
@@ -310,7 +309,7 @@ export default function BodegaPage() {
     }
   };
 
-  // --- LÓGICA AJUSTES ---
+  //lógica de ajustes
   const buscarParaAjuste = async () => {
     if (!busquedaAjuste.trim())
       return alert("Ingrese un SKU o Nombre para buscar.");
@@ -399,7 +398,7 @@ export default function BodegaPage() {
         )}
       </div>
 
-      {/* TAB 1: STOCK */}
+      {/* tab 1 de stock*/}
       {tabActual === "stock" && (
         <div className={styles.card}>
           <div className={styles.filterSection}>
@@ -563,10 +562,10 @@ export default function BodegaPage() {
                           {item.cantidad_actual}
                         </td>
 
-                        {/* ── Columna Lotes ── */}
+                        {/*Columna Lotes */}
                         <td>
                           {item.total_lotes >= 1 ? (
-                            // 1 o más lotes: siempre mostrar botón expandible
+                            // 1 o más lotes siempre mostrar botón expandible
                             <button
                               className={styles.btnSelectMini}
                               onClick={() => toggleLotes(item.id_producto)}
@@ -625,7 +624,7 @@ export default function BodegaPage() {
                         </td>
                       </tr>
 
-                      {/* ── Fila expandible de lotes (se inserta justo debajo) ── */}
+                      {/*Fila expandible de lotes (se inserta justo debajo)*/}
                       {lotesExpandidos[item.id_producto] !== undefined && (
                         <tr key={`lotes-${item.id_producto}`}>
                           <td
@@ -734,7 +733,7 @@ export default function BodegaPage() {
                                           }}
                                         >
                                           {idx === 0 ? (
-                                            // El primer lote (más antiguo) es el siguiente en consumirse
+                                            //El primer lote (más antiguo) es el siguiente en consumirse
                                             <span
                                               style={{
                                                 display: "inline-flex",
@@ -780,7 +779,7 @@ export default function BodegaPage() {
         </div>
       )}
 
-      {/* TAB 2: EMITIR TRASLADO — sin cambios */}
+      {/*tab 2 emitir traslado*/}
       {tabActual === "emitir" && (
         <div className={styles.card}>
           <h2 className={styles.sectionTitle}>
@@ -958,7 +957,7 @@ export default function BodegaPage() {
         </div>
       )}
 
-      {/* TAB 3: RECIBIR TRASLADO — sin cambios */}
+      {/*tab 3 de recibir traslado*/}
       {tabActual === "recibir" && !cargando && (
         <div>
           {recepciones.length === 0 ? (
@@ -1007,7 +1006,7 @@ export default function BodegaPage() {
         </div>
       )}
 
-      {/* TAB 4: AJUSTES — sin cambios */}
+      {/*tab 4 de ajustes*/}
       {tabActual === "ajustes" && (
         <div className={styles.card}>
           <h2 className={styles.sectionTitle}>
@@ -1163,7 +1162,7 @@ export default function BodegaPage() {
         </div>
       )}
 
-      {/* TAB 5: REACONDICIONADOS — sin cambios */}
+      {/*tab 5 de reacondicionados*/}
       {tabActual === "reacondicionados" && (
         <div className={styles.card}>
           <h2 className={styles.sectionTitle}>
@@ -1242,7 +1241,7 @@ export default function BodegaPage() {
         </div>
       )}
 
-      {/* MODAL DETALLE COMPATIBILIDAD VEHÍCULOS — sin cambios */}
+      {/*modal de detalle de compatibilidad con vehiculo*/}
       {modalCompatAbierto && productoCompatSelect && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalContent}>
@@ -1291,7 +1290,7 @@ export default function BodegaPage() {
         </div>
       )}
 
-      {/* MODAL DETALLE OTRAS SUCURSALES — sin cambios */}
+      {/*modal detalle otras sucursales*/}
       {modalDetalleAbierto && productoDetalle && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalContent}>

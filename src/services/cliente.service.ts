@@ -7,7 +7,7 @@ function getToken() {
 }
 
 export const ClienteService = {
-  // Búsqueda exacta por NIT (sin cambios)
+  // Búsqueda exacta por NIT
   async buscarPorNit(nit: string) {
     const token = document.cookie.match(new RegExp("(^| )token=([^;]+)"))?.[2];
     const res = await fetch(`${API_URL}/clientes/buscar?nit=${nit}`, {
@@ -18,8 +18,7 @@ export const ClienteService = {
     return res.json();
   },
 
-  // ← NUEVO: búsqueda libre por nombre, NIT o teléfono
-  // (es la que llama el autocomplete del nuevo page.tsx)
+  //búsqueda libre por nombre, NIT o teléfono
   async buscarClientes(criterio: string): Promise<any[]> {
     const token = document.cookie.match(new RegExp("(^| )token=([^;]+)"))?.[2];
     const res = await fetch(

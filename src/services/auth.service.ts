@@ -22,7 +22,7 @@ export const AuthService = {
   },
 
   guardarSesion(token: string, usuario: any) {
-    //guardamos el token Y el rol en cookies para el Middleware
+    //guarda el token Y el rol en cookies para el Middleware
     document.cookie = `token=${token}; path=/; max-age=1800; samesite=strict`;
     document.cookie = `rol=${usuario.rol}; path=/; max-age=1800; samesite=strict`;
 

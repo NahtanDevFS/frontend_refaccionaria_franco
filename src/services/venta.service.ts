@@ -9,9 +9,7 @@ import {
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
 
 /**
- * Función ÚNICA para obtener el token.
- * Usarla en todos los métodos del servicio evita el bug de
- * "Bearer undefined" que ocurría cuando se duplicaba la lógica inline.
+ * Función única para obtener el token.
  */
 function obtenerToken(): string {
   if (typeof document === "undefined") return "";
@@ -65,12 +63,6 @@ export const VentaService = {
 
   /**
    * Crea una orden de venta.
-   * Llama a POST /api/ventas/orden (único endpoint de creación de ventas).
-   *
-   * Retorna el id_venta creado para poder redirigir o mostrar confirmación.
-   *
-   * ELIMINADO: crearVenta() que apuntaba a /ventas/mostrador (ruta inexistente →
-   * siempre devolvía 404). Toda creación de venta usa este método.
    */
   async crearOrdenVenta(payload: CrearVentaDTO): Promise<number> {
     const token = obtenerToken();

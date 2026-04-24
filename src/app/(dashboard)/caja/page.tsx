@@ -17,11 +17,11 @@ import styles from "./Caja.module.css";
 
 type Tab = "cobros" | "arqueo" | "historial" | "arqueos";
 
-// ── Generar reporte PDF de un arqueo ─────────────────────────────────────
+//Generar reporte PDF de un arqueo
 const generarReporteArqueo = (a: ArqueoHistorial) => {
   const doc = new jsPDF();
 
-  // ── Encabezado (mismo estilo que reporte de ventas) ──────────────────────
+  //Encabezado
   doc.setFontSize(20);
   doc.setTextColor(40);
   doc.text("Refaccionaria Franco", 14, 22);
@@ -38,7 +38,7 @@ const generarReporteArqueo = (a: ArqueoHistorial) => {
     38,
   );
 
-  // ── Parseo seguro de fecha (evita "Invalid Date") ────────────────────────
+  // ── Parseo seguro de fecha
   // fecha_cierre llega como "2026-04-04" — se parte manualmente
   const [anio, mes, dia] = String(a.fecha_cierre)
     .split("T")[0]
@@ -177,7 +177,7 @@ export default function CajaPage() {
   const [monto, setMonto] = useState("");
   const [referencia, setReferencia] = useState("");
 
-  // ── Tab 2: Arqueo + Liquidación
+  //Tab 2 Arqueo + Liquidación
   const [resumen, setResumen] = useState<ResumenCaja[]>([]);
   const [efectivoContado, setEfectivoContado] = useState("");
   const [obsArqueo, setObservacionesArqueo] = useState("");
@@ -189,14 +189,14 @@ export default function CajaPage() {
   );
   const [liquidando, setLiquidando] = useState(false);
 
-  // ── Tab 3: Historial de cobros
+  //Tab 3: Historial de cobros
   const [historial, setHistorial] = useState<HistorialCobro[]>([]);
   const [fechaDesde, setFechaDesde] = useState(hoy());
   const [fechaHasta, setFechaHasta] = useState(hoy());
   const [modalFactura, setModalFactura] = useState<HistorialCobro | null>(null);
   const facturaRef = useRef<HTMLDivElement>(null);
 
-  // ── Tab 4: Historial de arqueos
+  //Tab 4: Historial de arqueos
   const [arqueos, setArqueos] = useState<ArqueoHistorial[]>([]);
   const [resumenArqueos, setResumenArqueos] = useState<ResumenArqueos | null>(
     null,
@@ -244,7 +244,7 @@ export default function CajaPage() {
         ? "Tarjeta POS"
         : "Transferencia";
 
-  // ── Funciones Tab 1
+  //Funciones Tab 1
   const cargarPendientes = async () => {
     try {
       setCargando(true);
@@ -285,7 +285,7 @@ export default function CajaPage() {
     }
   };
 
-  // ── Funciones Tab 2
+  //Funciones Tab 2
   const cargarResumen = async () => {
     try {
       setCargando(true);
@@ -403,7 +403,7 @@ export default function CajaPage() {
     return acc;
   }, {});
 
-  // ── Funciones Tab 3
+  //Funciones Tab 3
   const cargarHistorial = async () => {
     try {
       setCargando(true);
@@ -441,7 +441,7 @@ export default function CajaPage() {
     setTimeout(() => ventana.print(), 300);
   };
 
-  // ── Funciones Tab 4
+  //Funciones Tab 4
   const cargarHistorialArqueos = async () => {
     try {
       setCargando(true);
@@ -506,7 +506,7 @@ export default function CajaPage() {
         <p className={styles.loadingText}>Cargando...</p>
       ) : (
         <>
-          {/* ═══ TAB 1: COBROS PENDIENTES ═══════════════════════════════ */}
+          {/*tab 1 de cobros pendientes*/}
           {tabActual === "cobros" && (
             <div className={styles.card}>
               {pendientes.length === 0 ? (
@@ -564,7 +564,7 @@ export default function CajaPage() {
             </div>
           )}
 
-          {/* ═══ TAB 2: ARQUEO + LIQUIDACIÓN ════════════════════════════ */}
+          {/*TAB 2: ARQUEO + LIQUIDACIÓN */}
           {tabActual === "arqueo" && (
             <>
               {/* Liquidación Repartidores */}
@@ -767,7 +767,7 @@ export default function CajaPage() {
             </>
           )}
 
-          {/* ═══ TAB 3: HISTORIAL DE COBROS ═════════════════════════════ */}
+          {/*TAB 3: HISTORIAL DE COBROS  */}
           {tabActual === "historial" && (
             <div className={styles.card}>
               <div className={styles.historialFiltros}>
@@ -883,7 +883,7 @@ export default function CajaPage() {
             </div>
           )}
 
-          {/* ═══ TAB 4: HISTORIAL DE ARQUEOS ════════════════════════════ */}
+          {/* tab 4 de historial de arqueos */}
           {tabActual === "arqueos" && (
             <div className={styles.card}>
               <div className={styles.historialFiltros}>
@@ -1089,7 +1089,7 @@ export default function CajaPage() {
         </>
       )}
 
-      {/* ── MODAL COBRO ───────────────────────────────────────────────────── */}
+      {/*MODAL COBRO  */}
       {modalCobro && ordenSeleccionada && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalContent}>
@@ -1172,7 +1172,7 @@ export default function CajaPage() {
         </div>
       )}
 
-      {/* ── MODAL COMPROBANTE ─────────────────────────────────────────────── */}
+      {/*MODAL COMPROBANTE */}
       {modalFactura && (
         <div
           className={styles.modalOverlay}
