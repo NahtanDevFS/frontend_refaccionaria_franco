@@ -1,8 +1,4 @@
 // src/types/meta.types.ts
-// ── PUNTO 8: Los porcentajes de comisión siguen viajando como parámetros
-//    de entrada al crear una meta. El backend los traduce a id_esquema
-//    internamente. El frontend nunca maneja id_esquema directamente.
-
 export interface RendimientoEmpleado {
   id_empleado: number;
   id_sucursal: number;
@@ -11,6 +7,11 @@ export interface RendimientoEmpleado {
   monto_meta: number;
   monto_vendido: number;
   porcentaje_cumplimiento: number;
+  comision_base_pct: number;
+  comision_excedente_pct: number;
+  comision_base: number;
+  comision_excedente: number;
+  comision_total: number;
 }
 
 export interface ConsolidadoSucursal {
@@ -27,6 +28,8 @@ export interface VendedorParaMeta {
   nombre_sucursal: string;
   ya_tiene_meta: boolean;
   meta_actual: number | null;
+  comision_base_pct_actual: number | null;
+  comision_excedente_pct_actual: number | null;
 }
 
 export interface SugerenciaMeta {
@@ -57,7 +60,15 @@ export interface AsignarMetaPayload {
   anio: number;
   mes: number;
   monto_meta: number;
-  // Siguen siendo opcionales — el backend los usa para resolver/crear el esquema
+  //el backend los usa para resolver/crear el esquema
+  comision_base_pct?: number;
+  comision_excedente_pct?: number;
+}
+
+export interface ActualizarMetaPayload {
+  anio: number;
+  mes: number;
+  monto_meta: number;
   comision_base_pct?: number;
   comision_excedente_pct?: number;
 }

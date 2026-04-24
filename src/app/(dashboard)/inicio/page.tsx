@@ -61,6 +61,7 @@ export default function InicioPage() {
   const [mesMeta, setMesMeta] = useState<number>(hoy.getMonth() + 1);
   const [vendedores, setVendedores] = useState<VendedorParaMeta[]>([]);
   const [vendedorSel, setVendedorSel] = useState<VendedorParaMeta | null>(null);
+  const [modoEdicion, setModoEdicion] = useState(false);
   const [sugerencia, setSugerencia] = useState<SugerenciaMeta | null>(null);
   const [montoMeta, setMontoMeta] = useState<string>("");
   const [comisionBase, setComisionBase] = useState<string>("2");
@@ -143,27 +144,39 @@ export default function InicioPage() {
     }
   }, [usuario, sucursalFiltro, anioMeta, mesMeta]);
 
-  // ─── Tab Asignar: seleccionar vendedor → cargar sugerencia ─
+  // ─── Tab Asignar: seleccionar vendedor y cargar sugerencia
   const seleccionarVendedor = async (v: VendedorParaMeta) => {
-    if (v.ya_tiene_meta) return;
     setVendedorSel(v);
     setSugerencia(null);
-    setMontoMeta("");
     setMsgError("");
     setMsgExito("");
-    try {
-      const sug = await MetaService.obtenerSugerencia(v.id_empleado);
-      setSugerencia(sug);
-      if (sug.sugerencia !== null) {
-        setMontoMeta(sug.sugerencia.toFixed(2));
+
+    if (v.ya_tiene_meta) {
+      // Modo edición: precarga los valores actuales
+      setModoEdicion(true);
+      setMontoMeta(v.meta_actual?.toFixed(2) ?? "");
+      setComisionBase(String(v.comision_base_pct_actual ?? 2));
+      setComisionExc(String(v.comision_excedente_pct_actual ?? 4));
+    } else {
+      // Modo creación: carga sugerencia normalmente
+      setModoEdicion(false);
+      setMontoMeta("");
+      setComisionBase("2");
+      setComisionExc("4");
+      try {
+        const sug = await MetaService.obtenerSugerencia(v.id_empleado);
+        setSugerencia(sug);
+        if (sug.sugerencia !== null) {
+          setMontoMeta(sug.sugerencia.toFixed(2));
+        }
+      } catch (err: any) {
+        setMsgError(err.message);
       }
-    } catch (err: any) {
-      setMsgError(err.message);
     }
   };
 
-  // ─── Tab Asignar: enviar ───────────────────────────────────
-  const asignarMeta = async () => {
+  //Tab Asignar enviar
+  const guardarMeta = async () => {
     if (!vendedorSel) return;
     const monto = parseFloat(montoMeta);
     if (isNaN(monto) || monto <= 0) {
@@ -185,18 +198,32 @@ export default function InicioPage() {
     setMsgError("");
     setMsgExito("");
     try {
-      await MetaService.asignarMeta({
-        id_empleado: vendedorSel.id_empleado,
-        anio: anioMeta,
-        mes: mesMeta,
-        monto_meta: monto,
-        comision_base_pct: base,
-        comision_excedente_pct: exc,
-      });
-      setMsgExito(
-        `Meta asignada a ${vendedorSel.nombre} para ${NOMBRES_MES[mesMeta]}/${anioMeta}`,
-      );
+      if (modoEdicion) {
+        await MetaService.actualizarMeta(vendedorSel.id_empleado, {
+          anio: anioMeta,
+          mes: mesMeta,
+          monto_meta: monto,
+          comision_base_pct: base,
+          comision_excedente_pct: exc,
+        });
+        setMsgExito(
+          `Meta de ${vendedorSel.nombre} actualizada para ${NOMBRES_MES[mesMeta]}/${anioMeta}`,
+        );
+      } else {
+        await MetaService.asignarMeta({
+          id_empleado: vendedorSel.id_empleado,
+          anio: anioMeta,
+          mes: mesMeta,
+          monto_meta: monto,
+          comision_base_pct: base,
+          comision_excedente_pct: exc,
+        });
+        setMsgExito(
+          `Meta asignada a ${vendedorSel.nombre} para ${NOMBRES_MES[mesMeta]}/${anioMeta}`,
+        );
+      }
       setVendedorSel(null);
+      setModoEdicion(false);
       setSugerencia(null);
       setMontoMeta("");
       cargarVendedores();
@@ -425,6 +452,29 @@ export default function InicioPage() {
                             estamos después del día 20. ¡Vamos por más!
                           </div>
                         )}
+                        <div className={styles.comisionBox}>
+                          <div className={styles.comisionTitle}>
+                            Comisión del mes
+                          </div>
+                          <div className={styles.comisionRow}>
+                            <span>Base ({emp.comision_base_pct}%):</span>
+                            <strong>Q {emp.comision_base.toFixed(2)}</strong>
+                          </div>
+                          {emp.comision_excedente > 0 && (
+                            <div className={styles.comisionRow}>
+                              <span>
+                                Excedente ({emp.comision_excedente_pct}%):
+                              </span>
+                              <strong>
+                                Q {emp.comision_excedente.toFixed(2)}
+                              </strong>
+                            </div>
+                          )}
+                          <div className={styles.comisionTotal}>
+                            <span>Total:</span>
+                            <strong>Q {emp.comision_total.toFixed(2)}</strong>
+                          </div>
+                        </div>
                       </div>
                     );
                   })}
@@ -497,7 +547,7 @@ export default function InicioPage() {
                     vendedorSel?.id_empleado === v.id_empleado
                       ? styles.vendedorCardActiva
                       : ""
-                  } ${v.ya_tiene_meta ? styles.vendedorCardConMeta : ""}`}
+                  } ${v.ya_tiene_meta ? styles.vendedorCardConMetaEditable : ""}`}
                   onClick={() => seleccionarVendedor(v)}
                 >
                   <div className={styles.vendedorNombre}>{v.nombre}</div>
@@ -525,9 +575,17 @@ export default function InicioPage() {
                 style={{
                   color: "var(--primary-blue)",
                   marginBottom: "0.75rem",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.75rem",
                 }}
               >
-                Nueva meta para {vendedorSel.nombre}
+                {modoEdicion
+                  ? `Editando meta de ${vendedorSel.nombre}`
+                  : `Nueva meta para ${vendedorSel.nombre}`}
+                {modoEdicion && (
+                  <span className={styles.badgeEdicion}>EDICIÓN</span>
+                )}
               </h3>
 
               {sugerencia && (
@@ -603,10 +661,14 @@ export default function InicioPage() {
               <div className={styles.btnGroup}>
                 <button
                   className={styles.btnPrimary}
-                  onClick={asignarMeta}
+                  onClick={guardarMeta}
                   disabled={loadingAsig}
                 >
-                  {loadingAsig ? "Asignando..." : "Asignar Meta"}
+                  {loadingAsig
+                    ? "Guardando..."
+                    : modoEdicion
+                      ? "Guardar cambios"
+                      : "Asignar meta"}
                 </button>
                 <button
                   className={styles.btnSecondary}

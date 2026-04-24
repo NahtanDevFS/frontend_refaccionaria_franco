@@ -7,6 +7,7 @@ import {
   HistorialMeta,
   SucursalOpcion,
   AsignarMetaPayload,
+  ActualizarMetaPayload,
 } from "../types/meta.types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
@@ -97,6 +98,15 @@ export const MetaService = {
   async asignarMeta(payload: AsignarMetaPayload) {
     const res = await fetch(`${API_URL}/metas/asignar`, {
       method: "POST",
+      headers: getHeaders(),
+      body: JSON.stringify(payload),
+    });
+    return manejarRespuesta(res);
+  },
+
+  async actualizarMeta(id_empleado: number, payload: ActualizarMetaPayload) {
+    const res = await fetch(`${API_URL}/metas/actualizar/${id_empleado}`, {
+      method: "PUT",
       headers: getHeaders(),
       body: JSON.stringify(payload),
     });
