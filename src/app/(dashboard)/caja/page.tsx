@@ -70,8 +70,6 @@ const generarReporteArqueo = (a: ArqueoHistorial) => {
       ["Fecha de Cierre", fechaCierre],
       ["Hora de Registro", horaRegistro],
       ["Cajero", a.cajero],
-      ["Verificación de Supervisor", textoVerificacion],
-      ["Estado", a.estado === "cuadrado" ? "Cuadrado" : "Con diferencia"],
     ],
     theme: "grid",
     headStyles: { fillColor: [41, 128, 185], textColor: 255 },
@@ -99,22 +97,8 @@ const generarReporteArqueo = (a: ArqueoHistorial) => {
       ],
       ["Efectivo físico contado", `Q ${Number(a.efectivo_contado).toFixed(2)}`],
     ],
-    foot: [
-      [
-        { content: `Diferencia`, styles: { fontStyle: "bold" as const } },
-        {
-          content: `${diff >= 0 ? "+" : ""}Q ${diff.toFixed(2)}`,
-          styles: { fontStyle: "bold" as const },
-        },
-      ],
-    ],
     theme: "grid",
     headStyles: { fillColor: [41, 128, 185], textColor: 255 },
-    footStyles: {
-      fillColor: diff === 0 ? [220, 252, 231] : [254, 226, 226], // verde o rojo según cuadre
-      textColor: diff === 0 ? [6, 95, 70] : [153, 27, 27],
-      fontStyle: "bold",
-    },
     styles: { fontSize: 9 },
     columnStyles: { 1: { halign: "right" } },
     margin: { left: 14, right: 14 },
@@ -372,11 +356,28 @@ export default function CajaPage() {
       return alert(
         "Hay cobros de repartidores sin liquidar. Liquídalos primero antes de cerrar caja.",
       );
+
+    const contado = Number(efectivoContado);
+    const diferencia = parseFloat((contado - efectivoSistema).toFixed(2));
+
+    if (diferencia !== 0) {
+      const tipo = diferencia > 0 ? "sobrante" : "faltante";
+      const monto = Math.abs(diferencia).toFixed(2);
+      alert(
+        `La caja no está cuadrada.\n\n` +
+          `Efectivo según sistema: Q ${efectivoSistema.toFixed(2)}\n` +
+          `Efectivo físico contado: Q ${contado.toFixed(2)}\n` +
+          `Diferencia (${tipo}): Q ${monto}\n\n` +
+          `Corrija el monto ingresado antes de cerrar la caja.`,
+      );
+      return;
+    }
+
     if (!confirm("¿Registrar cierre de caja?")) return;
 
     try {
       await CajaService.registrarArqueo({
-        efectivo_contado: Number(efectivoContado),
+        efectivo_contado: contado,
         observaciones: obsArqueo || undefined,
       });
       alert("Arqueo registrado correctamente.");
@@ -750,16 +751,7 @@ export default function CajaPage() {
                       )
                     </div>
                   )}
-                  <div className={styles.inputGroup}>
-                    <label>Observaciones (opcional):</label>
-                    <textarea
-                      className={styles.input}
-                      rows={3}
-                      placeholder="Ej. Faltan Q10..."
-                      value={obsArqueo}
-                      onChange={(e) => setObservacionesArqueo(e.target.value)}
-                    />
-                  </div>
+
                   <button
                     className={styles.btnCerrarCaja}
                     onClick={procesarArqueo}
@@ -933,61 +925,18 @@ export default function CajaPage() {
                   Buscar
                 </button>
               </div>
-
-              {resumenArqueos && resumenArqueos.totalArqueos > 0 && (
+              {resumenArqueos && resumenArqueos.cuadrados > 0 && (
                 <div className={styles.arqueoResumenGrid}>
                   <div className={styles.arqueoResumenCard}>
                     <span className={styles.arqueoResumenLabel}>
                       Total arqueos
                     </span>
                     <span className={styles.arqueoResumenValor}>
-                      {resumenArqueos.totalArqueos}
-                    </span>
-                  </div>
-                  <div
-                    className={`${styles.arqueoResumenCard} ${styles.arqueoResumenVerde}`}
-                  >
-                    <span className={styles.arqueoResumenLabel}>Cuadraron</span>
-                    <span className={styles.arqueoResumenValor}>
                       {resumenArqueos.cuadrados}
                     </span>
                   </div>
-                  <div
-                    className={`${styles.arqueoResumenCard} ${resumenArqueos.conDiferencia > 0 ? styles.arqueoResumenRojo : ""}`}
-                  >
-                    <span className={styles.arqueoResumenLabel}>
-                      Con diferencia
-                    </span>
-                    <span className={styles.arqueoResumenValor}>
-                      {resumenArqueos.conDiferencia}
-                    </span>
-                  </div>
-                  <div
-                    className={`${styles.arqueoResumenCard} ${resumenArqueos.sumaDiferencias !== 0 ? styles.arqueoResumenAmarillo : ""}`}
-                  >
-                    <span className={styles.arqueoResumenLabel}>
-                      Suma diferencias
-                    </span>
-                    <span className={styles.arqueoResumenValor}>
-                      {resumenArqueos.sumaDiferencias >= 0 ? "+" : ""}
-                      {fmtQ(resumenArqueos.sumaDiferencias)}
-                    </span>
-                  </div>
-                  {resumenArqueos.sinVerificar > 0 && (
-                    <div
-                      className={`${styles.arqueoResumenCard} ${styles.arqueoResumenAmarillo}`}
-                    >
-                      <span className={styles.arqueoResumenLabel}>
-                        Sin verificar
-                      </span>
-                      <span className={styles.arqueoResumenValor}>
-                        {resumenArqueos.sinVerificar}
-                      </span>
-                    </div>
-                  )}
                 </div>
               )}
-
               {arqueos.length === 0 ? (
                 <p className={styles.emptyState}>
                   No hay arqueos en este período.
@@ -1002,88 +951,39 @@ export default function CajaPage() {
                         <th>Cajero</th>
                         <th>Sistema</th>
                         <th>Contado</th>
-                        <th>Diferencia</th>
-                        <th>Estado</th>
-                        <th>Verificado por</th>
-                        <th>Observaciones</th>
                         <th>Reporte</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {arqueos.map((a) => (
-                        <tr key={a.id_arqueo}>
-                          <td className={styles.textMuted}>#{a.id_arqueo}</td>
-                          <td>
-                            <div>{fmtDate(a.fecha_cierre)}</div>
-                            <div className={styles.textTiny}>
-                              {new Date(a.created_at).toLocaleTimeString(
-                                "es-GT",
-                                { hour: "2-digit", minute: "2-digit" },
-                              )}
-                            </div>
-                          </td>
-                          <td>{a.cajero}</td>
-                          <td>{fmtQ(a.efectivo_segun_sistema)}</td>
-                          <td>{fmtQ(a.efectivo_contado)}</td>
-                          <td>
-                            <span
-                              className={
-                                a.diferencia === 0
-                                  ? styles.diffValueOk
-                                  : a.diferencia > 0
-                                    ? styles.diffValuePos
-                                    : styles.diffValueNeg
-                              }
-                            >
-                              {a.diferencia >= 0 ? "+" : ""}
-                              {fmtQ(a.diferencia)}
-                            </span>
-                          </td>
-                          <td>
-                            {a.estado === "cuadrado" ? (
-                              <span className={styles.badgeArqueoCuadra}>
-                                Cuadrado
-                              </span>
-                            ) : (
-                              <span className={styles.badgeArqueoDif}>
-                                Diferencia
-                              </span>
-                            )}
-                          </td>
-                          <td>
-                            {a.supervisor_verifica?.trim() ? (
-                              <span className={styles.textSmall}>
-                                {a.supervisor_verifica}
-                              </span>
-                            ) : a.pendiente_verificacion && esSupervisor ? (
+                      {arqueos
+                        .filter((a) => a.estado === "cuadrado")
+                        .map((a) => (
+                          <tr key={a.id_arqueo}>
+                            <td className={styles.textMuted}>#{a.id_arqueo}</td>
+                            <td>
+                              <div>{fmtDate(a.fecha_cierre)}</div>
+                              <div className={styles.textTiny}>
+                                {new Date(a.created_at).toLocaleTimeString(
+                                  "es-GT",
+                                  { hour: "2-digit", minute: "2-digit" },
+                                )}
+                              </div>
+                            </td>
+                            <td>{a.cajero}</td>
+                            <td>{fmtQ(a.efectivo_segun_sistema)}</td>
+                            <td>{fmtQ(a.efectivo_contado)}</td>
+
+                            <td>
                               <button
-                                className={styles.btnVerify}
-                                onClick={() => verificar(a.id_arqueo)}
-                                disabled={verificando}
+                                className={styles.btnReporte}
+                                onClick={() => generarReporteArqueo(a)}
+                                title="Descargar reporte PDF"
                               >
-                                Verificar
+                                PDF
                               </button>
-                            ) : (
-                              <span className={styles.textSmallMuted}>—</span>
-                            )}
-                          </td>
-                          <td
-                            className={styles.textTruncate}
-                            title={a.observaciones ?? ""}
-                          >
-                            {a.observaciones ?? "—"}
-                          </td>
-                          <td>
-                            <button
-                              className={styles.btnReporte}
-                              onClick={() => generarReporteArqueo(a)}
-                              title="Descargar reporte PDF"
-                            >
-                              PDF
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
+                            </td>
+                          </tr>
+                        ))}
                     </tbody>
                   </table>
                 </div>
