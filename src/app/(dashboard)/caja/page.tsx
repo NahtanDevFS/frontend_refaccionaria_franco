@@ -1138,7 +1138,7 @@ export default function CajaPage() {
               <div className={styles.inputGroup}>
                 <label>No. de Autorización / Referencia:</label>
                 <input
-                  type="text"
+                  type="number"
                   className={styles.input}
                   placeholder="Ej. 123456"
                   value={referencia}
