@@ -274,7 +274,7 @@ export default function CajaPage() {
       await CajaService.registrarPago({
         id_venta: ordenSeleccionada.id_venta,
         metodo_pago: metodoPago,
-        monto: Number(monto),
+        monto: ordenSeleccionada.total,
         referencia: referencia || undefined,
       });
       alert("Pago registrado exitosamente.");
@@ -727,11 +727,15 @@ export default function CajaPage() {
                   <div className={styles.inputGroup}>
                     <label>Efectivo físico contado (Q):</label>
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="decimal"
                       className={styles.input}
                       placeholder="0.00"
                       value={efectivoContado}
-                      onChange={(e) => setEfectivoContado(e.target.value)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (/^\d*\.?\d*$/.test(val)) setEfectivoContado(val);
+                      }}
                     />
                   </div>
                   {efectivoContado && (
@@ -1124,15 +1128,21 @@ export default function CajaPage() {
               </div>
             </div>
 
-            <div className={styles.inputGroup}>
-              <label>Monto Recibido (Q):</label>
-              <input
-                type="number"
-                className={styles.input}
-                value={monto}
-                onChange={(e) => setMonto(e.target.value)}
-              />
-            </div>
+            {metodoPago === "efectivo" && (
+              <div className={styles.inputGroup}>
+                <label>Monto Recibido (Q):</label>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  className={styles.input}
+                  value={monto}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (/^\d*\.?\d*$/.test(val)) setMonto(val);
+                  }}
+                />
+              </div>
+            )}
 
             {metodoPago !== "efectivo" && (
               <div className={styles.inputGroup}>
