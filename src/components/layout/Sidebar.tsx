@@ -9,6 +9,7 @@ import { AuthService } from "@/services/auth.service";
 interface MenuItem {
   title: string;
   path: string;
+  externalUrl?: string;
   rolesAllowed: string[];
 }
 
@@ -50,11 +51,7 @@ const MENU_CONFIG: MenuSection[] = [
       {
         title: "Historial de Ventas",
         path: "/ventas/historial",
-        rolesAllowed: [
-          "ADMINISTRADOR",
-          "SUPERVISOR_SUCURSAL",
-          // GERENTE_REGIONAL ya NO tiene acceso al historial de ventas
-        ],
+        rolesAllowed: ["ADMINISTRADOR", "SUPERVISOR_SUCURSAL"],
       },
       {
         title: "Aprobación de Descuentos",
@@ -69,12 +66,7 @@ const MENU_CONFIG: MenuSection[] = [
       {
         title: "Reclamar Garantía",
         path: "/garantias/nueva",
-        rolesAllowed: [
-          "ADMINISTRADOR",
-          "SUPERVISOR_SUCURSAL",
-          "VENDEDOR",
-          // CAJERO ya NO puede reclamar garantías
-        ],
+        rolesAllowed: ["ADMINISTRADOR", "SUPERVISOR_SUCURSAL", "VENDEDOR"],
       },
       {
         title: "Aprobación de Garantías",
@@ -84,11 +76,7 @@ const MENU_CONFIG: MenuSection[] = [
       {
         title: "Historial de Garantías",
         path: "/garantias/historial",
-        rolesAllowed: [
-          "ADMINISTRADOR",
-          "SUPERVISOR_SUCURSAL",
-          // GERENTE_REGIONAL ya NO tiene acceso al historial de garantías
-        ],
+        rolesAllowed: ["ADMINISTRADOR", "SUPERVISOR_SUCURSAL"],
       },
     ],
   },
@@ -103,16 +91,24 @@ const MENU_CONFIG: MenuSection[] = [
       {
         title: "Bodega e Inventario",
         path: "/bodega",
-        rolesAllowed: [
-          "ADMINISTRADOR",
-          "BODEGUERO",
-          // SUPERVISOR_SUCURSAL ya NO tiene acceso a bodega
-        ],
+        rolesAllowed: ["ADMINISTRADOR", "BODEGUERO"],
       },
       {
         title: "Entregas a Domicilio",
         path: "/entregas",
         rolesAllowed: ["ADMINISTRADOR", "REPARTIDOR"],
+      },
+    ],
+  },
+  {
+    section: "Reportes",
+    items: [
+      {
+        title: "Dashboard Power BI",
+        path: "/reportes/powerbi",
+        externalUrl:
+          "https://app.powerbi.com/view?r=eyJrIjoiNmMwN2MwNjYtYWM1ZC00NTljLWI4MTAtNmE3NWU3MTNkYmZmIiwidCI6IjVmNTNiNGNlLTYzZDQtNGVlOC04OGQyLTIyZjBiMmQ0YjI3YSIsImMiOjR9",
+        rolesAllowed: ["ADMINISTRADOR", "GERENTE_REGIONAL"],
       },
     ],
   },
@@ -123,7 +119,6 @@ export default function Sidebar() {
   const router = useRouter();
   const [usuario, setUsuario] = useState<UsuarioSesion | null>(null);
 
-  // ── Estado del drawer en mobile ──────────────────────────────────────────
   const [abierto, setAbierto] = useState(false);
 
   useEffect(() => {
@@ -138,12 +133,10 @@ export default function Sidebar() {
     }
   }, []);
 
-  // Cerrar el drawer al cambiar de ruta (navegación en mobile)
   useEffect(() => {
     setAbierto(false);
   }, [pathname]);
 
-  // Bloquear scroll del body cuando el drawer está abierto
   useEffect(() => {
     if (abierto) {
       document.body.style.overflow = "hidden";
@@ -164,7 +157,6 @@ export default function Sidebar() {
 
   return (
     <>
-      {/* ── Botón hamburguesa — solo visible en mobile ──────────────────── */}
       <button
         className={styles.hamburger}
         onClick={() => setAbierto(true)}
@@ -175,7 +167,6 @@ export default function Sidebar() {
         <span />
       </button>
 
-      {/* ── Overlay oscuro — cierra el drawer al hacer click ────────────── */}
       {abierto && (
         <div
           className={styles.overlay}
@@ -184,11 +175,9 @@ export default function Sidebar() {
         />
       )}
 
-      {/* ── Sidebar / Drawer ─────────────────────────────────────────────── */}
       <aside
         className={`${styles.sidebar} ${abierto ? styles.sidebarAbierto : ""}`}
       >
-        {/* Botón cerrar — solo visible en mobile cuando está abierto */}
         <button
           className={styles.btnCerrar}
           onClick={() => setAbierto(false)}
@@ -199,7 +188,6 @@ export default function Sidebar() {
 
         <div className={styles.brand}>REFACCIONARIA FRANCO</div>
 
-        {/* Bloque de usuario */}
         <div className={styles.userInfo}>
           <div className={styles.userRow}>
             <span className={styles.userName}>{usuario.username}</span>
@@ -216,29 +204,43 @@ export default function Sidebar() {
           </div>
         </div>
 
-        {/* Navegación filtrada por rol */}
         <nav className={styles.nav}>
           {MENU_CONFIG.map((group, index) => {
             const itemsPermitidos = group.items.filter((item) =>
               item.rolesAllowed.includes(usuario.rol),
             );
-            // Si el rol no tiene ningún ítem en esta sección, no renderizar
             if (itemsPermitidos.length === 0) return null;
 
             return (
               <div key={index} className={styles.menuSection}>
                 <div className={styles.sectionTitle}>{group.section}</div>
-                {itemsPermitidos.map((item) => (
-                  <Link
-                    key={item.path}
-                    href={item.path}
-                    className={`${styles.navItem} ${
-                      pathname.startsWith(item.path) ? styles.active : ""
-                    }`}
-                  >
-                    {item.title}
-                  </Link>
-                ))}
+                {itemsPermitidos.map((item) => {
+                  if (item.externalUrl) {
+                    return (
+                      <a
+                        key={item.path}
+                        href={item.externalUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={styles.navItem}
+                      >
+                        {item.title}
+                      </a>
+                    );
+                  }
+
+                  return (
+                    <Link
+                      key={item.path}
+                      href={item.path}
+                      className={`${styles.navItem} ${
+                        pathname.startsWith(item.path) ? styles.active : ""
+                      }`}
+                    >
+                      {item.title}
+                    </Link>
+                  );
+                })}
               </div>
             );
           })}
